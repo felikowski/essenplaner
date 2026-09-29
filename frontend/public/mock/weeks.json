@@ -1,0 +1,26 @@
+[
+  {
+    "week": "2026-W40",
+    "days": {
+      "2026-09-28": "spaghetti-bolognese",
+      "2026-09-29": null,
+      "2026-09-30": "haehnchen-curry",
+      "2026-10-01": "linsensuppe",
+      "2026-10-02": null,
+      "2026-10-03": "pfannkuchen",
+      "2026-10-04": null
+    }
+  },
+  {
+    "week": "2026-W41",
+    "days": {
+      "2026-10-05": "gemueselasagne",
+      "2026-10-06": "kichererbsen-curry",
+      "2026-10-07": null,
+      "2026-10-08": null,
+      "2026-10-09": "ofengemuese-feta",
+      "2026-10-10": null,
+      "2026-10-11": "kartoffelsuppe"
+    }
+  }
+]
