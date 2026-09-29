@@ -5,6 +5,26 @@ context: |
   All artifacts must be written in de.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
 
+  Projekt: "Essenplaner" - Web-App, mit der eine Familie pro Kalenderwoche
+  festlegt, was es an jedem Tag zum Abendessen gibt. Rezepte kommen aus
+  PDFs in einem Google-Drive-Ordner und aus importierten Rezeptseiten (URL).
+  Nachfolger des Prototyps "family-dinner-planner" (Go + React), aus dem
+  Muster und Code uebernommen werden duerfen.
+
+  Nutzer: eine Familie (wenige Personen), ueberwiegend am Smartphone.
+  Betrieb: oeffentlich im Internet erreichbar, Zugriff nur nach Login mit
+  Google und nur fuer freigegebene E-Mail-Adressen.
+
+  Stack:
+  - frontend/: React + TypeScript (Vite), Tests mit Vitest + Testing Library
+  - backend/: Go, net/http aus der Standardbibliothek, SQLite
+  - Ein deploybares Artefakt: das Go-Binary liefert API und gebautes Frontend aus
+  - UI-Texte auf Deutsch, Code und Bezeichner auf Englisch
+
+  Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
+  add-google-login -> add-google-drive-recipes -> add-recipe-url-import.
+  Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:
