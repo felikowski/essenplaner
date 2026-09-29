@@ -43,7 +43,7 @@ Die Alternative, jede URL nur einmal vor dem Abruf per DNS zu prüfen, verwerfen
 
 **Speicherung:** Rezepte mit `origin = 'web-import'`, `source_kind = 'web'`, `source_ref` = kanonische URL; Zutaten und Schritte kommen in die vorhandenen JSON-Spalten. Entfernen setzt `available = 0` und nutzt die Semantik aus `recipe-catalog`.
 
-**Bilder:** `imageUrl` zeigt direkt auf die Quelle. Die CSP aus `add-google-login` erlaubt bereits `img-src https:`. Den Nachteil nehmen wir in Kauf: Der Browser lädt Bilder von fremden Servern (`referrerpolicy="no-referrer"` am `<img>`).
+**Bilder:** `imageUrl` zeigt direkt auf die Quelle. Die CSP aus `add-auth0-login` erlaubt bereits `img-src https:`. Den Nachteil nehmen wir in Kauf: Der Browser lädt Bilder von fremden Servern (`referrerpolicy="no-referrer"` am `<img>`).
 
 ## Risks / Trade-offs
 

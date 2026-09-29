@@ -12,8 +12,8 @@ context: |
   Muster und Code uebernommen werden duerfen.
 
   Nutzer: eine Familie (wenige Personen), ueberwiegend am Smartphone.
-  Betrieb: oeffentlich im Internet erreichbar, Zugriff nur nach Login mit
-  Google und nur fuer freigegebene E-Mail-Adressen.
+  Betrieb: oeffentlich im Internet erreichbar, Zugriff nur nach Login ueber Auth0
+  und nur fuer freigegebene E-Mail-Adressen.
 
   Stack:
   - frontend/: React + TypeScript (Vite), Tests mit Vitest + Testing Library
@@ -22,7 +22,7 @@ context: |
   - UI-Texte auf Deutsch, Code und Bezeichner auf Englisch
 
   Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
-  add-google-login -> add-google-drive-recipes -> add-recipe-url-import.
+  add-auth0-login -> add-google-drive-recipes -> add-recipe-url-import.
   Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.
 
 # Per-artifact rules (optional)

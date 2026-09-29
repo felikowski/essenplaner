@@ -23,4 +23,4 @@ Viele Rezepte, die die Familie kochen möchte, liegen nicht als PDF vor, sondern
 - Backend: neue Endpunkte `POST /api/recipes/import` und `DELETE /api/recipes/{id}`, ausgehende HTTP-Anfragen ins Internet, Abhängigkeit `golang.org/x/net/html`
 - Datenbank: Spalte `recipes.canonical_url` (eindeutig für `origin = 'web-import'`)
 - Frontend: neuer Dialog im Katalog, „Entfernen“ im Detail von Web-Rezepten
-- Setzt `add-google-login` (Schutz der Endpunkte) und `add-google-drive-recipes` (Feld `available`) voraus
+- Setzt `add-auth0-login` (Schutz der Endpunkte) und `add-google-drive-recipes` (Feld `available`) voraus

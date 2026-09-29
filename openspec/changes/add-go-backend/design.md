@@ -10,7 +10,7 @@ Das Frontend aus `add-frontend-mock-data` spricht über das `PlannerApi`-Interfa
 - Die Rezeptquellen (Seed, später Drive und Web-Import) sind austauschbar, ohne dass sich API oder Plan-Logik ändern
 
 **Non-Goals:**
-- Login und Zugriffsschutz (kommt mit `add-google-login`; bis dahin nur lokal betreiben)
+- Login und Zugriffsschutz (kommt mit `add-auth0-login`; bis dahin nur lokal betreiben)
 - Rezepte über die API anlegen oder bearbeiten
 - Hosting und CI/CD für eine konkrete Plattform
 
@@ -46,7 +46,7 @@ Ein leerer Tag bedeutet, dass es keine Zeile gibt. Die Woche wird immer aus dem 
 ## Risks / Trade-offs
 
 - [SQLite bei gleichzeitigen Schreibzugriffen] → WAL-Modus und `busy_timeout`; bei ein paar Familienmitgliedern ist das unkritisch.
-- [Ohne Login darf das Backend nicht öffentlich erreichbar sein] → Die README weist ausdrücklich darauf hin. Öffentlicher Betrieb erst nach `add-google-login`.
+- [Ohne Login darf das Backend nicht öffentlich erreichbar sein] → Die README weist ausdrücklich darauf hin. Öffentlicher Betrieb erst nach `add-auth0-login`.
 - [Seed-Rezepte vermischen sich mit echten Rezepten] → Sie sind über `origin = 'seed'` markiert, sodass ein späterer Change sie gezielt entfernen kann.
 
 ## Migration Plan

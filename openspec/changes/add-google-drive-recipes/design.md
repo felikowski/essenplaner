@@ -1,6 +1,6 @@
 ## Context
 
-Nach `add-google-login` gibt es ein geschütztes Backend mit SQLite. Rezepte haben `origin` (`seed`, `drive`, `web-import`) und `source_kind`. Die PDFs liegen in einem Drive-Ordner der Familie, der einem privaten Google-Konto gehört.
+Nach `add-auth0-login` gibt es ein geschütztes Backend mit SQLite. Rezepte haben `origin` (`seed`, `drive`, `web-import`) und `source_kind`. Die PDFs liegen in einem Drive-Ordner der Familie, der einem privaten Google-Konto gehört.
 
 ## Goals / Non-Goals
 

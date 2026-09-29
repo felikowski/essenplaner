@@ -11,7 +11,7 @@ Es gibt noch keinen Code. Der Prototyp `family-dinner-planner` zeigt eine einzig
 
 **Non-Goals:**
 - Speicherung über ein Neuladen hinaus (kommt mit `add-go-backend`)
-- Login (kommt mit `add-google-login`), Rezepte anlegen oder importieren
+- Login (kommt mit `add-auth0-login`), Rezepte anlegen oder importieren
 - Offline-Fähigkeit / PWA
 
 ## Decisions

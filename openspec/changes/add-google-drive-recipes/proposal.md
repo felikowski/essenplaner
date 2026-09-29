@@ -24,4 +24,4 @@ Die Familie sammelt ihre Rezepte als PDFs in Google Drive. Bisher gibt es nur Be
 - Backend: neue Abhängigkeit `google.golang.org/api/drive/v3`, neue Spalten bzw. eine neue Tabelle für Drive-Metadaten und den Sync-Status, ein Hintergrund-Job
 - API: neu sind `GET /api/recipes/{id}/pdf`, `GET /api/recipes/{id}/thumbnail`, `GET /api/sync/drive` und `POST /api/sync/drive`. Rezepte erhalten das Feld `available`.
 - Konfiguration: Drive-Ordner-ID und Zugangsdaten eines Google-Dienstkontos. Einmalig muss der Ordner in Drive für das Dienstkonto freigegeben werden.
-- Setzt `add-google-login` voraus: Die PDFs dürfen nur angemeldete Nutzer sehen.
+- Setzt `add-auth0-login` voraus: Die PDFs dürfen nur angemeldete Nutzer sehen.

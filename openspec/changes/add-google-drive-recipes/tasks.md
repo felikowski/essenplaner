@@ -1,6 +1,6 @@
 ## 1. Vorbereitung
 
-- [ ] 1.1 `docs/google-cloud-setup.md` ergänzen: Drive-API aktivieren, Dienstkonto und Schlüssel anlegen, Ordner freigeben, Ordner-ID ermitteln; mit einem Testordner nachvollziehen
+- [ ] 1.1 `docs/google-cloud-setup.md` anlegen: Google-Cloud-Projekt anlegen, Drive-API aktivieren, Dienstkonto und Schlüssel anlegen, Ordner freigeben, Ordner-ID ermitteln; mit einem Testordner nachvollziehen
 - [ ] 1.2 Konfiguration `DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `DRIVE_SYNC_INTERVAL` mit Prüfung beim Start (beide oder keiner); Tests
 - [ ] 1.3 Migration: `recipes.available`, `recipes.drive_path`, `drive_files`, `sync_runs`; Migrationstest auf einer Datenbank mit bestehenden Daten
 
