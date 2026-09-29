@@ -1,0 +1,110 @@
+[
+  {
+    "id": "haehnchen-curry",
+    "title": "Hähnchen-Curry",
+    "source": {
+      "kind": "web",
+      "url": "https://example.com/rezepte/haehnchen-curry"
+    },
+    "imageUrl": "/mock/images/haehnchen-curry.svg",
+    "servings": "4 Portionen",
+    "ingredients": [
+      "600 g Hähnchenbrust",
+      "1 Zwiebel",
+      "2 Knoblauchzehen",
+      "1 EL Currypulver",
+      "400 ml Kokosmilch",
+      "1 rote Paprika",
+      "Salz und Pfeffer",
+      "250 g Basmatireis"
+    ],
+    "instructions": [
+      "Reis nach Packungsanweisung kochen.",
+      "Hähnchen in Würfel schneiden, Zwiebel und Knoblauch fein hacken.",
+      "Hähnchen in Öl rundherum anbraten, Zwiebel und Knoblauch zugeben.",
+      "Currypulver kurz mitrösten, mit Kokosmilch ablöschen.",
+      "Paprika in Streifen zugeben und 10 Minuten köcheln lassen, abschmecken."
+    ]
+  },
+  {
+    "id": "spaghetti-bolognese",
+    "title": "Spaghetti Bolognese",
+    "source": {
+      "kind": "pdf",
+      "pdfUrl": "/mock/pdf/beispielrezept.pdf"
+    },
+    "imageUrl": "/mock/images/spaghetti-bolognese.svg"
+  },
+  {
+    "id": "gemueselasagne",
+    "title": "Gemüselasagne",
+    "source": {
+      "kind": "pdf",
+      "pdfUrl": "/mock/pdf/beispielrezept.pdf"
+    }
+  },
+  {
+    "id": "linsensuppe",
+    "title": "Linsensuppe",
+    "source": {
+      "kind": "web",
+      "url": "https://example.com/rezepte/linsensuppe"
+    },
+    "servings": "6 Portionen",
+    "ingredients": [
+      "250 g Tellerlinsen",
+      "2 Karotten",
+      "1 Stange Lauch",
+      "3 Kartoffeln",
+      "1,5 l Gemüsebrühe",
+      "2 EL Essig"
+    ]
+  },
+  {
+    "id": "kichererbsen-curry",
+    "title": "Kichererbsen-Curry mit Spinat",
+    "source": {
+      "kind": "web",
+      "url": "https://example.com/rezepte/kichererbsen-curry"
+    },
+    "imageUrl": "/mock/images/kichererbsen-curry.svg",
+    "servings": "4 Portionen",
+    "ingredients": [
+      "2 Dosen Kichererbsen",
+      "200 g Blattspinat",
+      "1 Dose gehackte Tomaten",
+      "200 ml Kokosmilch",
+      "1 EL rote Currypaste"
+    ],
+    "instructions": [
+      "Currypaste in etwas Öl anrösten.",
+      "Tomaten, Kokosmilch und abgetropfte Kichererbsen zugeben und 15 Minuten köcheln.",
+      "Spinat unterheben, bis er zusammenfällt."
+    ]
+  },
+  {
+    "id": "pfannkuchen",
+    "title": "Pfannkuchen",
+    "source": {
+      "kind": "pdf",
+      "pdfUrl": "/mock/pdf/beispielrezept.pdf"
+    },
+    "imageUrl": "/mock/images/pfannkuchen.svg"
+  },
+  {
+    "id": "ofengemuese-feta",
+    "title": "Ofengemüse mit Feta",
+    "source": {
+      "kind": "web",
+      "url": "https://example.com/rezepte/ofengemuese-feta"
+    }
+  },
+  {
+    "id": "kartoffelsuppe",
+    "title": "Kartoffelsuppe mit Würstchen",
+    "source": {
+      "kind": "pdf",
+      "pdfUrl": "/mock/pdf/beispielrezept.pdf"
+    }
+  }
+]

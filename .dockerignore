@@ -1,0 +1,9 @@
+.git
+.claude
+**/node_modules
+frontend/dist
+backend/bin
+backend/data
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+openspec

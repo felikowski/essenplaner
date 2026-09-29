@@ -1,0 +1,6 @@
+# Wird von `make build` aus frontend/dist kopiert.
+/internal/web/dist/*
+!/internal/web/dist/.gitkeep
+
+/bin/
+/data/

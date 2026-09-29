@@ -14,7 +14,7 @@ interface MockData {
 
 /**
  * Lädt Rezepte und Wochenpläne aus `public/mock/*.json` und hält Änderungen nur
- * im Speicher. Nach einem Neuladen der Seite gilt wieder der Stand der Dateien.
+ * im Speicher. Wird nur noch in Tests verwendet; die App nutzt HttpPlannerApi.
  */
 export class MockPlannerApi implements PlannerApi {
   private readonly load: JsonLoader
