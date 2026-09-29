@@ -22,7 +22,8 @@ context: |
   - UI-Texte auf Deutsch, Code und Bezeichner auf Englisch
 
   Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
-  add-auth0-login -> add-google-drive-recipes -> add-recipe-url-import.
+  add-auth0-login -> add-vps-deployment -> add-google-drive-recipes ->
+  add-recipe-url-import.
   Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.
 
 # Per-artifact rules (optional)
