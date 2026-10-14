@@ -84,4 +84,19 @@ describe('MockPlannerApi', () => {
     await expect(api.listRecipes()).rejects.toThrow('offline')
     expect((await api.listRecipes()).length).toBeGreaterThan(0)
   })
+
+  it('importiert Rezepte, erkennt Duplikate und entfernt sie wieder', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const imported = await api.importRecipe('https://example.com/rezepte/kuerbis-suppe')
+    expect(imported).toMatchObject({ title: 'Kuerbis suppe', removable: true })
+    expect((await api.importRecipe('https://example.com/rezepte/kuerbis-suppe')).id).toBe(imported.id)
+
+    await api.setDay('2026-09-29', imported.id)
+    await api.removeRecipe(imported.id)
+    expect((await api.listRecipes()).some((recipe) => recipe.id === imported.id)).toBe(false)
+    expect(await api.getRecipe(imported.id)).toMatchObject({ available: false })
+    await expect(api.setDay('2026-09-30', imported.id)).rejects.toThrow()
+    await expect(api.removeRecipe('gemueselasagne')).rejects.toMatchObject({ status: 409 })
+    await expect(api.importRecipe('https://example.com/keine-rezeptdaten')).rejects.toMatchObject({ status: 422 })
+  })
 })

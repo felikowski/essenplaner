@@ -20,10 +20,11 @@ type HealthChecker interface {
 }
 
 type Server struct {
-	recipes store.RecipeStore
-	plans   store.PlanStore
-	health  HealthChecker
-	logger  *slog.Logger
+	recipes  store.RecipeStore
+	plans    store.PlanStore
+	health   HealthChecker
+	importer RecipeImporter
+	logger   *slog.Logger
 }
 
 func NewServer(recipes store.RecipeStore, plans store.PlanStore, health HealthChecker, logger *slog.Logger) *Server {
@@ -36,6 +37,8 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/recipes", s.handleListRecipes)
 	mux.HandleFunc("GET /api/recipes/{id}", s.handleGetRecipe)
+	mux.HandleFunc("DELETE /api/recipes/{id}", s.handleRemoveRecipe)
+	mux.HandleFunc("POST /api/recipes/import", s.handleImportRecipe)
 	mux.HandleFunc("GET /api/weeks/{week}", s.handleGetWeek)
 	mux.HandleFunc("PUT /api/days/{date}", s.handleSetDay)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +130,7 @@ func (s *Server) handleSetDay(w http.ResponseWriter, r *http.Request) {
 
 	err = s.plans.SetDay(r.Context(), isoweek.FormatDate(date), recipeID)
 	if errors.Is(err, store.ErrUnknownRecipe) {
-		writeError(w, http.StatusUnprocessableEntity, "unknown recipeId")
+		writeError(w, http.StatusUnprocessableEntity, "unknown or unavailable recipeId")
 		return
 	}
 	if err != nil {

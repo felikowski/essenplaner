@@ -12,4 +12,11 @@ export interface PlannerApi {
   getWeek(week: IsoWeek): Promise<WeekPlan>
   /** Ordnet einem Tag ein Rezept zu (null entfernt die Zuordnung) und liefert den neuen Wochenplan. */
   setDay(date: IsoDate, recipeId: string | null): Promise<WeekPlan>
+  /**
+   * Importiert ein Rezept von einer Webseite. Liefert bei einem Duplikat das vorhandene Rezept.
+   * Wirft RequestError mit serverMessage, wenn der Import scheitert.
+   */
+  importRecipe(url: string): Promise<Recipe>
+  /** Markiert ein Rezept als nicht mehr verfügbar. */
+  removeRecipe(id: string): Promise<void>
 }

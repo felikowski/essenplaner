@@ -79,6 +79,28 @@ describe('HttpPlannerApi', () => {
     )
   })
 
+  it('importiert über POST /api/recipes/import und entfernt über DELETE', async () => {
+    const api = new HttpPlannerApi()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'w-1', title: 'Kürbissuppe', source: { kind: 'web', url: 'x' } }, 201))
+    expect(await api.importRecipe('https://example.com/k')).toMatchObject({ id: 'w-1' })
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/recipes/import',
+      expect.objectContaining({ method: 'POST', body: '{"url":"https://example.com/k"}' }),
+    )
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await expect(api.removeRecipe('w 1')).resolves.toBeUndefined()
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/recipes/w%201', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('reicht die Fehlermeldung des Servers weiter', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: 'Auf dieser Seite wurden keine Rezeptdaten gefunden.' }, 422))
+    await expect(new HttpPlannerApi().importRecipe('https://example.com')).rejects.toMatchObject({
+      status: 422,
+      serverMessage: 'Auf dieser Seite wurden keine Rezeptdaten gefunden.',
+    })
+  })
+
   it('wirft bei Fehlerstatus, damit die Ansicht eine Meldung zeigen kann', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: 'unknown recipeId' }, 422))
 

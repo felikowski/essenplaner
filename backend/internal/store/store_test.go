@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -74,9 +75,10 @@ func TestOpenTwiceAppliesMigrationsOnce(t *testing.T) {
 	first.Close()
 
 	db := openTestDB(t, path)
+	files, _ := fs.Glob(migrations, "migrations/*.sql")
 	var count int
-	if err := db.sql.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&count); err != nil || count != 1 {
-		t.Errorf("schema_migrations enthält %d Einträge (%v), erwartet 1", count, err)
+	if err := db.sql.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&count); err != nil || count != len(files) {
+		t.Errorf("schema_migrations enthält %d Einträge (%v), erwartet %d", count, err, len(files))
 	}
 }
 

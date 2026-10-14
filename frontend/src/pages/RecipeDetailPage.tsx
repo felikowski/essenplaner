@@ -1,6 +1,7 @@
-import { useCallback } from 'react'
-import { Link, useParams } from 'react-router'
+import { useCallback, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
+import { RecipeImage } from '../components/RecipeImage'
 import { LoadError, Loading } from '../components/Status'
 import { useAsyncData } from '../lib/useAsyncData'
 import type { Recipe } from '../types'
@@ -35,11 +36,17 @@ export function RecipeDetailPage() {
 
 function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const { source } = recipe
+  const unavailable = recipe.available === false
 
   return (
     <article className="recipe-detail">
       <h1>{recipe.title}</h1>
-      {recipe.imageUrl && <img className="recipe-detail__image" src={recipe.imageUrl} alt={recipe.title} />}
+      {unavailable && (
+        <p className="notice" role="note">
+          Nicht mehr verfügbar. Das Rezept steht nur noch in bestehenden Plänen.
+        </p>
+      )}
+      <RecipeImage className="recipe-detail__image" src={recipe.imageUrl} alt={recipe.title} />
       {recipe.servings && <p className="recipe-detail__servings">{recipe.servings}</p>}
       <p>
         <a
@@ -71,6 +78,54 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
           </ol>
         </section>
       )}
+      {recipe.removable && <RemoveRecipe recipe={recipe} />}
     </article>
+  )
+}
+
+function RemoveRecipe({ recipe }: { recipe: Recipe }) {
+  const api = usePlannerApi()
+  const navigate = useNavigate()
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.removeRecipe(recipe.id)
+      navigate('/rezepte')
+    } catch {
+      setError('Das Rezept konnte nicht entfernt werden. Bitte versuche es noch einmal.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="danger-zone">
+      {error && (
+        <p className="form__error" role="alert">
+          {error}
+        </p>
+      )}
+      {confirming ? (
+        <div className="danger-zone__confirm">
+          <p>„{recipe.title}“ entfernen? In bereits geplanten Tagen bleibt es sichtbar.</p>
+          <div className="modal__actions">
+            <button type="button" className="button button--secondary" onClick={() => setConfirming(false)} disabled={busy}>
+              Abbrechen
+            </button>
+            <button type="button" className="button button--danger" onClick={remove} disabled={busy}>
+              {busy ? 'Wird entfernt …' : 'Endgültig entfernen'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="button button--secondary" onClick={() => setConfirming(true)}>
+          Rezept entfernen
+        </button>
+      )}
+    </section>
   )
 }

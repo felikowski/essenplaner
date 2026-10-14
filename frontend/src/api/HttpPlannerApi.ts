@@ -21,6 +21,14 @@ export class HttpPlannerApi implements PlannerApi {
     return request(`/api/weeks/${encodeURIComponent(week)}`)
   }
 
+  importRecipe(url: string): Promise<Recipe> {
+    return request('/api/recipes/import', { method: 'POST', body: JSON.stringify({ url }) })
+  }
+
+  removeRecipe(id: string): Promise<void> {
+    return request(`/api/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
   setDay(date: IsoDate, recipeId: string | null): Promise<WeekPlan> {
     return request(`/api/days/${encodeURIComponent(date)}`, {
       method: 'PUT',

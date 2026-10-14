@@ -10,6 +10,10 @@ export interface Recipe {
   servings?: string
   ingredients?: string[]
   instructions?: string[]
+  /** false, wenn das Rezept entfernt wurde. Es bleibt dann nur in bestehenden Plänen sichtbar. Fehlt = verfügbar. */
+  available?: boolean
+  /** true, wenn sich das Rezept entfernen lässt (zum Beispiel per URL importierte Rezepte). */
+  removable?: boolean
 }
 
 /** Lokales Kalenderdatum, z. B. "2026-09-28". */

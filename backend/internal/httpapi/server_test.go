@@ -97,7 +97,8 @@ func TestRecipeJSONOmitsMissingFields(t *testing.T) {
 	pdf := decode[map[string]any](t, do(t, h, "GET", "/api/recipes/gemueselasagne", ""))
 	want := map[string]any{
 		"id": "gemueselasagne", "title": "Gemüselasagne",
-		"source": map[string]any{"kind": "pdf", "pdfUrl": "/mock/pdf/beispielrezept.pdf"},
+		"source":    map[string]any{"kind": "pdf", "pdfUrl": "/mock/pdf/beispielrezept.pdf"},
+		"available": true,
 	}
 	gotJSON, _ := json.Marshal(pdf)
 	wantJSON, _ := json.Marshal(want)
@@ -277,7 +278,14 @@ func (failingStore) PlannedDays(context.Context, string, string) (map[string]str
 func (failingStore) SetDay(context.Context, string, *string) error {
 	return errors.New("database is locked")
 }
-func (failingStore) Ping(context.Context) error { return nil }
+func (failingStore) FindImported(context.Context, string) (store.Recipe, error) {
+	return store.Recipe{}, errors.New("disk I/O error")
+}
+func (failingStore) SaveImported(context.Context, string, store.Recipe) (store.Recipe, bool, error) {
+	return store.Recipe{}, false, errors.New("disk I/O error")
+}
+func (failingStore) RemoveRecipe(context.Context, string) error { return errors.New("disk I/O error") }
+func (failingStore) Ping(context.Context) error                 { return nil }
 
 func TestDatabaseErrorsBecomeInternalError(t *testing.T) {
 	var logs bytes.Buffer
@@ -289,6 +297,7 @@ func TestDatabaseErrorsBecomeInternalError(t *testing.T) {
 		{"GET", "/api/recipes/x", ""},
 		{"GET", "/api/weeks/2026-W40", ""},
 		{"PUT", "/api/days/2026-09-30", `{"recipeId":"x"}`},
+		{"DELETE", "/api/recipes/x", ""},
 	} {
 		rec := do(t, h, req.method, req.path, req.body)
 		assertError(t, rec, http.StatusInternalServerError)

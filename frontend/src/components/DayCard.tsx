@@ -23,9 +23,12 @@ export function DayCard({ date, recipeId, recipe, isToday, saving, onPick }: Pro
       </div>
       <div className="day-card__body">
         {recipeId ? (
-          <Link to={`/rezepte/${recipeId}`} className="day-card__recipe">
-            {recipe?.title ?? 'Unbekanntes Rezept'}
-          </Link>
+          <div className="day-card__entry">
+            <Link to={`/rezepte/${recipeId}`} className="day-card__recipe">
+              {recipe?.title ?? 'Unbekanntes Rezept'}
+            </Link>
+            {recipe?.available === false && <span className="notice-label">Nicht mehr verfügbar</span>}
+          </div>
         ) : (
           <p className="day-card__empty">Noch nichts geplant</p>
         )}

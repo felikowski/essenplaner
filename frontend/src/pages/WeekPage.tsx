@@ -16,7 +16,8 @@ import {
   toIsoDate,
 } from '../lib/isoWeek'
 import { useAsyncData } from '../lib/useAsyncData'
-import type { IsoDate, IsoWeek } from '../types'
+import type { PlannerApi } from '../api/PlannerApi'
+import type { IsoDate, IsoWeek, Recipe, WeekPlan } from '../types'
 
 export function WeekPage() {
   const { week = '' } = useParams()
@@ -38,10 +39,10 @@ export function WeekPage() {
 
 function WeekPlanView({ week }: { week: IsoWeek }) {
   const api = usePlannerApi()
-  const load = useCallback(
-    () => Promise.all([api.getWeek(week), api.listRecipes()]).then(([plan, recipes]) => ({ plan, recipes })),
-    [api, week],
-  )
+  const load = useCallback(async () => {
+    const [plan, recipes] = await Promise.all([api.getWeek(week), api.listRecipes()])
+    return { plan, recipes, planned: await withPlannedRecipes(api, plan, recipes) }
+  }, [api, week])
   const { state, update, retry } = useAsyncData(load)
   const [pickerDate, setPickerDate] = useState<IsoDate | null>(null)
   const [savingDate, setSavingDate] = useState<IsoDate | null>(null)
@@ -59,7 +60,8 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
     setSavingDate(date)
     try {
       const plan = await api.setDay(date, recipeId)
-      update((data) => ({ ...data, plan }))
+      const planned = await withPlannedRecipes(api, plan, state.status === 'ready' ? state.data.planned : [])
+      update((data) => ({ ...data, plan, planned }))
     } catch {
       setSaveError(`${formatWeekday(date)} konnte nicht gespeichert werden. Bitte versuche es noch einmal.`)
     } finally {
@@ -113,7 +115,7 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
                   key={date}
                   date={date}
                   recipeId={recipeId}
-                  recipe={state.data.recipes.find((recipe) => recipe.id === recipeId)}
+                  recipe={state.data.planned.find((recipe) => recipe.id === recipeId)}
                   isToday={date === today}
                   saving={date === savingDate}
                   onPick={() => setPickerDate(date)}
@@ -137,4 +139,15 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
       )}
     </div>
   )
+}
+
+/**
+ * Liefert die Rezepte, die im Plan stehen. Entfernte Rezepte fehlen in der Rezeptliste und werden
+ * einzeln nachgeladen, damit ihr Titel im Plan sichtbar bleibt.
+ */
+async function withPlannedRecipes(api: PlannerApi, plan: WeekPlan, known: Recipe[]): Promise<Recipe[]> {
+  const ids = new Set(Object.values(plan.days).filter((id): id is string => id !== null))
+  const missing = [...ids].filter((id) => !known.some((recipe) => recipe.id === id))
+  const loaded = await Promise.all(missing.map((id) => api.getRecipe(id)))
+  return [...known, ...loaded.filter((recipe): recipe is Recipe => recipe !== null)]
 }

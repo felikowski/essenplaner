@@ -13,9 +13,11 @@ import (
 
 	"github.com/felikowski/essenplaner/backend/internal/config"
 	"github.com/felikowski/essenplaner/backend/internal/httpapi"
+	"github.com/felikowski/essenplaner/backend/internal/safefetch"
 	"github.com/felikowski/essenplaner/backend/internal/seed"
 	"github.com/felikowski/essenplaner/backend/internal/store"
 	"github.com/felikowski/essenplaner/backend/internal/web"
+	"github.com/felikowski/essenplaner/backend/internal/webimport"
 )
 
 func main() {
@@ -49,7 +51,8 @@ func run(logger *slog.Logger) error {
 		logger.Info("beispielrezepte angelegt")
 	}
 
-	api := httpapi.NewServer(db, db, db, logger)
+	importer := webimport.Importer{Client: safefetch.New(safefetch.Options{UserAgent: "Essenplaner/1.0"})}
+	api := httpapi.NewServer(db, db, db, logger).WithImporter(importer)
 	server := &http.Server{
 		Addr:              cfg.Addr(),
 		Handler:           api.Handler(web.Handler(web.Dist())),

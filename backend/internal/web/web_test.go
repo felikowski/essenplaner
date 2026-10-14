@@ -23,7 +23,11 @@ var dist = fstest.MapFS{
 	"mock/images/a.svg":   {Data: []byte("<svg/>")},
 }
 
-type emptyStore struct{}
+// emptyStore liefert leere Daten. Die eingebetteten Interfaces decken Methoden ab, die diese Tests nicht aufrufen.
+type emptyStore struct {
+	store.RecipeStore
+	store.PlanStore
+}
 
 func (emptyStore) ListRecipes(context.Context) ([]store.Recipe, error) { return []store.Recipe{}, nil }
 func (emptyStore) GetRecipe(context.Context, string) (store.Recipe, error) {

@@ -85,5 +85,22 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | GET     | `/api/recipes/{id}`   | ein Rezept, 404 wenn unbekannt                                 |
 | GET     | `/api/weeks/{week}`   | Plan einer Woche (`2026-W40`), alle sieben Tage, leer = `null` |
 | PUT     | `/api/days/{date}`    | Body `{"recipeId": "…"}` oder `{"recipeId": null}`             |
+| POST    | `/api/recipes/import` | Body `{"url": "…"}`: Rezept von einer Webseite importieren      |
+| DELETE  | `/api/recipes/{id}`   | importiertes Rezept entfernen (bleibt in Plänen sichtbar)       |
 
 Fehler haben immer die Form `{"error": "…"}`.
+
+## Rezepte per Link importieren
+
+„Rezept hinzufügen“ im Rezeptkatalog übernimmt Titel, Bild, Portionen, Zutaten und Zubereitung von
+einer Rezeptseite. Grundlage sind die strukturierten Rezeptdaten (schema.org `Recipe` als JSON-LD), die
+fast alle großen Rezeptseiten für Suchmaschinen ausliefern, etwa Chefkoch, Lecker, BBC Good Food,
+Allrecipes und Kochblogs mit WordPress-Rezept-Plugins. Seiten ohne solche Daten (zum Beispiel
+Übersichtsseiten) werden mit „Auf dieser Seite wurden keine Rezeptdaten gefunden.“ abgelehnt.
+
+- Dieselbe Seite wird nicht doppelt importiert, auch nicht mit Tracking-Parametern wie `utm_source`.
+- Entfernte Rezepte verschwinden aus Katalog und Auswahl, bleiben in bestehenden Plänen aber mit dem
+  Hinweis „Nicht mehr verfügbar“ lesbar. Ein erneuter Import macht sie wieder verfügbar.
+- Der Server ruft nur Adressen im öffentlichen Internet über Port 80/443 ab (keine internen
+  Netzadressen, auch nicht nach Weiterleitungen), höchstens 10 Sekunden lang und bis 5 MB.
+- Bilder werden direkt von der Rezeptseite geladen (ohne Referrer).

@@ -1,8 +1,10 @@
-import { useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useCallback, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
+import { ImportRecipeDialog } from '../components/ImportRecipeDialog'
 import { SearchField } from '../components/SearchField'
 import { LoadError, Loading } from '../components/Status'
+import { RecipeImage } from '../components/RecipeImage'
 import { filterByTitle, sortByTitle, sourceLabel } from '../lib/recipes'
 import { useAsyncData } from '../lib/useAsyncData'
 
@@ -13,6 +15,8 @@ export function RecipeListPage() {
   // Der Suchbegriff steht in der URL, damit er beim Zurückkehren aus dem Detail erhalten bleibt.
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
+  const [importing, setImporting] = useState(false)
+  const navigate = useNavigate()
 
   function setQuery(value: string) {
     setSearchParams(value ? { q: value } : {}, { replace: true })
@@ -20,12 +24,23 @@ export function RecipeListPage() {
 
   return (
     <div className="page">
-      <h1>Rezepte</h1>
+      <div className="page-header">
+        <h1>Rezepte</h1>
+        <button type="button" className="button" onClick={() => setImporting(true)}>
+          Rezept hinzufügen
+        </button>
+      </div>
+      {importing && (
+        <ImportRecipeDialog
+          onImported={(recipe) => navigate(`/rezepte/${recipe.id}`)}
+          onClose={() => setImporting(false)}
+        />
+      )}
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <LoadError message="Die Rezepte konnten nicht geladen werden." onRetry={retry} />}
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
-          <p className="status">Noch keine Rezepte vorhanden.</p>
+          <p className="status">Noch keine Rezepte vorhanden. Füge eines über „Rezept hinzufügen“ hinzu.</p>
         ) : (
           <>
             <SearchField value={query} onChange={setQuery} />
@@ -44,11 +59,13 @@ function RecipeList({ recipes }: { recipes: ReturnType<typeof sortByTitle> }) {
       {recipes.map((recipe) => (
         <li key={recipe.id}>
           <Link to={`/rezepte/${recipe.id}`} className="recipe-card">
-            {recipe.imageUrl ? (
-              <img className="recipe-card__image" src={recipe.imageUrl} alt="" loading="lazy" />
-            ) : (
-              <span className="recipe-card__image recipe-card__image--empty" aria-hidden="true" />
-            )}
+            <RecipeImage
+              className="recipe-card__image"
+              src={recipe.imageUrl}
+              alt=""
+              loading="lazy"
+              fallback={<span className="recipe-card__image recipe-card__image--empty" aria-hidden="true" />}
+            />
             <span className="recipe-card__text">
               <span className="recipe-card__title">{recipe.title}</span>
               <span className="source-label">{sourceLabel(recipe)}</span>

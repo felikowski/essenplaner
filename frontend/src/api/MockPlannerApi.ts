@@ -1,7 +1,7 @@
 import { daysOfWeek, parseIsoDate, weekOf } from '../lib/isoWeek'
 import type { IsoDate, IsoWeek, Recipe, WeekPlan } from '../types'
 import type { PlannerApi } from './PlannerApi'
-import { request } from './request'
+import { RequestError, request } from './request'
 
 export type JsonLoader = (file: string) => Promise<unknown>
 
@@ -26,7 +26,7 @@ export class MockPlannerApi implements PlannerApi {
 
   async listRecipes(): Promise<Recipe[]> {
     const { recipes } = await this.getData()
-    return structuredClone(recipes)
+    return structuredClone(recipes.filter(isAvailable))
   }
 
   async getRecipe(id: string): Promise<Recipe | null> {
@@ -42,7 +42,7 @@ export class MockPlannerApi implements PlannerApi {
 
   async setDay(date: IsoDate, recipeId: string | null): Promise<WeekPlan> {
     const { recipes, weeks } = await this.getData()
-    if (recipeId !== null && !recipes.some((recipe) => recipe.id === recipeId)) {
+    if (recipeId !== null && !recipes.some((recipe) => recipe.id === recipeId && isAvailable(recipe))) {
       throw new Error(`Unbekanntes Rezept: ${recipeId}`)
     }
     const week = weekOf(parseIsoDate(date))
@@ -50,6 +50,48 @@ export class MockPlannerApi implements PlannerApi {
     plan.days[date] = recipeId
     weeks.set(week, plan)
     return structuredClone(plan)
+  }
+
+  /**
+   * Simuliert den Import: Adressen mit „keine-rezeptdaten“ scheitern wie beim Server mit 422,
+   * alle anderen werden zu einem Rezept, dessen Titel aus dem letzten Pfadteil stammt.
+   */
+  async importRecipe(url: string): Promise<Recipe> {
+    const { recipes } = await this.getData()
+    if (url.includes('keine-rezeptdaten')) {
+      throw new RequestError('POST /api/recipes/import fehlgeschlagen: 422', 422, 'Auf dieser Seite wurden keine Rezeptdaten gefunden.')
+    }
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      throw new RequestError('POST /api/recipes/import fehlgeschlagen: 400', 400, 'Bitte eine gültige Adresse einer öffentlichen Webseite angeben.')
+    }
+    const existing = recipes.find((recipe) => recipe.source.kind === 'web' && recipe.source.url === parsed.origin + parsed.pathname)
+    if (existing) {
+      existing.available = true
+      existing.removable = true
+      return structuredClone(existing)
+    }
+    const slug = parsed.pathname.split('/').filter(Boolean).pop() ?? 'rezept'
+    const recipe: Recipe = {
+      id: `w-${recipes.length + 1}`,
+      title: slug.replace(/[-_]+/g, ' ').replace(/^./, (first) => first.toUpperCase()),
+      source: { kind: 'web', url: parsed.origin + parsed.pathname },
+      available: true,
+      removable: true,
+    }
+    recipes.push(recipe)
+    return structuredClone(recipe)
+  }
+
+  async removeRecipe(id: string): Promise<void> {
+    const { recipes } = await this.getData()
+    const recipe = recipes.find((candidate) => candidate.id === id)
+    if (!recipe) throw new RequestError(`DELETE /api/recipes/${id} fehlgeschlagen: 404`, 404)
+    if (!recipe.removable) throw new RequestError(`DELETE /api/recipes/${id} fehlgeschlagen: 409`, 409)
+    recipe.available = false
+    recipe.removable = false
   }
 
   private getData(): Promise<MockData> {
@@ -67,6 +109,10 @@ export class MockPlannerApi implements PlannerApi {
     }
     return this.data
   }
+}
+
+function isAvailable(recipe: Recipe): boolean {
+  return recipe.available !== false
 }
 
 function emptyWeek(week: IsoWeek): WeekPlan {

@@ -41,8 +41,9 @@ func (db *DB) SetDay(ctx context.Context, date string, recipeID *string) error {
 	}
 	defer tx.Rollback()
 
+	// Nicht mehr verfügbare Rezepte lassen sich keinem weiteren Tag zuordnen.
 	var exists bool
-	if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM recipes WHERE id = ?)", *recipeID).Scan(&exists); err != nil {
+	if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM recipes WHERE id = ? AND available = 1)", *recipeID).Scan(&exists); err != nil {
 		return fmt.Errorf("rezept prüfen: %w", err)
 	}
 	if !exists {

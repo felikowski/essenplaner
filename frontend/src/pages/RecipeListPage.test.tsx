@@ -42,7 +42,7 @@ describe('Rezeptliste', () => {
     const api = new MockPlannerApi(async () => [])
     renderApp('/rezepte', api)
 
-    expect(await screen.findByText('Noch keine Rezepte vorhanden.')).toBeInTheDocument()
+    expect(await screen.findByText(/Noch keine Rezepte vorhanden\./)).toBeInTheDocument()
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
   })
 
