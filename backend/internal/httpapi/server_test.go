@@ -33,7 +33,7 @@ func newTestAPI(t *testing.T) (http.Handler, *store.DB) {
 	if _, err := seed.Run(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	return NewServer(db, db, db, quietLogger()).Handler(nil), db
+	return NewServer(StoresFrom(db), quietLogger()).Handler(nil), db
 }
 
 func do(t *testing.T, h http.Handler, method, path, body string) *httptest.ResponseRecorder {
@@ -121,121 +121,12 @@ func TestGetRecipeNotFound(t *testing.T) {
 	assertError(t, do(t, h, "GET", "/api/recipes/does-not-exist", ""), http.StatusNotFound)
 }
 
-func TestGetWeekEmpty(t *testing.T) {
-	h, _ := newTestAPI(t)
-
-	rec := do(t, h, "GET", "/api/weeks/2026-W41", "")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d", rec.Code)
-	}
-	want := `{"week":"2026-W41","days":{"2026-10-05":null,"2026-10-06":null,"2026-10-07":null,"2026-10-08":null,"2026-10-09":null,"2026-10-10":null,"2026-10-11":null}}`
-	if got := strings.TrimSpace(rec.Body.String()); got != want {
-		t.Errorf("antwort = %s\nerwartet  %s", got, want)
-	}
-}
-
-func TestGetWeekPlanned(t *testing.T) {
-	h, db := newTestAPI(t)
-	id := "linsensuppe"
-	if err := db.SetDay(context.Background(), "2026-09-30", &id); err != nil {
-		t.Fatal(err)
-	}
-
-	plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", ""))
-	if plan.Week != "2026-W40" || len(plan.Days) != 7 {
-		t.Fatalf("plan = %+v", plan)
-	}
-	if got := plan.Days["2026-09-30"]; got == nil || *got != "linsensuppe" {
-		t.Errorf("30.09. = %v", got)
-	}
-	if plan.Days["2026-09-28"] != nil {
-		t.Errorf("28.09. sollte leer sein")
-	}
-}
-
 func TestGetWeekInvalid(t *testing.T) {
 	h, _ := newTestAPI(t)
 	for _, week := range []string{"2026-W60", "abc", "2025-W53", "2026-W00"} {
 		t.Run(week, func(t *testing.T) {
 			assertError(t, do(t, h, "GET", "/api/weeks/"+week, ""), http.StatusBadRequest)
 		})
-	}
-}
-
-func TestSetDayAssignAndRemove(t *testing.T) {
-	h, _ := newTestAPI(t)
-
-	rec := do(t, h, "PUT", "/api/days/2026-09-30", `{"recipeId":"haehnchen-curry"}`)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
-	}
-	plan := decode[weekPlan](t, rec)
-	if plan.Week != "2026-W40" || len(plan.Days) != 7 || plan.Days["2026-09-30"] == nil || *plan.Days["2026-09-30"] != "haehnchen-curry" {
-		t.Fatalf("plan nach Zuordnen = %s", rec.Body.String())
-	}
-
-	// Ersetzen
-	plan = decode[weekPlan](t, do(t, h, "PUT", "/api/days/2026-09-30", `{"recipeId":"linsensuppe"}`))
-	if *plan.Days["2026-09-30"] != "linsensuppe" {
-		t.Fatalf("plan nach Ersetzen = %+v", plan)
-	}
-
-	// Entfernen
-	rec = do(t, h, "PUT", "/api/days/2026-09-30", `{"recipeId":null}`)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d", rec.Code)
-	}
-	if plan := decode[weekPlan](t, rec); plan.Days["2026-09-30"] != nil {
-		t.Errorf("30.09. sollte leer sein: %s", rec.Body.String())
-	}
-	if plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", "")); plan.Days["2026-09-30"] != nil {
-		t.Error("entfernen wurde nicht gespeichert")
-	}
-}
-
-func TestSetDayReturnsWeekOfDateAcrossYearBoundary(t *testing.T) {
-	h, _ := newTestAPI(t)
-
-	plan := decode[weekPlan](t, do(t, h, "PUT", "/api/days/2027-01-03", `{"recipeId":"pfannkuchen"}`))
-	if plan.Week != "2026-W53" || plan.Days["2027-01-03"] == nil {
-		t.Errorf("plan = %+v", plan)
-	}
-}
-
-func TestSetDayUnknownRecipe(t *testing.T) {
-	h, _ := newTestAPI(t)
-	do(t, h, "PUT", "/api/days/2026-09-30", `{"recipeId":"linsensuppe"}`)
-
-	assertError(t, do(t, h, "PUT", "/api/days/2026-09-30", `{"recipeId":"gibt-es-nicht"}`), http.StatusUnprocessableEntity)
-
-	plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", ""))
-	if *plan.Days["2026-09-30"] != "linsensuppe" {
-		t.Error("plan wurde verändert")
-	}
-}
-
-func TestSetDayBadRequest(t *testing.T) {
-	h, _ := newTestAPI(t)
-	tests := []struct{ name, path, body string }{
-		{"datum nicht im Format", "/api/days/30.09.2026", `{"recipeId":"linsensuppe"}`},
-		{"datum gibt es nicht", "/api/days/2026-02-30", `{"recipeId":"linsensuppe"}`},
-		{"kein JSON", "/api/days/2026-09-30", `recipeId=linsensuppe`},
-		{"leerer body", "/api/days/2026-09-30", ``},
-		{"recipeId fehlt", "/api/days/2026-09-30", `{}`},
-		{"recipeId keine Zeichenkette", "/api/days/2026-09-30", `{"recipeId":42}`},
-		{"recipeId leer", "/api/days/2026-09-30", `{"recipeId":""}`},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assertError(t, do(t, h, "PUT", tt.path, tt.body), http.StatusBadRequest)
-		})
-	}
-
-	plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", ""))
-	for date, id := range plan.Days {
-		if id != nil {
-			t.Errorf("%s wurde trotz Fehler belegt", date)
-		}
 	}
 }
 
@@ -264,46 +155,43 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
-type failingStore struct{}
+// failingStore meldet bei jedem Zugriff einen Datenbankfehler. Die eingebetteten Interfaces sind nil:
+// Methoden, die der Test nicht aufruft, braucht er nicht.
+type failingStore struct {
+	store.RecipeStore
+	store.PlanStore
+	store.SettingsStore
+}
 
-func (failingStore) ListRecipes(context.Context) ([]store.Recipe, error) {
-	return nil, errors.New("SQL logic error: no such table: recipes")
-}
+var errDisk = errors.New("SQL logic error: no such table: recipes")
+
+func (failingStore) ListRecipes(context.Context) ([]store.Recipe, error) { return nil, errDisk }
 func (failingStore) GetRecipe(context.Context, string) (store.Recipe, error) {
-	return store.Recipe{}, errors.New("disk I/O error")
+	return store.Recipe{}, errDisk
 }
-func (failingStore) PlannedDays(context.Context, string, string) (map[string]string, error) {
-	return nil, errors.New("database is locked")
+func (failingStore) RemoveRecipe(context.Context, string) error { return errDisk }
+func (failingStore) Entries(context.Context, string, string) (map[string][]store.Entry, error) {
+	return nil, errDisk
 }
-func (failingStore) SetDay(context.Context, string, *string) error {
-	return errors.New("database is locked")
+func (failingStore) CreateEntry(context.Context, store.EntryInput) (store.Entry, error) {
+	return store.Entry{}, errDisk
 }
-func (failingStore) FindImported(context.Context, string) (store.Recipe, error) {
-	return store.Recipe{}, errors.New("disk I/O error")
-}
-func (failingStore) SaveImported(context.Context, string, store.Recipe) (store.Recipe, bool, error) {
-	return store.Recipe{}, false, errors.New("disk I/O error")
-}
-func (failingStore) RemoveRecipe(context.Context, string) error { return errors.New("disk I/O error") }
-func (failingStore) CreateRecipe(context.Context, store.RecipeInput) (store.Recipe, error) {
-	return store.Recipe{}, errors.New("disk I/O error")
-}
-func (failingStore) UpdateRecipe(context.Context, string, store.RecipeInput) (store.Recipe, error) {
-	return store.Recipe{}, errors.New("disk I/O error")
-}
-func (failingStore) Ping(context.Context) error { return nil }
+func (failingStore) Settings(context.Context) (map[string]any, error) { return nil, errDisk }
+func (failingStore) Ping(context.Context) error                       { return nil }
 
 func TestDatabaseErrorsBecomeInternalError(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logs, nil))
-	h := NewServer(failingStore{}, failingStore{}, failingStore{}, logger).Handler(nil)
+	db := failingStore{}
+	h := NewServer(Stores{Recipes: db, Plans: db, Settings: db, Health: db}, logger).Handler(nil)
 
 	for _, req := range []struct{ method, path, body string }{
 		{"GET", "/api/recipes", ""},
 		{"GET", "/api/recipes/x", ""},
 		{"GET", "/api/weeks/2026-W40", ""},
-		{"PUT", "/api/days/2026-09-30", `{"recipeId":"x"}`},
+		{"POST", "/api/entries", `{"date":"2026-09-30","meal":"dinner","kind":"recipe","recipeId":"x"}`},
 		{"DELETE", "/api/recipes/x", ""},
+		{"GET", "/api/settings", ""},
 	} {
 		rec := do(t, h, req.method, req.path, req.body)
 		assertError(t, rec, http.StatusInternalServerError)

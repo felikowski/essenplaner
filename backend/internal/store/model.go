@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strconv"
@@ -10,8 +11,7 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrUnknownRecipe = errors.New("unknown recipe")
+	ErrNotFound = errors.New("not found")
 	// ErrNotRemovable: Rezepte dieser Herkunft lassen sich nicht entfernen.
 	ErrNotRemovable = errors.New("recipe cannot be removed")
 	// ErrTitleNotEditable: der Titel kommt aus der Quelle und lässt sich nur bei eigenen Rezepten ändern.
@@ -130,9 +130,25 @@ type RecipeStore interface {
 }
 
 type PlanStore interface {
-	// PlannedDays liefert die belegten Tage (Datum → Rezept-ID) zwischen from und to einschließlich.
-	PlannedDays(ctx context.Context, from, to string) (map[string]string, error)
-	// SetDay ordnet einem Datum ein Rezept zu; nil entfernt die Zuordnung.
-	// Liefert ErrUnknownRecipe, wenn es das Rezept nicht gibt.
-	SetDay(ctx context.Context, date string, recipeID *string) error
+	// Entries liefert die Einträge zwischen from und to einschließlich, je Datum sortiert.
+	Entries(ctx context.Context, from, to string) (map[string][]Entry, error)
+	// GetEntry liefert ErrNotFound, wenn es den Eintrag nicht gibt.
+	GetEntry(ctx context.Context, id string) (Entry, error)
+	// CreateEntry legt einen Eintrag an (ErrInvalidEntry bei unzulässigen Verweisen oder Texten).
+	CreateEntry(ctx context.Context, input EntryInput) (Entry, error)
+	// UpdateEntry ändert einen Eintrag und liefert ihn vor und nach der Änderung.
+	UpdateEntry(ctx context.Context, id string, patch EntryPatch) (before, after Entry, err error)
+	// DeleteEntry löscht einen Eintrag und liefert die Daten aller betroffenen Tage.
+	DeleteEntry(ctx context.Context, id string) ([]string, error)
+	// CopyWeek kopiert die Einträge der Tage from auf die Tage to und zählt übersprungene Einträge.
+	CopyWeek(ctx context.Context, from, to []string, replace bool) (skipped int, err error)
+	// RecipeHistory liefert die Daten, an denen ein Rezept geplant war, neueste zuerst.
+	RecipeHistory(ctx context.Context, recipeID string) ([]string, error)
+}
+
+type SettingsStore interface {
+	// Settings liefert alle Haushalts-Einstellungen mit Standardwerten für nicht gespeicherte.
+	Settings(ctx context.Context) (map[string]any, error)
+	// UpdateSettings speichert die Werte, wenn alle gültig sind (sonst ErrInvalidSetting).
+	UpdateSettings(ctx context.Context, values map[string]json.RawMessage) (map[string]any, error)
 }

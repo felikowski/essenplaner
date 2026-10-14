@@ -43,8 +43,49 @@ export type IsoDate = string
 /** ISO-8601-Kalenderwoche, z. B. "2026-W40". */
 export type IsoWeek = string
 
+export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+/** Mahlzeiten in der Reihenfolge, in der sie angezeigt werden. */
+export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
+
+export type EntryKind = 'recipe' | 'note' | 'item' | 'leftover'
+
+/** Ein Eintrag im Wochenplan: Rezept, Notiz, Einzelzutat oder Reste eines Rezepts. */
+export interface PlanEntry {
+  id: string
+  meal: Meal
+  position: number
+  kind: EntryKind
+  /** Bei Rezepten und Resten */
+  recipeId?: string
+  /** Portionen eines Rezepteintrags */
+  servings?: number
+  /** Bei Notizen und Einzelzutaten */
+  text?: string
+  /** Bei Resten: der Rezepteintrag, von dem sie stammen */
+  leftoverOf?: { id: string; date: IsoDate }
+}
+
 export interface WeekPlan {
   week: IsoWeek
-  /** Alle sieben Tage der Woche, Wert ist die Rezept-ID oder null. */
-  days: Record<IsoDate, string | null>
+  /** Alle sieben Tage der Woche mit ihren Einträgen, nach Mahlzeit und Position sortiert. */
+  days: Record<IsoDate, PlanEntry[]>
+}
+
+export type NewEntry =
+  | { date: IsoDate; meal: Meal; kind: 'recipe'; recipeId: string; servings?: number }
+  | { date: IsoDate; meal: Meal; kind: 'note' | 'item'; text: string }
+  | { date: IsoDate; meal: Meal; kind: 'leftover'; leftoverOf: string }
+
+export interface EntryPatch {
+  date?: IsoDate
+  meal?: Meal
+  servings?: number | null
+  text?: string
+}
+
+export type CopyMode = 'append' | 'replace'
+
+export interface HouseholdSettings {
+  visibleMeals: Meal[]
 }

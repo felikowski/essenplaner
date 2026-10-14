@@ -4,13 +4,13 @@ import { HttpPlannerApi } from './HttpPlannerApi'
 const week = {
   week: '2026-W40',
   days: {
-    '2026-09-28': null,
-    '2026-09-29': null,
-    '2026-09-30': 'haehnchen-curry',
-    '2026-10-01': null,
-    '2026-10-02': null,
-    '2026-10-03': null,
-    '2026-10-04': null,
+    '2026-09-28': [],
+    '2026-09-29': [],
+    '2026-09-30': [{ id: 'e-1', meal: 'dinner', position: 1, kind: 'recipe', recipeId: 'haehnchen-curry', servings: 4 }],
+    '2026-10-01': [],
+    '2026-10-02': [],
+    '2026-10-03': [],
+    '2026-10-04': [],
   },
 }
 
@@ -62,21 +62,39 @@ describe('HttpPlannerApi', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/weeks/2026-W40', expect.anything())
   })
 
-  it('setzt und entfernt einen Tag über PUT /api/days/{date}', async () => {
+  it('legt Einträge an, ändert und löscht sie und liefert die betroffenen Wochen', async () => {
     const api = new HttpPlannerApi()
-    fetchMock.mockImplementation(async () => jsonResponse(week))
+    fetchMock.mockImplementation(async () => jsonResponse({ weeks: [week] }))
 
-    await api.setDay('2026-09-30', 'haehnchen-curry')
+    expect(await api.createEntry({ date: '2026-09-30', meal: 'dinner', kind: 'note', text: 'Oma kommt' })).toEqual([week])
     expect(fetchMock).toHaveBeenLastCalledWith(
-      '/api/days/2026-09-30',
-      expect.objectContaining({ method: 'PUT', body: '{"recipeId":"haehnchen-curry"}' }),
+      '/api/entries',
+      expect.objectContaining({ method: 'POST', body: '{"date":"2026-09-30","meal":"dinner","kind":"note","text":"Oma kommt"}' }),
+    )
+    await api.updateEntry('e 1', { servings: null })
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/entries/e%201',
+      expect.objectContaining({ method: 'PATCH', body: '{"servings":null}' }),
+    )
+    await api.deleteEntry('e-1')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/entries/e-1', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('kopiert Wochen, liest den Verlauf und die Einstellungen', async () => {
+    const api = new HttpPlannerApi()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ week, skipped: 1 }))
+    expect(await api.copyWeek('2026-W40', '2026-W42', 'replace')).toEqual({ week, skipped: 1 })
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/weeks/2026-W40/copy',
+      expect.objectContaining({ method: 'POST', body: '{"to":"2026-W42","mode":"replace"}' }),
     )
 
-    await api.setDay('2026-09-30', null)
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      '/api/days/2026-09-30',
-      expect.objectContaining({ method: 'PUT', body: '{"recipeId":null}' }),
-    )
+    fetchMock.mockResolvedValueOnce(jsonResponse({ dates: ['2026-10-16'] }))
+    expect(await api.getRecipeHistory('linsensuppe')).toEqual(['2026-10-16'])
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ visibleMeals: ['lunch', 'dinner'] }))
+    expect(await api.updateSettings({ visibleMeals: ['dinner', 'lunch'] })).toEqual({ visibleMeals: ['lunch', 'dinner'] })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/settings', expect.objectContaining({ method: 'PATCH' }))
   })
 
   it('importiert über POST /api/recipes/import und entfernt über DELETE', async () => {
@@ -104,6 +122,8 @@ describe('HttpPlannerApi', () => {
   it('wirft bei Fehlerstatus, damit die Ansicht eine Meldung zeigen kann', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: 'unknown recipeId' }, 422))
 
-    await expect(new HttpPlannerApi().setDay('2026-09-30', 'x')).rejects.toThrow('PUT /api/days/2026-09-30 fehlgeschlagen: 422')
+    await expect(
+      new HttpPlannerApi().createEntry({ date: '2026-09-30', meal: 'dinner', kind: 'recipe', recipeId: 'x' }),
+    ).rejects.toThrow('POST /api/entries fehlgeschlagen: 422')
   })
 })

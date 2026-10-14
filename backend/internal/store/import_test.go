@@ -48,9 +48,7 @@ func TestRemoveRecipeHidesButKeepsPlans(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.SetDay(ctx, "2026-09-30", &saved.ID); err != nil {
-		t.Fatal(err)
-	}
+	planRecipe(t, db, "2026-09-30", saved.ID)
 
 	if err := db.RemoveRecipe(ctx, saved.ID); err != nil {
 		t.Fatal(err)
@@ -65,13 +63,14 @@ func TestRemoveRecipeHidesButKeepsPlans(t *testing.T) {
 	if err != nil || removed.Available || removed.Removable {
 		t.Errorf("entferntes rezept: %+v %v", removed, err)
 	}
-	days, _ := db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
+	days := dinnerRecipes(t, db, "2026-09-28", "2026-10-04")
 	if days["2026-09-30"] != saved.ID {
 		t.Errorf("plan verloren: %v", days)
 	}
 
 	// Nicht mehr verfügbare Rezepte lassen sich nicht neu zuordnen.
-	if err := db.SetDay(ctx, "2026-10-01", &saved.ID); !errors.Is(err, ErrUnknownRecipe) {
+	var invalid ErrInvalidEntry
+	if _, err := db.CreateEntry(ctx, EntryInput{Date: "2026-10-01", Meal: "dinner", Kind: KindRecipe, RecipeID: saved.ID}); !errors.As(err, &invalid) {
 		t.Errorf("zuordnen eines entfernten rezepts: %v", err)
 	}
 

@@ -3,13 +3,10 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 
-	"github.com/felikowski/essenplaner/backend/internal/isoweek"
 	"github.com/felikowski/essenplaner/backend/internal/store"
 )
 
@@ -22,13 +19,32 @@ type HealthChecker interface {
 type Server struct {
 	recipes  store.RecipeStore
 	plans    store.PlanStore
+	settings store.SettingsStore
 	health   HealthChecker
 	importer RecipeImporter
 	logger   *slog.Logger
 }
 
-func NewServer(recipes store.RecipeStore, plans store.PlanStore, health HealthChecker, logger *slog.Logger) *Server {
-	return &Server{recipes: recipes, plans: plans, health: health, logger: logger}
+// Stores bündelt die Datenzugriffe der API. In der Anwendung ist alles dieselbe Datenbank.
+type Stores struct {
+	Recipes  store.RecipeStore
+	Plans    store.PlanStore
+	Settings store.SettingsStore
+	Health   HealthChecker
+}
+
+func NewServer(stores Stores, logger *slog.Logger) *Server {
+	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, health: stores.Health, logger: logger}
+}
+
+// StoresFrom nutzt eine Datenbank für alle Zugriffe.
+func StoresFrom(db interface {
+	store.RecipeStore
+	store.PlanStore
+	store.SettingsStore
+	HealthChecker
+}) Stores {
+	return Stores{Recipes: db, Plans: db, Settings: db, Health: db}
 }
 
 // Handler liefert den vollständigen Router. static beantwortet alle Pfade außerhalb
@@ -41,8 +57,14 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 	mux.HandleFunc("PUT /api/recipes/{id}", s.handleUpdateRecipe)
 	mux.HandleFunc("DELETE /api/recipes/{id}", s.handleRemoveRecipe)
 	mux.HandleFunc("POST /api/recipes/import", s.handleImportRecipe)
+	mux.HandleFunc("GET /api/recipes/{id}/history", s.handleRecipeHistory)
 	mux.HandleFunc("GET /api/weeks/{week}", s.handleGetWeek)
-	mux.HandleFunc("PUT /api/days/{date}", s.handleSetDay)
+	mux.HandleFunc("POST /api/weeks/{week}/copy", s.handleCopyWeek)
+	mux.HandleFunc("POST /api/entries", s.handleCreateEntry)
+	mux.HandleFunc("PATCH /api/entries/{id}", s.handleUpdateEntry)
+	mux.HandleFunc("DELETE /api/entries/{id}", s.handleDeleteEntry)
+	mux.HandleFunc("GET /api/settings", s.handleGetSettings)
+	mux.HandleFunc("PATCH /api/settings", s.handleUpdateSettings)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")
 	})
@@ -79,93 +101,6 @@ func (s *Server) handleGetRecipe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, recipe)
-}
-
-// weekPlan entspricht dem Typ WeekPlan im Frontend: alle sieben Tage, leere Tage sind null.
-type weekPlan struct {
-	Week string             `json:"week"`
-	Days map[string]*string `json:"days"`
-}
-
-func (s *Server) loadWeek(ctx context.Context, week isoweek.Week) (weekPlan, error) {
-	days := week.Days()
-	planned, err := s.plans.PlannedDays(ctx, days[0], days[len(days)-1])
-	if err != nil {
-		return weekPlan{}, err
-	}
-	plan := weekPlan{Week: week.String(), Days: make(map[string]*string, len(days))}
-	for _, date := range days {
-		if recipeID, ok := planned[date]; ok {
-			plan.Days[date] = &recipeID
-		} else {
-			plan.Days[date] = nil
-		}
-	}
-	return plan, nil
-}
-
-func (s *Server) handleGetWeek(w http.ResponseWriter, r *http.Request) {
-	week, err := isoweek.ParseWeek(r.PathValue("week"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid week, expected YYYY-Www")
-		return
-	}
-	plan, err := s.loadWeek(r.Context(), week)
-	if err != nil {
-		s.internalError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, plan)
-}
-
-func (s *Server) handleSetDay(w http.ResponseWriter, r *http.Request) {
-	date, err := isoweek.ParseDate(r.PathValue("date"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid date, expected YYYY-MM-DD")
-		return
-	}
-	recipeID, err := decodeSetDay(http.MaxBytesReader(w, r.Body, maxBodyBytes))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	err = s.plans.SetDay(r.Context(), isoweek.FormatDate(date), recipeID)
-	if errors.Is(err, store.ErrUnknownRecipe) {
-		writeError(w, http.StatusUnprocessableEntity, "unknown or unavailable recipeId")
-		return
-	}
-	if err != nil {
-		s.internalError(w, r, err)
-		return
-	}
-
-	plan, err := s.loadWeek(r.Context(), isoweek.Of(date))
-	if err != nil {
-		s.internalError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, plan)
-}
-
-// decodeSetDay liest {"recipeId": "<id>"} oder {"recipeId": null}.
-func decodeSetDay(body io.Reader) (*string, error) {
-	var raw map[string]json.RawMessage
-	if err := json.NewDecoder(body).Decode(&raw); err != nil {
-		return nil, errors.New("invalid JSON body")
-	}
-	value, ok := raw["recipeId"]
-	if !ok {
-		return nil, errors.New(`body must contain "recipeId"`)
-	}
-	var recipeID *string
-	if err := json.Unmarshal(value, &recipeID); err != nil {
-		return nil, errors.New(`"recipeId" must be a string or null`)
-	}
-	if recipeID != nil && *recipeID == "" {
-		return nil, errors.New(`"recipeId" must not be empty`)
-	}
-	return recipeID, nil
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

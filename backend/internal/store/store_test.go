@@ -47,7 +47,7 @@ func TestOpenCreatesSchema(t *testing.T) {
 	db := openTestDB(t, tempPath(t))
 	ctx := context.Background()
 
-	for _, table := range []string{"recipes", "plan_days", "schema_migrations"} {
+	for _, table := range []string{"recipes", "plan_entries", "household_settings", "schema_migrations"} {
 		var name string
 		err := db.sql.QueryRowContext(ctx, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&name)
 		if err != nil {
@@ -141,77 +141,6 @@ func TestGetRecipe(t *testing.T) {
 	}
 }
 
-func ptr(s string) *string { return &s }
-
-func TestSetDayAssignReplaceRemove(t *testing.T) {
-	db := seededDB(t)
-	ctx := context.Background()
-
-	if err := db.SetDay(ctx, "2026-09-30", ptr("linsensuppe")); err != nil {
-		t.Fatal(err)
-	}
-	if err := db.SetDay(ctx, "2026-10-01", ptr("aepfel")); err != nil {
-		t.Fatal(err)
-	}
-	if err := db.SetDay(ctx, "2026-09-30", ptr("haehnchen-curry")); err != nil {
-		t.Fatal(err)
-	}
-
-	days, err := db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(days) != 2 || days["2026-09-30"] != "haehnchen-curry" || days["2026-10-01"] != "aepfel" {
-		t.Errorf("tage = %v", days)
-	}
-
-	if err := db.SetDay(ctx, "2026-09-30", nil); err != nil {
-		t.Fatal(err)
-	}
-	// Entfernen eines leeren Tages ist kein Fehler.
-	if err := db.SetDay(ctx, "2026-09-29", nil); err != nil {
-		t.Fatal(err)
-	}
-	days, _ = db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
-	if len(days) != 1 || days["2026-10-01"] != "aepfel" {
-		t.Errorf("tage nach Entfernen = %v", days)
-	}
-}
-
-func TestPlannedDaysOnlyWithinRange(t *testing.T) {
-	db := seededDB(t)
-	ctx := context.Background()
-	for _, date := range []string{"2026-09-27", "2026-09-28", "2026-10-04", "2026-10-05"} {
-		if err := db.SetDay(ctx, date, ptr("linsensuppe")); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	days, err := db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(days) != 2 || days["2026-09-28"] == "" || days["2026-10-04"] == "" {
-		t.Errorf("tage = %v", days)
-	}
-}
-
-func TestSetDayUnknownRecipe(t *testing.T) {
-	db := seededDB(t)
-	ctx := context.Background()
-	if err := db.SetDay(ctx, "2026-09-30", ptr("linsensuppe")); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := db.SetDay(ctx, "2026-09-30", ptr("gibt-es-nicht")); !errors.Is(err, ErrUnknownRecipe) {
-		t.Fatalf("err = %v, erwartet ErrUnknownRecipe", err)
-	}
-	days, _ := db.PlannedDays(ctx, "2026-09-30", "2026-09-30")
-	if days["2026-09-30"] != "linsensuppe" {
-		t.Errorf("plan wurde verändert: %v", days)
-	}
-}
-
 func TestDataSurvivesReopen(t *testing.T) {
 	path := tempPath(t)
 	ctx := context.Background()
@@ -223,16 +152,11 @@ func TestDataSurvivesReopen(t *testing.T) {
 	if err := first.InsertRecipes(ctx, "seed", testRecipes); err != nil {
 		t.Fatal(err)
 	}
-	if err := first.SetDay(ctx, "2026-09-30", ptr("linsensuppe")); err != nil {
-		t.Fatal(err)
-	}
+	planRecipe(t, first, "2026-09-30", "linsensuppe")
 	first.Close()
 
 	db := openTestDB(t, path)
-	days, err := db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
-	if err != nil {
-		t.Fatal(err)
-	}
+	days := dinnerRecipes(t, db, "2026-09-28", "2026-10-04")
 	if days["2026-09-30"] != "linsensuppe" {
 		t.Errorf("zuordnung nach erneutem Öffnen verloren: %v", days)
 	}

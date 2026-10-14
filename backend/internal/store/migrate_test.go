@@ -20,7 +20,7 @@ func openAtVersion(t *testing.T, version int, setup string) string {
 		t.Fatal(err)
 	}
 	defer raw.Close()
-	if _, err := raw.Exec("DROP TABLE IF EXISTS plan_days; DROP TABLE IF EXISTS recipes; DELETE FROM schema_migrations"); err != nil {
+	if _, err := raw.Exec("DROP TABLE IF EXISTS plan_entries; DROP TABLE IF EXISTS household_settings; DROP TABLE IF EXISTS recipes; DELETE FROM schema_migrations"); err != nil {
 		t.Fatal(err)
 	}
 	for v := 1; v <= version; v++ {
@@ -74,9 +74,16 @@ func TestMigrateRecipeEditorConvertsOldData(t *testing.T) {
 		t.Errorf("auflauf = %+v", auflauf)
 	}
 
-	days, err := db.PlannedDays(ctx, "2026-09-28", "2026-10-04")
-	if err != nil || days["2026-09-30"] != "curry" || days["2026-10-01"] != "auflauf" {
-		t.Errorf("plan = %v, %v", days, err)
+	// Die alten Tage sind Abendessen mit den Portionen des Rezepts (Migration 004).
+	entries, err := db.Entries(ctx, "2026-09-28", "2026-10-04")
+	if err != nil || len(entries["2026-09-30"]) != 1 || len(entries["2026-10-01"]) != 1 {
+		t.Fatalf("plan = %v, %v", entries, err)
+	}
+	if e := entries["2026-09-30"][0]; e.Meal != "dinner" || e.Kind != KindRecipe || e.RecipeID != "curry" || e.Servings == nil || *e.Servings != 4 {
+		t.Errorf("eintrag = %+v", e)
+	}
+	if e := entries["2026-10-01"][0]; e.RecipeID != "auflauf" || e.Servings != nil {
+		t.Errorf("eintrag = %+v", e)
 	}
 
 	// Der Index für Duplikate besteht nach dem Umbau weiter.
@@ -85,7 +92,7 @@ func TestMigrateRecipeEditorConvertsOldData(t *testing.T) {
 		t.Error("eindeutiger index auf canonical_url fehlt")
 	}
 	// Fremdschlüssel sind wieder aktiv.
-	if _, err := db.sql.Exec("INSERT INTO plan_days (date, recipe_id) VALUES ('2026-10-02', 'gibt-es-nicht')"); err == nil {
+	if _, err := db.sql.Exec("INSERT INTO plan_entries (id, date, meal, position, kind, recipe_id) VALUES ('x', '2026-10-02', 'dinner', 1, 'recipe', 'gibt-es-nicht')"); err == nil {
 		t.Error("fremdschlüssel nicht aktiv")
 	}
 	// Eigene Rezepte sind jetzt erlaubt.

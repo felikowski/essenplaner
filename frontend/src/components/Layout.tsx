@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { SettingsProvider } from '../lib/settings'
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -18,11 +19,16 @@ export function Layout() {
             <NavLink to="/rezepte" className="app-nav__link">
               Rezepte
             </NavLink>
+            <NavLink to="/einstellungen" className="app-nav__link app-nav__link--icon" aria-label="Einstellungen">
+              ⚙
+            </NavLink>
           </nav>
         </div>
       </header>
       <main className="app-main">
-        <Outlet />
+        <SettingsProvider>
+          <Outlet />
+        </SettingsProvider>
       </main>
     </div>
   )

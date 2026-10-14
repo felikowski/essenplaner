@@ -5,6 +5,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { RecipeDetailPage } from './pages/RecipeDetailPage'
 import { RecipeEditPage } from './pages/RecipeEditPage'
 import { RecipeListPage } from './pages/RecipeListPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { WeekPage } from './pages/WeekPage'
 
 export function AppRoutes() {
@@ -18,6 +19,7 @@ export function AppRoutes() {
         <Route path="rezepte/neu" element={<RecipeEditPage />} />
         <Route path="rezepte/:id" element={<RecipeDetailPage />} />
         <Route path="rezepte/:id/bearbeiten" element={<RecipeEditPage />} />
+        <Route path="einstellungen" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

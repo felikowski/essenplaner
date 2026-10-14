@@ -27,21 +27,19 @@ var dist = fstest.MapFS{
 type emptyStore struct {
 	store.RecipeStore
 	store.PlanStore
+	store.SettingsStore
 }
 
 func (emptyStore) ListRecipes(context.Context) ([]store.Recipe, error) { return []store.Recipe{}, nil }
 func (emptyStore) GetRecipe(context.Context, string) (store.Recipe, error) {
 	return store.Recipe{}, store.ErrNotFound
 }
-func (emptyStore) PlannedDays(context.Context, string, string) (map[string]string, error) {
-	return map[string]string{}, nil
-}
-func (emptyStore) SetDay(context.Context, string, *string) error { return nil }
-func (emptyStore) Ping(context.Context) error                    { return nil }
+func (emptyStore) Ping(context.Context) error { return nil }
 
 func app() http.Handler {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return httpapi.NewServer(emptyStore{}, emptyStore{}, emptyStore{}, logger).Handler(web.Handler(dist))
+	db := emptyStore{}
+	return httpapi.NewServer(httpapi.Stores{Recipes: db, Plans: db, Settings: db, Health: db}, logger).Handler(web.Handler(dist))
 }
 
 func get(h http.Handler, path string) *httptest.ResponseRecorder {

@@ -1,6 +1,6 @@
 # Essenplaner
 
-Web-App, mit der die Familie pro Kalenderwoche plant, was es an jedem Tag zum Abendessen gibt.
+Web-App, mit der die Familie pro Kalenderwoche plant, was es an jedem Tag zu essen gibt: Rezepte, Notizen, Einzelzutaten und Reste, wahlweise auch für Frühstück, Mittagessen und Snack (Einstellungen ⚙).
 
 > **⚠️ Nicht öffentlich betreiben.** Es gibt noch keinen Login: Wer den Server erreicht, kann den
 > Plan lesen und ändern. Bis `add-auth0-login` umgesetzt ist, den Server nur lokal oder in einem
@@ -85,8 +85,13 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | GET     | `/api/recipes/{id}`   | ein Rezept, 404 wenn unbekannt                                 |
 | POST    | `/api/recipes`        | eigenes Rezept anlegen (siehe unten)                           |
 | PUT     | `/api/recipes/{id}`   | Portionen, Zutaten, Zubereitung (und Titel eigener Rezepte)    |
-| GET     | `/api/weeks/{week}`   | Plan einer Woche (`2026-W40`), alle sieben Tage, leer = `null` |
-| PUT     | `/api/days/{date}`    | Body `{"recipeId": "…"}` oder `{"recipeId": null}`             |
+| GET     | `/api/weeks/{week}`   | Plan einer Woche (`2026-W40`), je Tag eine Liste von Einträgen |
+| POST    | `/api/entries`        | Eintrag anlegen: Rezept, Notiz, Einzelzutat oder Reste          |
+| PATCH   | `/api/entries/{id}`   | Datum, Mahlzeit, Portionen oder Text ändern                     |
+| DELETE  | `/api/entries/{id}`   | Eintrag löschen (Reste davon werden zu Notizen)                 |
+| POST    | `/api/weeks/{week}/copy` | Woche kopieren, Body `{"to": "2026-W42", "mode": "append"}`  |
+| GET     | `/api/recipes/{id}/history` | Daten, an denen das Rezept geplant war                    |
+| GET/PATCH | `/api/settings`     | Haushalts-Einstellungen, z. B. `{"visibleMeals": ["dinner"]}`   |
 | POST    | `/api/recipes/import` | Body `{"url": "…"}`: Rezept von einer Webseite importieren      |
 | DELETE  | `/api/recipes/{id}`   | importiertes oder eigenes Rezept entfernen (bleibt in Plänen)   |
 

@@ -87,6 +87,12 @@ export function parseIsoDate(value: IsoDate): Date {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
 
+/** Prüft „YYYY-MM-DD“ auf ein existierendes Kalenderdatum. */
+export function isValidDate(value: string): value is IsoDate {
+  if (!DATE_PATTERN.test(value)) return false
+  return toIsoDate(parseIsoDate(value)) === value
+}
+
 export function isValidWeek(week: string): week is IsoWeek {
   return parseWeek(week) !== null
 }
@@ -133,4 +139,16 @@ export function formatWeekday(date: IsoDate): string {
 export function formatDayMonth(date: IsoDate): string {
   const parsed = parseIsoDate(date)
   return `${pad(parsed.getDate())}.${pad(parsed.getMonth() + 1)}.`
+}
+
+const SHORT_WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+/** "Mo 28.09." */
+export function formatShortDate(date: IsoDate): string {
+  return `${SHORT_WEEKDAYS[weekdayIndex(parseIsoDate(date))]} ${formatDayMonth(date)}`
+}
+
+/** "Fr 16.10.2026" */
+export function formatFullDate(date: IsoDate): string {
+  return `${formatShortDate(date)}${parseIsoDate(date).getFullYear()}`
 }

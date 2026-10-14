@@ -5,82 +5,86 @@ import { MockPlannerApi } from './MockPlannerApi'
 describe('MockPlannerApi', () => {
   it('lädt Rezepte und Wochenpläne aus den Dummy-Daten', async () => {
     const api = new MockPlannerApi(loadMockFiles)
-
     const recipes = await api.listRecipes()
     expect(recipes.length).toBeGreaterThanOrEqual(8)
-    expect(await api.getRecipe('haehnchen-curry')).toMatchObject({ title: 'Hähnchen-Curry' })
+    expect(await api.getRecipe('haehnchen-curry')).toMatchObject({ title: 'Hähnchen-Curry', servings: 4 })
     expect(await api.getRecipe('gibt-es-nicht')).toBeNull()
 
     const week = await api.getWeek('2026-W40')
     expect(Object.keys(week.days)).toHaveLength(7)
-    expect(week.days['2026-09-30']).toBe('haehnchen-curry')
+    expect(week.days['2026-09-30']).toMatchObject([{ kind: 'recipe', meal: 'dinner', recipeId: 'haehnchen-curry', servings: 4 }])
+    expect(week.days['2026-09-29']).toEqual([])
   })
 
-  it('liefert für Wochen ohne Plan sieben leere Tage', async () => {
+  it('legt Einträge aller Arten am Ende ihrer Mahlzeit an', async () => {
     const api = new MockPlannerApi(loadMockFiles)
+    await api.createEntry({ date: '2026-09-30', meal: 'dinner', kind: 'note', text: ' Oma kommt ' })
+    const [plan] = await api.createEntry({ date: '2026-09-30', meal: 'lunch', kind: 'item', text: '1 Baguette' })
 
-    const week = await api.getWeek('2027-W01')
-    expect(week).toEqual({
-      week: '2027-W01',
-      days: {
-        '2027-01-04': null,
-        '2027-01-05': null,
-        '2027-01-06': null,
-        '2027-01-07': null,
-        '2027-01-08': null,
-        '2027-01-09': null,
-        '2027-01-10': null,
-      },
+    expect(plan.days['2026-09-30'].map((entry) => [entry.meal, entry.kind, entry.text ?? entry.recipeId])).toEqual([
+      ['lunch', 'item', '1 Baguette'],
+      ['dinner', 'recipe', 'haehnchen-curry'],
+      ['dinner', 'note', 'Oma kommt'],
+    ])
+    await expect(api.createEntry({ date: '2026-09-30', meal: 'dinner', kind: 'recipe', recipeId: 'x' })).rejects.toMatchObject({
+      status: 422,
     })
   })
 
-  it('ordnet mit setDay ein Rezept zu und ersetzt ein vorhandenes', async () => {
+  it('verschiebt Einträge über Wochengrenzen und liefert beide Wochen', async () => {
     const api = new MockPlannerApi(loadMockFiles)
+    const id = (await api.getWeek('2026-W40')).days['2026-10-03'][0].id
+    const plans = await api.updateEntry(id, { date: '2026-10-05', meal: 'lunch', servings: 8 })
 
-    const added = await api.setDay('2026-09-29', 'pfannkuchen')
-    expect(added.days['2026-09-29']).toBe('pfannkuchen')
-
-    const replaced = await api.setDay('2026-09-29', 'linsensuppe')
-    expect(replaced.days['2026-09-29']).toBe('linsensuppe')
-    expect((await api.getWeek('2026-W40')).days['2026-09-29']).toBe('linsensuppe')
+    expect(plans.map((plan) => plan.week)).toEqual(['2026-W40', '2026-W41'])
+    expect(plans[0].days['2026-10-03']).toEqual([])
+    expect(plans[1].days['2026-10-05'][0]).toMatchObject({ id, meal: 'lunch', servings: 8 })
   })
 
-  it('legt beim Zuordnen einen Plan für eine neue Woche an', async () => {
+  it('macht aus Resten eine Notiz, wenn das Original entfernt wird', async () => {
     const api = new MockPlannerApi(loadMockFiles)
+    const original = (await api.getWeek('2026-W40')).days['2026-09-30'][0]
+    await api.createEntry({ date: '2026-10-01', meal: 'lunch', kind: 'leftover', leftoverOf: original.id })
+    const plans = await api.deleteEntry(original.id)
 
-    const plan = await api.setDay('2027-01-03', 'pfannkuchen')
-    expect(plan.week).toBe('2026-W53')
-    expect(Object.keys(plan.days)).toHaveLength(7)
-    expect((await api.getWeek('2026-W53')).days['2027-01-03']).toBe('pfannkuchen')
+    expect(plans[0].days['2026-10-01'][0]).toMatchObject({ kind: 'note', text: 'Reste: Hähnchen-Curry' })
   })
 
-  it('entfernt eine Zuordnung mit setDay(null)', async () => {
+  it('kopiert Wochen samt Resten und zählt Übersprungenes', async () => {
     const api = new MockPlannerApi(loadMockFiles)
+    const original = (await api.getWeek('2026-W40')).days['2026-09-30'][0]
+    await api.createEntry({ date: '2026-10-01', meal: 'lunch', kind: 'leftover', leftoverOf: original.id })
 
-    const plan = await api.setDay('2026-09-30', null)
-    expect(plan.days['2026-09-30']).toBeNull()
-    expect((await api.getWeek('2026-W40')).days['2026-09-30']).toBeNull()
+    const { week, skipped } = await api.copyWeek('2026-W40', '2026-W42', 'append')
+    expect(skipped).toBe(0)
+    const copied = week.days['2026-10-14'][0]
+    expect(copied.recipeId).toBe('haehnchen-curry')
+    expect(week.days['2026-10-15'].find((entry) => entry.kind === 'leftover')?.leftoverOf).toEqual({
+      id: copied.id,
+      date: '2026-10-14',
+    })
   })
 
-  it('lehnt unbekannte Rezepte ab und lässt den Plan unverändert', async () => {
+  it('liefert den Verlauf ohne Reste und speichert Einstellungen', async () => {
     const api = new MockPlannerApi(loadMockFiles)
-
-    await expect(api.setDay('2026-09-30', 'gibt-es-nicht')).rejects.toThrow()
-    expect((await api.getWeek('2026-W40')).days['2026-09-30']).toBe('haehnchen-curry')
+    expect(await api.getRecipeHistory('haehnchen-curry')).toEqual(['2026-09-30'])
+    expect(await api.getSettings()).toEqual({ visibleMeals: ['dinner'] })
+    expect(await api.updateSettings({ visibleMeals: ['dinner', 'breakfast'] })).toEqual({
+      visibleMeals: ['breakfast', 'dinner'],
+    })
+    await expect(api.updateSettings({ visibleMeals: [] })).rejects.toMatchObject({ status: 422 })
   })
 
   it('gibt Kopien heraus, damit Aufrufer den Speicher nicht verändern', async () => {
     const api = new MockPlannerApi(loadMockFiles)
-
     const week = await api.getWeek('2026-W40')
-    week.days['2026-09-30'] = null
-    expect((await api.getWeek('2026-W40')).days['2026-09-30']).toBe('haehnchen-curry')
+    week.days['2026-09-30'] = []
+    expect((await api.getWeek('2026-W40')).days['2026-09-30']).toHaveLength(1)
   })
 
   it('versucht es nach einem Ladefehler erneut', async () => {
     const load = vi.fn(loadMockFiles).mockRejectedValueOnce(new Error('offline'))
     const api = new MockPlannerApi(load)
-
     await expect(api.listRecipes()).rejects.toThrow('offline')
     expect((await api.listRecipes()).length).toBeGreaterThan(0)
   })
@@ -91,11 +95,9 @@ describe('MockPlannerApi', () => {
     expect(imported).toMatchObject({ title: 'Kuerbis suppe', removable: true })
     expect((await api.importRecipe('https://example.com/rezepte/kuerbis-suppe')).id).toBe(imported.id)
 
-    await api.setDay('2026-09-29', imported.id)
     await api.removeRecipe(imported.id)
     expect((await api.listRecipes()).some((recipe) => recipe.id === imported.id)).toBe(false)
     expect(await api.getRecipe(imported.id)).toMatchObject({ available: false })
-    await expect(api.setDay('2026-09-30', imported.id)).rejects.toThrow()
     await expect(api.removeRecipe('gemueselasagne')).rejects.toMatchObject({ status: 409 })
     await expect(api.importRecipe('https://example.com/keine-rezeptdaten')).rejects.toMatchObject({ status: 422 })
   })

@@ -34,9 +34,7 @@ func TestCreateRecipe(t *testing.T) {
 	}
 
 	// Das Rezept lässt sich einplanen und steht im Katalog.
-	if rec := do(t, h, "PUT", "/api/days/2026-09-30", fmt.Sprintf(`{"recipeId":%q}`, id)); rec.Code != http.StatusOK {
-		t.Errorf("einplanen: %d", rec.Code)
-	}
+	planDinner(t, h, "2026-09-30", id)
 	if n := len(decode[[]map[string]any](t, do(t, h, "GET", "/api/recipes", ""))); n != 9 {
 		t.Errorf("%d rezepte, erwartet 9", n)
 	}
@@ -135,7 +133,7 @@ func TestUpdateRecipe(t *testing.T) {
 func TestRemoveManualRecipe(t *testing.T) {
 	h, _ := newTestAPI(t)
 	id := decode[map[string]any](t, do(t, h, "POST", "/api/recipes", `{"title":"Brotzeit"}`))["id"].(string)
-	do(t, h, "PUT", "/api/days/2026-09-30", fmt.Sprintf(`{"recipeId":%q}`, id))
+	planDinner(t, h, "2026-09-30", id)
 
 	if rec := do(t, h, "DELETE", "/api/recipes/"+id, ""); rec.Code != http.StatusNoContent {
 		t.Fatalf("entfernen: %d", rec.Code)
@@ -145,7 +143,7 @@ func TestRemoveManualRecipe(t *testing.T) {
 			t.Error("entferntes rezept steht noch in der liste")
 		}
 	}
-	if plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", "")); plan.Days["2026-09-30"] == nil {
+	if plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", "")); len(plan.Days["2026-09-30"]) != 1 {
 		t.Error("plan verloren")
 	}
 	assertError(t, do(t, h, "DELETE", "/api/recipes/gemueselasagne", ""), http.StatusConflict)

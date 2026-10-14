@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { daysOfWeek, isValidWeek } from './lib/isoWeek'
 import { mockRecipes, mockWeeks } from './test/mockData'
-import type { Recipe, WeekPlan } from './types'
+import type { IsoDate, IsoWeek, Recipe } from './types'
 
-// Prüft zur Laufzeit, dass public/mock/*.json exakt den Typen aus types.ts folgt.
+// Prüft zur Laufzeit, dass public/mock/*.json dem Format folgt, das MockPlannerApi einliest:
+// Rezepte mit Zutaten als Zeilen und je Tag die ID des Abendessens.
+
+interface MockWeek {
+  week: IsoWeek
+  days: Record<IsoDate, string | null>
+}
 
 const isString = (value: unknown): value is string => typeof value === 'string'
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every(isString)
@@ -32,7 +38,7 @@ function isRecipe(value: unknown): value is Recipe {
   )
 }
 
-function isWeekPlan(value: unknown): value is WeekPlan {
+function isWeekPlan(value: unknown): value is MockWeek {
   if (!isObject(value) || !hasOnlyKeys(value, ['week', 'days'])) return false
   const { week, days } = value
   return (
@@ -67,7 +73,7 @@ describe('Dummy-Daten', () => {
     const recipeIds = new Set((mockRecipes as Recipe[]).map((recipe) => recipe.id))
     for (const plan of mockWeeks as unknown[]) {
       expect(isWeekPlan(plan), JSON.stringify(plan)).toBe(true)
-      const { week, days } = plan as WeekPlan
+      const { week, days } = plan as MockWeek
       expect(Object.keys(days)).toEqual(daysOfWeek(week))
       for (const recipeId of Object.values(days)) {
         if (recipeId !== null) expect(recipeIds.has(recipeId), recipeId).toBe(true)

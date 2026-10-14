@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
+import { RecipeHistory } from '../components/RecipeHistory'
 import { RecipeImage } from '../components/RecipeImage'
 import { LoadError, Loading } from '../components/Status'
 import { formatServings, sourceLabel } from '../lib/recipes'
@@ -53,6 +54,7 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
         <span className="source-label">{sourceLabel(recipe)}</span>
         {recipe.servings !== undefined && <span>{formatServings(recipe.servings)}</span>}
       </p>
+      <RecipeHistory recipeId={recipe.id} />
       <div className="recipe-detail__actions">
         {source.kind !== 'manual' && (
           <a

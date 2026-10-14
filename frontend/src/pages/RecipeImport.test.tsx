@@ -77,7 +77,7 @@ describe('Importiertes Rezept entfernen', () => {
   it('entfernt nach Rückfrage; im Plan bleibt es mit Hinweis sichtbar', async () => {
     const api = new MockPlannerApi(loadMockFiles)
     const imported = await api.importRecipe('https://example.com/rezepte/gulasch')
-    await api.setDay('2026-09-29', imported.id)
+    await api.createEntry({ date: '2026-09-29', meal: 'dinner', kind: 'recipe', recipeId: imported.id })
     const { user } = renderApp(`/rezepte/${imported.id}`, api)
 
     await user.click(await screen.findByRole('button', { name: 'Rezept entfernen' }))

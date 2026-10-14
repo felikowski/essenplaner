@@ -48,7 +48,7 @@ func newImportAPI(t *testing.T) (http.Handler, *fakeImporter) {
 			"https://example.com/intern":     fmt.Errorf("%w: 10.0.0.5", safefetch.ErrBlocked),
 		},
 	}
-	return NewServer(db, db, db, quietLogger()).WithImporter(importer).Handler(nil), importer
+	return NewServer(StoresFrom(db), quietLogger()).WithImporter(importer).Handler(nil), importer
 }
 
 func TestImportRecipe(t *testing.T) {
@@ -122,7 +122,7 @@ func TestRemoveImportedRecipe(t *testing.T) {
 	h, importer := newImportAPI(t)
 	recipe := decode[map[string]any](t, do(t, h, "POST", "/api/recipes/import", `{"url":"https://www.chefkoch.de/rezepte/1/kuerbis.html"}`))
 	id := recipe["id"].(string)
-	do(t, h, "PUT", "/api/days/2026-09-30", fmt.Sprintf(`{"recipeId":%q}`, id))
+	planDinner(t, h, "2026-09-30", id)
 
 	if rec := do(t, h, "DELETE", "/api/recipes/"+id, ""); rec.Code != http.StatusNoContent {
 		t.Fatalf("entfernen: %d %s", rec.Code, rec.Body.String())
@@ -138,10 +138,10 @@ func TestRemoveImportedRecipe(t *testing.T) {
 		t.Errorf("detail nach entfernen: %v", detail)
 	}
 	plan := decode[weekPlan](t, do(t, h, "GET", "/api/weeks/2026-W40", ""))
-	if plan.Days["2026-09-30"] == nil || *plan.Days["2026-09-30"] != id {
+	if entries := plan.Days["2026-09-30"]; len(entries) != 1 || entries[0].RecipeID != id {
 		t.Error("plan hat das entfernte rezept verloren")
 	}
-	assertError(t, do(t, h, "PUT", "/api/days/2026-10-01", fmt.Sprintf(`{"recipeId":%q}`, id)), http.StatusUnprocessableEntity)
+	assertError(t, do(t, h, "POST", "/api/entries", fmt.Sprintf(`{"date":"2026-10-01","meal":"dinner","kind":"recipe","recipeId":%q}`, id)), http.StatusUnprocessableEntity)
 
 	// Erneuter Import macht das Rezept wieder verfügbar.
 	rec := do(t, h, "POST", "/api/recipes/import", `{"url":"https://www.chefkoch.de/rezepte/1/kuerbis.html"}`)

@@ -20,14 +20,15 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// DB implementiert RecipeStore und PlanStore.
+// DB implementiert RecipeStore, PlanStore und SettingsStore.
 type DB struct {
 	sql *sql.DB
 }
 
 var (
-	_ RecipeStore = (*DB)(nil)
-	_ PlanStore   = (*DB)(nil)
+	_ RecipeStore   = (*DB)(nil)
+	_ PlanStore     = (*DB)(nil)
+	_ SettingsStore = (*DB)(nil)
 )
 
 // Open öffnet (oder erstellt) die Datenbankdatei und bringt das Schema auf den neuesten Stand.

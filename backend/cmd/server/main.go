@@ -52,7 +52,7 @@ func run(logger *slog.Logger) error {
 	}
 
 	importer := webimport.Importer{Client: safefetch.New(safefetch.Options{UserAgent: "Essenplaner/1.0"})}
-	api := httpapi.NewServer(db, db, db, logger).WithImporter(importer)
+	api := httpapi.NewServer(httpapi.StoresFrom(db), logger).WithImporter(importer)
 	server := &http.Server{
 		Addr:              cfg.Addr(),
 		Handler:           api.Handler(web.Handler(web.Dist())),
