@@ -5,14 +5,16 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/felikowski/essenplaner/backend/internal/ingredient"
 )
 
 func TestSaveImportedCreatesAndDeduplicates(t *testing.T) {
 	db := seededDB(t)
 	ctx := context.Background()
 	recipe := Recipe{
-		Title: "Kürbissuppe", ImageURL: "https://img.example.com/k.jpg", Servings: "4 Portionen",
-		Ingredients: []string{"1 kg Kürbis"}, Instructions: []string{"Kochen."},
+		Title: "Kürbissuppe", ImageURL: "https://img.example.com/k.jpg", Servings: intPtr(4),
+		Ingredients: ingredient.ParseAll([]string{"1 kg Kürbis"}), Instructions: []string{"Kochen."},
 	}
 
 	saved, created, err := db.SaveImported(ctx, "https://example.com/kuerbis", recipe)
@@ -20,12 +22,13 @@ func TestSaveImportedCreatesAndDeduplicates(t *testing.T) {
 		t.Fatalf("erster import: created=%v err=%v", created, err)
 	}
 	if !strings.HasPrefix(saved.ID, "w-") || saved.Source.URL != "https://example.com/kuerbis" ||
-		!saved.Available || !saved.Removable || saved.Ingredients[0] != "1 kg Kürbis" {
+		!saved.Available || !saved.Removable || saved.Ingredients[0].Text != "1 kg Kürbis" {
 		t.Errorf("gespeichert: %+v", saved)
 	}
 
-	again, created, err := db.SaveImported(ctx, "https://example.com/kuerbis", Recipe{Title: "Anders"})
-	if err != nil || created || again.ID != saved.ID || again.Title != "Kürbissuppe" {
+	// Ein erneuter Import übernimmt die Angaben der Quelle.
+	again, created, err := db.SaveImported(ctx, "https://example.com/kuerbis", Recipe{Title: "Kürbissuppe neu"})
+	if err != nil || created || again.ID != saved.ID || again.Title != "Kürbissuppe neu" || again.Ingredients != nil {
 		t.Errorf("duplikat: %+v created=%v err=%v", again, created, err)
 	}
 

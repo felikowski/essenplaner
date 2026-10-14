@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
 import { RecipeImage } from '../components/RecipeImage'
 import { LoadError, Loading } from '../components/Status'
+import { formatServings, sourceLabel } from '../lib/recipes'
 import { useAsyncData } from '../lib/useAsyncData'
 import type { Recipe } from '../types'
 
@@ -37,6 +38,7 @@ export function RecipeDetailPage() {
 function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const { source } = recipe
   const unavailable = recipe.available === false
+  const hasIngredients = (recipe.ingredients?.length ?? 0) > 0
 
   return (
     <article className="recipe-detail">
@@ -47,26 +49,43 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
         </p>
       )}
       <RecipeImage className="recipe-detail__image" src={recipe.imageUrl} alt={recipe.title} />
-      {recipe.servings && <p className="recipe-detail__servings">{recipe.servings}</p>}
-      <p>
-        <a
-          className="button"
-          href={source.kind === 'pdf' ? source.pdfUrl : source.url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {source.kind === 'pdf' ? 'PDF öffnen' : 'Original ansehen'}
-        </a>
+      <p className="recipe-detail__meta">
+        <span className="source-label">{sourceLabel(recipe)}</span>
+        {recipe.servings !== undefined && <span>{formatServings(recipe.servings)}</span>}
       </p>
-      {recipe.ingredients && recipe.ingredients.length > 0 && (
+      <div className="recipe-detail__actions">
+        {source.kind !== 'manual' && (
+          <a
+            className="button"
+            href={source.kind === 'pdf' ? source.pdfUrl : source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {source.kind === 'pdf' ? 'PDF öffnen' : 'Original ansehen'}
+          </a>
+        )}
+        {!unavailable && (
+          <Link className="button button--secondary" to={`/rezepte/${recipe.id}/bearbeiten`}>
+            Bearbeiten
+          </Link>
+        )}
+      </div>
+      {hasIngredients ? (
         <section>
           <h2>Zutaten</h2>
           <ul className="recipe-detail__ingredients">
-            {recipe.ingredients.map((ingredient, index) => (
-              <li key={index}>{ingredient}</li>
+            {recipe.ingredients?.map((ingredient, index) => (
+              <li key={index}>{ingredient.text}</li>
             ))}
           </ul>
         </section>
+      ) : (
+        !unavailable && (
+          <p className="notice">
+            Für dieses Rezept sind noch keine Zutaten erfasst.{' '}
+            <Link to={`/rezepte/${recipe.id}/bearbeiten`}>Zutaten nachtragen</Link>
+          </p>
+        )
       )}
       {recipe.instructions && recipe.instructions.length > 0 && (
         <section>

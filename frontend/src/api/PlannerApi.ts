@@ -1,4 +1,4 @@
-import type { IsoDate, IsoWeek, Recipe, WeekPlan } from '../types'
+import type { IsoDate, IsoWeek, Recipe, RecipeInput, WeekPlan } from '../types'
 
 /**
  * Zugriff auf Rezepte und Wochenpläne. Komponenten kennen nur dieses Interface,
@@ -17,6 +17,10 @@ export interface PlannerApi {
    * Wirft RequestError mit serverMessage, wenn der Import scheitert.
    */
   importRecipe(url: string): Promise<Recipe>
+  /** Legt ein eigenes Rezept an. Wirft RequestError mit field bei ungültigen Eingaben. */
+  createRecipe(input: RecipeInput): Promise<Recipe>
+  /** Ersetzt die bearbeitbaren Angaben eines Rezepts. Wirft RequestError mit field bei ungültigen Eingaben. */
+  updateRecipe(id: string, input: RecipeInput): Promise<Recipe>
   /** Markiert ein Rezept als nicht mehr verfügbar. */
   removeRecipe(id: string): Promise<void>
 }

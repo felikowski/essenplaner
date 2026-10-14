@@ -1,39 +1,39 @@
 ## 1. Zutaten zerlegen
 
-- [ ] 1.1 `testdata/ingredient-cases.json` mit mindestens 40 Fällen anlegen (alle Szenarien aus `recipe-editor`, Brüche, gemischte Zahlen, Spannen mit `-`/`–`/„bis“, „ca.“, `200g`, Aufzählungszeichen, Einheiten in Ein- und Mehrzahl, „2 Dosen“ ohne Namen, unbekannte Einheit, Hinweis nach Komma, „Salz, Pfeffer“ ohne Menge); die Datei ist gültiges JSON
-- [ ] 1.2 Go-Paket `internal/ingredient` mit `Parse(line) Ingredient` und Einheitentabelle; der Tabellentest über alle Fälle aus 1.1 ist grün
-- [ ] 1.3 `frontend/src/lib/ingredient.ts` mit derselben Logik; der Vitest-Test über dieselbe Datei aus 1.1 ist grün
+- [x] 1.1 `testdata/ingredient-cases.json` mit mindestens 40 Fällen anlegen (alle Szenarien aus `recipe-editor`, Brüche, gemischte Zahlen, Spannen mit `-`/`–`/„bis“, „ca.“, `200g`, Aufzählungszeichen, Einheiten in Ein- und Mehrzahl, „2 Dosen“ ohne Namen, unbekannte Einheit, Hinweis nach Komma, „Salz, Pfeffer“ ohne Menge); die Datei ist gültiges JSON
+- [x] 1.2 Go-Paket `internal/ingredient` mit `Parse(line) Ingredient` und Einheitentabelle; der Tabellentest über alle Fälle aus 1.1 ist grün
+- [x] 1.3 `frontend/src/lib/ingredient.ts` mit derselben Logik; der Vitest-Test über dieselbe Datei aus 1.1 ist grün
 
 ## 2. Datenmodell und Migration
 
-- [ ] 2.1 Migrations-Runner um optionale Go-Schritte pro Version erweitern, die in derselben Transaktion nach dem SQL laufen; ein Test zeigt, dass ein Fehler im Go-Schritt auch das SQL zurückrollt
-- [ ] 2.2 Migration: `recipes` neu aufbauen (CHECK mit `manual`, `servings INTEGER`, Spalte `edited_fields`, Indizes inklusive `canonical_url` erhalten), Go-Schritt zerlegt Zutaten und wandelt Portionen um; der Migrationstest mit einer Datenbank im alten Stand prüft Zutaten, „4 Portionen“ → 4, „eine Auflaufform“ → keine Angabe, bestehende Plan-Einträge und `PRAGMA foreign_key_check`
-- [ ] 2.3 `store.Recipe` und `Ingredient` auf das neue Schema umstellen, `servings` als `*int`; die bestehenden Store-Tests sind angepasst und grün
-- [ ] 2.4 Seed-Daten (`recipes.json`) auf Zahl-Portionen umstellen; Seed-Test grün
+- [x] 2.1 Migrations-Runner um optionale Go-Schritte pro Version erweitern, die in derselben Transaktion nach dem SQL laufen; ein Test zeigt, dass ein Fehler im Go-Schritt auch das SQL zurückrollt
+- [x] 2.2 Migration: `recipes` neu aufbauen (CHECK mit `manual`, `servings INTEGER`, Spalte `edited_fields`, Indizes inklusive `canonical_url` erhalten), Go-Schritt zerlegt Zutaten und wandelt Portionen um; der Migrationstest mit einer Datenbank im alten Stand prüft Zutaten, „4 Portionen“ → 4, „eine Auflaufform“ → keine Angabe, bestehende Plan-Einträge und `PRAGMA foreign_key_check`
+- [x] 2.3 `store.Recipe` und `Ingredient` auf das neue Schema umstellen, `servings` als `*int`; die bestehenden Store-Tests sind angepasst und grün
+- [x] 2.4 Seed-Daten (`recipes.json`) auf Zahl-Portionen umstellen; Seed-Test grün
 
 ## 3. Store: Anlegen, Bearbeiten, geschützte Felder
 
-- [ ] 3.1 `CreateManualRecipe` mit ID `m-` + 12 Hex-Zeichen; Test prüft ID-Format, `origin`, `source_kind = 'manual'` und zerlegte Zutaten
-- [ ] 3.2 `UpdateRecipe` ersetzt Portionen, Zutaten und Schritte und ergänzt `edited_fields` nur für tatsächlich geänderte Felder; der Titel ist nur bei `manual` änderbar; Tests für alle drei Felder einzeln und für den Titel bei einem PDF-Rezept
-- [ ] 3.3 Der URL-Import schreibt über eine gemeinsame Upsert-Funktion, die Felder aus `edited_fields` auslässt (sie ist für den späteren Drive-Sync wiederverwendbar); Test für das Szenario „Erneuter Import“
-- [ ] 3.4 Entfernen auf `manual` erweitern (PDF-Rezepte weiterhin 409); Test
+- [x] 3.1 `CreateManualRecipe` mit ID `m-` + 12 Hex-Zeichen; Test prüft ID-Format, `origin`, `source_kind = 'manual'` und zerlegte Zutaten
+- [x] 3.2 `UpdateRecipe` ersetzt Portionen, Zutaten und Schritte und ergänzt `edited_fields` nur für tatsächlich geänderte Felder; der Titel ist nur bei `manual` änderbar; Tests für alle drei Felder einzeln und für den Titel bei einem PDF-Rezept
+- [x] 3.3 Der URL-Import schreibt über eine gemeinsame Upsert-Funktion, die Felder aus `edited_fields` auslässt (sie ist für den späteren Drive-Sync wiederverwendbar); Test für das Szenario „Erneuter Import“
+- [x] 3.4 Entfernen auf `manual` erweitern (PDF-Rezepte weiterhin 409); Test
 
 ## 4. API
 
-- [ ] 4.1 Validierung gemäß „Eingaben prüfen“ mit 422 und `field`; Tabellentests für jede Grenze (Titel leer/201 Zeichen, Portionen 0/100/Text, 101 Zutaten, zu lange Zeile, Leerzeilen werden verworfen)
-- [ ] 4.2 `POST /api/recipes` (201) und `PUT /api/recipes/{id}` (200, 404, 422 bei Titel einer fremden Quelle); httptest-Tests
-- [ ] 4.3 `GET /api/recipes` liefert das neue Schema; Test für das Szenario „Strukturierte Zutat“ und für fehlende `quantity`/`unit`/`note`
+- [x] 4.1 Validierung gemäß „Eingaben prüfen“ mit 422 und `field`; Tabellentests für jede Grenze (Titel leer/201 Zeichen, Portionen 0/100/Text, 101 Zutaten, zu lange Zeile, Leerzeilen werden verworfen)
+- [x] 4.2 `POST /api/recipes` (201) und `PUT /api/recipes/{id}` (200, 404, 422 bei Titel einer fremden Quelle); httptest-Tests
+- [x] 4.3 `GET /api/recipes` liefert das neue Schema; Test für das Szenario „Strukturierte Zutat“ und für fehlende `quantity`/`unit`/`note`
 
 ## 5. Frontend
 
-- [ ] 5.1 Typen `Recipe`, `Ingredient` und `RecipeSource` mit `manual`, `PlannerApi` um `createRecipe` und `updateRecipe` erweitern (Http und Mock); Mock-Daten umstellen; `npm test` grün
-- [ ] 5.2 Komponente für die Zutatenliste mit einzelnen Feldern, Vorschau „Menge · Einheit · Name“, Enter für neue Zeile, Backspace in leerer Zeile, mehrzeiliges Einfügen; Tests für jede Interaktion
-- [ ] 5.3 Seite `RecipeEditPage` für `/rezepte/neu` und `/rezepte/:id/bearbeiten` mit Titel (bei fremden Quellen als Text), Portionen, Zutaten und Zubereitung, Fehlern am Feld ohne Eingabeverlust, Nachfrage bei ungespeicherten Änderungen und Navigation zum Detail nach dem Speichern; Tests für Anlegen, Bearbeiten, Fehler und Abbrechen
-- [ ] 5.4 Rezeptliste: „Neues Rezept“, Kennzeichnung „Eigenes Rezept“, Hinweis bei leerer Liste; Detailansicht: „Bearbeiten“, „Zutaten nachtragen“, „Entfernen“ bei eigenen Rezepten, Zutaten über `text`; Tests für die Szenarien aus `recipe-catalog`
-- [ ] 5.5 Am Handy (Viewport 375 px, Browser-Pane) ein Rezept mit zehn Zutaten anlegen, bearbeiten und einplanen; Screenshot, und das Formular ist ohne horizontales Scrollen bedienbar
+- [x] 5.1 Typen `Recipe`, `Ingredient` und `RecipeSource` mit `manual`, `PlannerApi` um `createRecipe` und `updateRecipe` erweitern (Http und Mock); Mock-Daten umstellen; `npm test` grün
+- [x] 5.2 Komponente für die Zutatenliste mit einzelnen Feldern, Vorschau „Menge · Einheit · Name“, Enter für neue Zeile, Backspace in leerer Zeile, mehrzeiliges Einfügen; Tests für jede Interaktion
+- [x] 5.3 Seite `RecipeEditPage` für `/rezepte/neu` und `/rezepte/:id/bearbeiten` mit Titel (bei fremden Quellen als Text), Portionen, Zutaten und Zubereitung, Fehlern am Feld ohne Eingabeverlust, Nachfrage bei ungespeicherten Änderungen und Navigation zum Detail nach dem Speichern; Tests für Anlegen, Bearbeiten, Fehler und Abbrechen
+- [x] 5.4 Rezeptliste: „Neues Rezept“, Kennzeichnung „Eigenes Rezept“, Hinweis bei leerer Liste; Detailansicht: „Bearbeiten“, „Zutaten nachtragen“, „Entfernen“ bei eigenen Rezepten, Zutaten über `text`; Tests für die Szenarien aus `recipe-catalog`
+- [x] 5.5 Am Handy (Viewport 375 px, Browser-Pane) ein Rezept mit zehn Zutaten anlegen, bearbeiten und einplanen; Screenshot, und das Formular ist ohne horizontales Scrollen bedienbar
 
 ## 6. Abschluss
 
-- [ ] 6.1 `openspec validate add-recipe-editor --strict` ist grün (die Reihenfolge in `openspec/config.yaml` ist bereits ergänzt)
-- [ ] 6.2 README um das Bearbeiten von Rezepten und den Sicherungsschritt vor dem Deploy ergänzen
-- [ ] 6.3 `make test` (Backend und Frontend) ist grün
+- [x] 6.1 `openspec validate add-recipe-editor --strict` ist grün (die Reihenfolge in `openspec/config.yaml` ist bereits ergänzt)
+- [x] 6.2 README um das Bearbeiten von Rezepten und den Sicherungsschritt vor dem Deploy ergänzen
+- [x] 6.3 `make test` (Backend und Frontend) ist grün

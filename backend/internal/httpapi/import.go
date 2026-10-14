@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/felikowski/essenplaner/backend/internal/ingredient"
 	"github.com/felikowski/essenplaner/backend/internal/safefetch"
 	"github.com/felikowski/essenplaner/backend/internal/store"
 	"github.com/felikowski/essenplaner/backend/internal/webimport"
@@ -41,16 +42,21 @@ func (s *Server) handleImportRecipe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Schon importiert? Dann ohne erneuten Abruf das vorhandene Rezept liefern.
-	if existing, err := s.recipes.FindImported(r.Context(), webimport.Normalize(target)); err == nil {
-		s.respondImported(w, r, existing)
-		return
-	} else if !errors.Is(err, store.ErrNotFound) {
+	// Schon importiert? Dann wird die Seite trotzdem neu gelesen, damit nicht bearbeitete Angaben aktuell
+	// bleiben. Ist sie nicht mehr erreichbar, wird das vorhandene Rezept geliefert.
+	existing, err := s.recipes.FindImported(r.Context(), webimport.Normalize(target))
+	found := err == nil
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		s.internalError(w, r, err)
 		return
 	}
 
 	result, err := s.importer.Import(r.Context(), target)
+	if err != nil && found {
+		s.logger.Info("rezeptseite erneut nicht lesbar, liefere vorhandenes rezept", "url", target.String(), "err", err)
+		s.respondImported(w, r, existing)
+		return
+	}
 	switch {
 	case err == nil:
 	case errors.Is(err, safefetch.ErrInvalidURL), errors.Is(err, safefetch.ErrBlocked):
@@ -74,8 +80,8 @@ func (s *Server) handleImportRecipe(w http.ResponseWriter, r *http.Request) {
 	saved, created, err := s.recipes.SaveImported(r.Context(), result.CanonicalURL, store.Recipe{
 		Title:        result.Recipe.Title,
 		ImageURL:     result.Recipe.ImageURL,
-		Servings:     result.Recipe.Yield,
-		Ingredients:  result.Recipe.Ingredients,
+		Servings:     store.ParseServings(result.Recipe.Yield),
+		Ingredients:  ingredient.ParseAll(result.Recipe.Ingredients),
 		Instructions: result.Recipe.Instructions,
 	})
 	if err != nil {

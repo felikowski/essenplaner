@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/felikowski/essenplaner/backend/internal/ingredient"
 	"github.com/felikowski/essenplaner/backend/internal/store"
 )
 
@@ -24,11 +25,29 @@ type Target interface {
 	InsertRecipes(ctx context.Context, origin string, recipes []store.Recipe) error
 }
 
-// Recipes liefert die eingebetteten Beispielrezepte.
+// seedRecipe ist das Format von recipes.json: Zutaten als Zeilen, wie man sie eintippt.
+type seedRecipe struct {
+	ID           string       `json:"id"`
+	Title        string       `json:"title"`
+	Source       store.Source `json:"source"`
+	ImageURL     string       `json:"imageUrl"`
+	Servings     *int         `json:"servings"`
+	Ingredients  []string     `json:"ingredients"`
+	Instructions []string     `json:"instructions"`
+}
+
+// Recipes liefert die eingebetteten Beispielrezepte mit zerlegten Zutaten.
 func Recipes() ([]store.Recipe, error) {
-	var recipes []store.Recipe
-	if err := json.Unmarshal(recipesJSON, &recipes); err != nil {
+	var raw []seedRecipe
+	if err := json.Unmarshal(recipesJSON, &raw); err != nil {
 		return nil, fmt.Errorf("beispielrezepte lesen: %w", err)
+	}
+	recipes := make([]store.Recipe, len(raw))
+	for i, r := range raw {
+		recipes[i] = store.Recipe{
+			ID: r.ID, Title: r.Title, Source: r.Source, ImageURL: r.ImageURL, Servings: r.Servings,
+			Ingredients: ingredient.ParseAll(r.Ingredients), Instructions: r.Instructions,
+		}
 	}
 	return recipes, nil
 }

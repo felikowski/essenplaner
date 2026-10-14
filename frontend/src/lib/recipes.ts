@@ -13,6 +13,16 @@ export function filterByTitle(recipes: Recipe[], query: string): Recipe[] {
   return recipes.filter((recipe) => recipe.title.toLocaleLowerCase('de').includes(needle))
 }
 
+const sourceLabels: Record<Recipe['source']['kind'], string> = {
+  pdf: 'PDF',
+  web: 'Webseite',
+  manual: 'Eigenes Rezept',
+}
+
 export function sourceLabel(recipe: Recipe): string {
-  return recipe.source.kind === 'pdf' ? 'PDF' : 'Webseite'
+  return sourceLabels[recipe.source.kind]
+}
+
+export function formatServings(servings: number): string {
+  return servings === 1 ? '1 Portion' : `${servings} Portionen`
 }

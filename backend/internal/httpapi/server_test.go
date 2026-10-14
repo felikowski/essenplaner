@@ -108,7 +108,7 @@ func TestRecipeJSONOmitsMissingFields(t *testing.T) {
 
 	web := decode[map[string]any](t, do(t, h, "GET", "/api/recipes/haehnchen-curry", ""))
 	if web["source"].(map[string]any)["url"] != "https://example.com/rezepte/haehnchen-curry" ||
-		web["servings"] != "4 Portionen" || len(web["ingredients"].([]any)) != 8 || web["imageUrl"] == nil {
+		web["servings"] != float64(4) || len(web["ingredients"].([]any)) != 8 || web["imageUrl"] == nil {
 		t.Errorf("web-rezept unvollständig: %v", web)
 	}
 	if _, ok := web["source"].(map[string]any)["pdfUrl"]; ok {
@@ -285,7 +285,13 @@ func (failingStore) SaveImported(context.Context, string, store.Recipe) (store.R
 	return store.Recipe{}, false, errors.New("disk I/O error")
 }
 func (failingStore) RemoveRecipe(context.Context, string) error { return errors.New("disk I/O error") }
-func (failingStore) Ping(context.Context) error                 { return nil }
+func (failingStore) CreateRecipe(context.Context, store.RecipeInput) (store.Recipe, error) {
+	return store.Recipe{}, errors.New("disk I/O error")
+}
+func (failingStore) UpdateRecipe(context.Context, string, store.RecipeInput) (store.Recipe, error) {
+	return store.Recipe{}, errors.New("disk I/O error")
+}
+func (failingStore) Ping(context.Context) error { return nil }
 
 func TestDatabaseErrorsBecomeInternalError(t *testing.T) {
 	var logs bytes.Buffer

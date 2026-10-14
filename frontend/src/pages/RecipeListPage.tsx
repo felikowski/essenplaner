@@ -26,9 +26,14 @@ export function RecipeListPage() {
     <div className="page">
       <div className="page-header">
         <h1>Rezepte</h1>
-        <button type="button" className="button" onClick={() => setImporting(true)}>
-          Rezept hinzufügen
-        </button>
+        <div className="page-header__actions">
+          <Link className="button button--secondary" to="/rezepte/neu">
+            Neues Rezept
+          </Link>
+          <button type="button" className="button" onClick={() => setImporting(true)}>
+            Rezept hinzufügen
+          </button>
+        </div>
       </div>
       {importing && (
         <ImportRecipeDialog
@@ -40,7 +45,10 @@ export function RecipeListPage() {
       {state.status === 'error' && <LoadError message="Die Rezepte konnten nicht geladen werden." onRetry={retry} />}
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
-          <p className="status">Noch keine Rezepte vorhanden. Füge eines über „Rezept hinzufügen“ hinzu.</p>
+          <p className="status">
+            Noch keine Rezepte vorhanden. Lege über „Neues Rezept“ ein eigenes an oder übernimm eines per Link mit
+            „Rezept hinzufügen“.
+          </p>
         ) : (
           <>
             <SearchField value={query} onChange={setQuery} />

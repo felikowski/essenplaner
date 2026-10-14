@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/felikowski/essenplaner/backend/internal/ingredient"
 )
 
 func openTestDB(t *testing.T, path string) *DB {
@@ -25,7 +27,7 @@ func tempPath(t *testing.T) string {
 
 var testRecipes = []Recipe{
 	{ID: "linsensuppe", Title: "Linsensuppe", Source: Source{Kind: SourceWeb, URL: "https://example.com/linsen"},
-		Servings: "6 Portionen", Ingredients: []string{"Linsen", "Karotten"}},
+		Servings: intPtr(6), Ingredients: ingredient.ParseAll([]string{"250 g Linsen", "Karotten"})},
 	{ID: "aepfel", Title: "Äpfel im Schlafrock", Source: Source{Kind: SourcePDF, PDFURL: "/mock/pdf/a.pdf"}},
 	{ID: "haehnchen-curry", Title: "Hähnchen-Curry", Source: Source{Kind: SourceWeb, URL: "https://example.com/curry"},
 		ImageURL: "/img.svg", Instructions: []string{"Kochen.", "Essen."}},
@@ -120,7 +122,8 @@ func TestGetRecipe(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Title != "Linsensuppe" || got.Source != (Source{Kind: SourceWeb, URL: "https://example.com/linsen"}) ||
-		got.Servings != "6 Portionen" || !slices.Equal(got.Ingredients, []string{"Linsen", "Karotten"}) ||
+		got.Servings == nil || *got.Servings != 6 || len(got.Ingredients) != 2 || got.Ingredients[0].Name != "Linsen" ||
+		got.Ingredients[0].Text != "250 g Linsen" || got.Ingredients[0].Unit != "g" ||
 		got.Instructions != nil || got.ImageURL != "" {
 		t.Errorf("unerwartetes Rezept: %+v", got)
 	}
@@ -237,3 +240,5 @@ func TestDataSurvivesReopen(t *testing.T) {
 		t.Errorf("rezepte nach erneutem Öffnen: %d", count)
 	}
 }
+
+func intPtr(n int) *int { return &n }

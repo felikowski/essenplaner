@@ -68,6 +68,12 @@ func (db *DB) Ping(ctx context.Context) error {
 	return db.sql.QueryRowContext(ctx, "SELECT 1").Scan(&one)
 }
 
+// goMigrations sind Schritte in Go, die für eine Version nach dem SQL in derselben Transaktion laufen,
+// etwa um Daten umzuwandeln, was in SQL nicht vernünftig geht. Eine Version kann auch nur aus Go bestehen.
+var goMigrations = map[int]func(ctx context.Context, tx *sql.Tx) error{
+	3: migrateRecipeEditor,
+}
+
 func (db *DB) migrate(ctx context.Context) error {
 	if _, err := db.sql.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
 		version    INTEGER PRIMARY KEY,
@@ -80,45 +86,101 @@ func (db *DB) migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	sort.Strings(files)
-
+	sqlFiles := map[int]string{}
 	for _, file := range files {
 		name := filepath.Base(file)
 		version, err := strconv.Atoi(strings.SplitN(name, "_", 2)[0])
 		if err != nil {
 			return fmt.Errorf("migration %s: dateiname muss mit einer Nummer beginnen", name)
 		}
-		if err := db.applyMigration(ctx, version, file); err != nil {
-			return fmt.Errorf("migration %s: %w", name, err)
+		sqlFiles[version] = file
+	}
+	versions := make([]int, 0, len(sqlFiles)+len(goMigrations))
+	for version := range sqlFiles {
+		versions = append(versions, version)
+	}
+	for version := range goMigrations {
+		if _, ok := sqlFiles[version]; !ok {
+			versions = append(versions, version)
+		}
+	}
+	sort.Ints(versions)
+
+	for _, version := range versions {
+		if err := db.applyMigration(ctx, version, sqlFiles[version], goMigrations[version]); err != nil {
+			return fmt.Errorf("migration %d: %w", version, err)
 		}
 	}
 	return nil
 }
 
-func (db *DB) applyMigration(ctx context.Context, version int, file string) error {
-	tx, err := db.sql.BeginTx(ctx, nil)
+// applyMigration führt eine Version in einer Transaktion aus. Fremdschlüssel sind dabei abgeschaltet, damit
+// Tabellen nach dem von SQLite empfohlenen Muster neu aufgebaut werden können; vor dem Commit prüft
+// foreign_key_check, dass alle Verweise stimmen.
+func (db *DB) applyMigration(ctx context.Context, version int, file string, step func(context.Context, *sql.Tx) error) error {
+	conn, err := db.sql.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer conn.Close()
 
 	var applied bool
-	if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = ?)", version).Scan(&applied); err != nil {
+	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = ?)", version).Scan(&applied); err != nil {
 		return err
 	}
 	if applied {
 		return nil
 	}
 
-	script, err := migrations.ReadFile(file)
+	// PRAGMA foreign_keys wirkt nur außerhalb einer Transaktion.
+	if _, err := conn.ExecContext(ctx, "PRAGMA foreign_keys = OFF"); err != nil {
+		return err
+	}
+	defer conn.ExecContext(context.WithoutCancel(ctx), "PRAGMA foreign_keys = ON")
+
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, string(script)); err != nil {
+	defer tx.Rollback()
+
+	if file != "" {
+		script, err := migrations.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, string(script)); err != nil {
+			return err
+		}
+	}
+	if step != nil {
+		if err := step(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if err := checkForeignKeys(ctx, tx); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, "INSERT INTO schema_migrations (version) VALUES (?)", version); err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+func checkForeignKeys(ctx context.Context, tx *sql.Tx) error {
+	rows, err := tx.QueryContext(ctx, "PRAGMA foreign_key_check")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var table, parent string
+		var rowid sql.NullInt64
+		var fkid int
+		if err := rows.Scan(&table, &rowid, &parent, &fkid); err != nil {
+			return err
+		}
+		return fmt.Errorf("verletzter fremdschlüssel: %s (zeile %d) verweist auf fehlenden eintrag in %s", table, rowid.Int64, parent)
+	}
+	return rows.Err()
 }

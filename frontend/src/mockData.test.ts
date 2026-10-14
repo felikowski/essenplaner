@@ -26,7 +26,7 @@ function isRecipe(value: unknown): value is Recipe {
   return (
     validSource &&
     (imageUrl === undefined || isString(imageUrl)) &&
-    (servings === undefined || isString(servings)) &&
+    (servings === undefined || (Number.isInteger(servings) && Number(servings) >= 1 && Number(servings) <= 99)) &&
     (ingredients === undefined || isStringArray(ingredients)) &&
     (instructions === undefined || isStringArray(instructions))
   )

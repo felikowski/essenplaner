@@ -59,7 +59,7 @@ func TestImportRecipe(t *testing.T) {
 		t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
 	}
 	recipe := decode[map[string]any](t, rec)
-	if recipe["title"] != "Kürbissuppe" || recipe["servings"] != "4 Portionen" || recipe["imageUrl"] != "https://img.example.com/k.jpg" ||
+	if recipe["title"] != "Kürbissuppe" || recipe["servings"] != float64(4) || recipe["imageUrl"] != "https://img.example.com/k.jpg" ||
 		len(recipe["ingredients"].([]any)) != 2 || len(recipe["instructions"].([]any)) != 2 || recipe["removable"] != true {
 		t.Errorf("rezept = %v", recipe)
 	}
@@ -76,13 +76,20 @@ func TestImportRecipe(t *testing.T) {
 		t.Error("importiertes rezept fehlt in der liste")
 	}
 
-	// Duplikat mit Tracking-Parametern: 200, kein neuer Abruf, dasselbe Rezept.
+	// Duplikat mit Tracking-Parametern: 200 und dasselbe Rezept.
 	rec = do(t, h, "POST", "/api/recipes/import", `{"url":"https://www.chefkoch.de/rezepte/1/kuerbis.html?utm_source=whatsapp#bilder"}`)
 	if rec.Code != http.StatusOK || decode[map[string]any](t, rec)["id"] != recipe["id"] {
 		t.Errorf("duplikat: %d %s", rec.Code, rec.Body.String())
 	}
-	if importer.calls != 1 {
-		t.Errorf("seite wurde %d-mal abgerufen, erwartet 1", importer.calls)
+	if n := len(decode[[]map[string]any](t, do(t, h, "GET", "/api/recipes", ""))); n != 9 {
+		t.Errorf("%d rezepte nach duplikat, erwartet 9", n)
+	}
+
+	// Ist die Seite beim erneuten Import nicht erreichbar, kommt trotzdem das vorhandene Rezept.
+	delete(importer.results, "https://www.chefkoch.de/rezepte/1/kuerbis.html")
+	rec = do(t, h, "POST", "/api/recipes/import", `{"url":"https://www.chefkoch.de/rezepte/1/kuerbis.html"}`)
+	if rec.Code != http.StatusOK || decode[map[string]any](t, rec)["id"] != recipe["id"] {
+		t.Errorf("duplikat ohne erreichbare seite: %d %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -136,14 +143,14 @@ func TestRemoveImportedRecipe(t *testing.T) {
 	}
 	assertError(t, do(t, h, "PUT", "/api/days/2026-10-01", fmt.Sprintf(`{"recipeId":%q}`, id)), http.StatusUnprocessableEntity)
 
-	// Erneuter Import macht das Rezept wieder verfügbar, ohne die Seite neu abzurufen.
+	// Erneuter Import macht das Rezept wieder verfügbar.
 	rec := do(t, h, "POST", "/api/recipes/import", `{"url":"https://www.chefkoch.de/rezepte/1/kuerbis.html"}`)
 	again := decode[map[string]any](t, rec)
 	if rec.Code != http.StatusOK || again["id"] != id || again["available"] != true {
 		t.Errorf("reaktivierung: %d %v", rec.Code, again)
 	}
-	if importer.calls != 1 {
-		t.Errorf("seite wurde %d-mal abgerufen, erwartet 1", importer.calls)
+	if importer.calls != 2 {
+		t.Errorf("seite wurde %d-mal abgerufen, erwartet 2", importer.calls)
 	}
 }
 

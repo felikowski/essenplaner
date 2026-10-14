@@ -36,7 +36,9 @@ func NewServer(recipes store.RecipeStore, plans store.PlanStore, health HealthCh
 func (s *Server) Handler(static http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/recipes", s.handleListRecipes)
+	mux.HandleFunc("POST /api/recipes", s.handleCreateRecipe)
 	mux.HandleFunc("GET /api/recipes/{id}", s.handleGetRecipe)
+	mux.HandleFunc("PUT /api/recipes/{id}", s.handleUpdateRecipe)
 	mux.HandleFunc("DELETE /api/recipes/{id}", s.handleRemoveRecipe)
 	mux.HandleFunc("POST /api/recipes/import", s.handleImportRecipe)
 	mux.HandleFunc("GET /api/weeks/{week}", s.handleGetWeek)

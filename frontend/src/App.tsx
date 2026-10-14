@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { CurrentWeekRedirect } from './pages/CurrentWeekRedirect'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RecipeDetailPage } from './pages/RecipeDetailPage'
+import { RecipeEditPage } from './pages/RecipeEditPage'
 import { RecipeListPage } from './pages/RecipeListPage'
 import { WeekPage } from './pages/WeekPage'
 
@@ -14,7 +15,9 @@ export function AppRoutes() {
         <Route path="woche" element={<CurrentWeekRedirect />} />
         <Route path="woche/:week" element={<WeekPage />} />
         <Route path="rezepte" element={<RecipeListPage />} />
+        <Route path="rezepte/neu" element={<RecipeEditPage />} />
         <Route path="rezepte/:id" element={<RecipeDetailPage />} />
+        <Route path="rezepte/:id/bearbeiten" element={<RecipeEditPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

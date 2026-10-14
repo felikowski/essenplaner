@@ -1,5 +1,6 @@
+import { parseIngredients } from '../lib/ingredient'
 import { daysOfWeek, parseIsoDate, weekOf } from '../lib/isoWeek'
-import type { IsoDate, IsoWeek, Recipe, WeekPlan } from '../types'
+import type { IsoDate, IsoWeek, Recipe, RecipeInput, WeekPlan } from '../types'
 import type { PlannerApi } from './PlannerApi'
 import { RequestError, request } from './request'
 
@@ -85,6 +86,37 @@ export class MockPlannerApi implements PlannerApi {
     return structuredClone(recipe)
   }
 
+  async createRecipe(input: RecipeInput): Promise<Recipe> {
+    const { recipes } = await this.getData()
+    validate(input)
+    const recipe: Recipe = {
+      id: `m-${recipes.length + 1}`,
+      title: input.title.trim(),
+      source: { kind: 'manual' },
+      available: true,
+      removable: true,
+      titleEditable: true,
+    }
+    applyInput(recipe, input)
+    recipes.push(recipe)
+    return structuredClone(recipe)
+  }
+
+  async updateRecipe(id: string, input: RecipeInput): Promise<Recipe> {
+    const { recipes } = await this.getData()
+    const recipe = recipes.find((candidate) => candidate.id === id)
+    if (!recipe) throw new RequestError(`PUT /api/recipes/${id} fehlgeschlagen: 404`, 404)
+    validate(input)
+    if (input.title.trim() !== recipe.title) {
+      if (!recipe.titleEditable) {
+        throw new RequestError('PUT fehlgeschlagen: 422', 422, 'Der Titel lässt sich nur bei eigenen Rezepten ändern.', 'title')
+      }
+      recipe.title = input.title.trim()
+    }
+    applyInput(recipe, input)
+    return structuredClone(recipe)
+  }
+
   async removeRecipe(id: string): Promise<void> {
     const { recipes } = await this.getData()
     const recipe = recipes.find((candidate) => candidate.id === id)
@@ -98,7 +130,7 @@ export class MockPlannerApi implements PlannerApi {
     if (!this.data) {
       this.data = Promise.all([this.load('recipes.json'), this.load('weeks.json')]).then(
         ([recipes, weeks]) => ({
-          recipes: recipes as Recipe[],
+          recipes: (recipes as MockRecipe[]).map(fromMockRecipe),
           weeks: new Map((weeks as WeekPlan[]).map((plan) => [plan.week, completeWeek(plan)])),
         }),
       )
@@ -109,6 +141,38 @@ export class MockPlannerApi implements PlannerApi {
     }
     return this.data
   }
+}
+
+/** Format von public/mock/recipes.json: Zutaten als Zeilen, wie man sie eintippt. */
+type MockRecipe = Omit<Recipe, 'ingredients'> & { ingredients?: string[] }
+
+function fromMockRecipe({ ingredients, ...recipe }: MockRecipe): Recipe {
+  return ingredients ? { ...recipe, ingredients: toIngredients(ingredients) } : recipe
+}
+
+function toIngredients(lines: string[]) {
+  return parseIngredients(lines).map(({ quantityMin: _quantityMin, ...ingredient }) => ingredient)
+}
+
+/** Prüft wie das Backend die wichtigsten Regeln, damit Tests Fehler am Formular sehen können. */
+function validate(input: RecipeInput) {
+  if (!input.title.trim()) {
+    throw new RequestError('fehlgeschlagen: 422', 422, 'Bitte einen Titel eingeben.', 'title')
+  }
+  if (input.servings !== null && (!Number.isInteger(input.servings) || input.servings < 1 || input.servings > 99)) {
+    throw new RequestError('fehlgeschlagen: 422', 422, 'Portionen müssen eine ganze Zahl von 1 bis 99 sein.', 'servings')
+  }
+}
+
+function applyInput(recipe: Recipe, input: RecipeInput) {
+  const ingredients = toIngredients(input.ingredients)
+  const instructions = input.instructions.map((step) => step.trim()).filter(Boolean)
+  if (input.servings === null) delete recipe.servings
+  else recipe.servings = input.servings
+  if (ingredients.length > 0) recipe.ingredients = ingredients
+  else delete recipe.ingredients
+  if (instructions.length > 0) recipe.instructions = instructions
+  else delete recipe.instructions
 }
 
 function isAvailable(recipe: Recipe): boolean {

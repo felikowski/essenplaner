@@ -1,4 +1,4 @@
-import type { IsoDate, IsoWeek, Recipe, WeekPlan } from '../types'
+import type { IsoDate, IsoWeek, Recipe, RecipeInput, WeekPlan } from '../types'
 import type { PlannerApi } from './PlannerApi'
 import { RequestError, request } from './request'
 
@@ -23,6 +23,14 @@ export class HttpPlannerApi implements PlannerApi {
 
   importRecipe(url: string): Promise<Recipe> {
     return request('/api/recipes/import', { method: 'POST', body: JSON.stringify({ url }) })
+  }
+
+  createRecipe(input: RecipeInput): Promise<Recipe> {
+    return request('/api/recipes', { method: 'POST', body: JSON.stringify(input) })
+  }
+
+  updateRecipe(id: string, input: RecipeInput): Promise<Recipe> {
+    return request(`/api/recipes/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
   }
 
   removeRecipe(id: string): Promise<void> {

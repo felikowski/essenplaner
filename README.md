@@ -83,12 +83,39 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | ------- | --------------------- | -------------------------------------------------------------- |
 | GET     | `/api/recipes`        | alle Rezepte, nach Titel sortiert                              |
 | GET     | `/api/recipes/{id}`   | ein Rezept, 404 wenn unbekannt                                 |
+| POST    | `/api/recipes`        | eigenes Rezept anlegen (siehe unten)                           |
+| PUT     | `/api/recipes/{id}`   | Portionen, Zutaten, Zubereitung (und Titel eigener Rezepte)    |
 | GET     | `/api/weeks/{week}`   | Plan einer Woche (`2026-W40`), alle sieben Tage, leer = `null` |
 | PUT     | `/api/days/{date}`    | Body `{"recipeId": "…"}` oder `{"recipeId": null}`             |
 | POST    | `/api/recipes/import` | Body `{"url": "…"}`: Rezept von einer Webseite importieren      |
-| DELETE  | `/api/recipes/{id}`   | importiertes Rezept entfernen (bleibt in Plänen sichtbar)       |
+| DELETE  | `/api/recipes/{id}`   | importiertes oder eigenes Rezept entfernen (bleibt in Plänen)   |
 
-Fehler haben immer die Form `{"error": "…"}`.
+Fehler haben immer die Form `{"error": "…"}`. Validierungsfehler (422) nennen zusätzlich das
+betroffene Feld: `{"error": "…", "field": "servings"}`.
+
+Rezepte anlegen und bearbeiten (`POST`/`PUT`) nehmen
+`{"title": "…", "servings": 4, "ingredients": ["200 g Mehl", "…"], "instructions": ["…"]}`.
+Zutaten kommen als Zeilen und werden vom Server zerlegt. In Antworten ist jede Zutat ein Objekt
+`{"text": "200 g Mehl", "quantity": 200, "unit": "g", "name": "Mehl"}` (`quantity`, `unit` und
+`note` fehlen, wenn nichts erkannt wurde), `servings` ist eine Zahl.
+
+## Rezepte anlegen und bearbeiten
+
+„Neues Rezept“ im Katalog legt ein eigenes Rezept an. Über „Bearbeiten“ lassen sich bei allen Rezepten
+Portionen, Zutaten und Zubereitung ändern oder nachtragen, auch bei PDF- und Web-Rezepten. Den Titel
+ändert man nur bei eigenen Rezepten, bei den übrigen kommt er aus der Quelle.
+
+Zutaten werden Zeile für Zeile eingegeben („200 g Mehl“, „½ TL Salz“, „1-2 Knoblauchzehen“, „Salz und
+Pfeffer“). Unter jeder Zeile zeigt das Formular, wie sie in Menge, Einheit und Name zerlegt wird. Das ist
+die Grundlage für Einkaufsliste und Portionen. Die Regeln stehen in `backend/internal/ingredient` und
+`frontend/src/lib/ingredient.ts`. Beide prüfen dieselben Fälle aus `testdata/ingredient-cases.json`.
+
+Von Hand geänderte Angaben bleiben erhalten, wenn ein Rezept erneut per Link importiert wird.
+
+**Vor einem Update mit Datenbank-Migration sichern.** Manche Versionen bauen beim Start Tabellen um
+(zum Beispiel die Umstellung auf zerlegte Zutaten). Die alte Version kann die neue Datenbank danach nicht
+mehr lesen, ein Rollback heißt also: Sicherung zurückspielen. Sicherung bei laufendem Server:
+`sqlite3 data/essenplaner.db ".backup data/essenplaner-$(date +%F).db"`.
 
 ## Rezepte per Link importieren
 

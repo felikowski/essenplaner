@@ -7,7 +7,7 @@
       "url": "https://example.com/rezepte/haehnchen-curry"
     },
     "imageUrl": "/mock/images/haehnchen-curry.svg",
-    "servings": "4 Portionen",
+    "servings": 4,
     "ingredients": [
       "600 g Hähnchenbrust",
       "1 Zwiebel",
@@ -50,7 +50,7 @@
       "kind": "web",
       "url": "https://example.com/rezepte/linsensuppe"
     },
-    "servings": "6 Portionen",
+    "servings": 6,
     "ingredients": [
       "250 g Tellerlinsen",
       "2 Karotten",
@@ -68,7 +68,7 @@
       "url": "https://example.com/rezepte/kichererbsen-curry"
     },
     "imageUrl": "/mock/images/kichererbsen-curry.svg",
-    "servings": "4 Portionen",
+    "servings": 4,
     "ingredients": [
       "2 Dosen Kichererbsen",
       "200 g Blattspinat",
