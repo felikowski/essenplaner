@@ -1,6 +1,6 @@
 ## Context
 
-Rezepte haben bereits `source.kind = 'web'` (seit `add-frontend-mock-data`), `origin` und `available` (seit `add-google-drive-recipes`). Der Server läuft öffentlich hinter Login und darf nach diesem Change selbst Anfragen ins Internet stellen. Das ist das Hauptrisiko des Changes.
+Rezepte haben bereits `source.kind = 'web'` (seit `add-frontend-mock-data`), `origin` und `available` (seit `add-google-drive-recipes`). Der Server läuft zunächst nur lokal, später öffentlich hinter Login (`add-auth0-login`, `add-vps-deployment`). Nach diesem Change darf er selbst Anfragen ins Internet stellen. Das ist das Hauptrisiko des Changes, und der SSRF-Schutz muss schon lokal vollständig sein, weil er beim späteren Deploy nicht erneut angefasst wird.
 
 ## Goals / Non-Goals
 
@@ -43,7 +43,7 @@ Die Alternative, jede URL nur einmal vor dem Abruf per DNS zu prüfen, verwerfen
 
 **Speicherung:** Rezepte mit `origin = 'web-import'`, `source_kind = 'web'`, `source_ref` = kanonische URL; Zutaten und Schritte kommen in die vorhandenen JSON-Spalten. Entfernen setzt `available = 0` und nutzt die Semantik aus `recipe-catalog`.
 
-**Bilder:** `imageUrl` zeigt direkt auf die Quelle. Die CSP aus `add-auth0-login` erlaubt bereits `img-src https:`. Den Nachteil nehmen wir in Kauf: Der Browser lädt Bilder von fremden Servern (`referrerpolicy="no-referrer"` am `<img>`).
+**Bilder:** `imageUrl` zeigt direkt auf die Quelle. Die CSP, die später mit `add-auth0-login` kommt, sieht dafür `img-src https:` vor. Den Nachteil nehmen wir in Kauf: Der Browser lädt Bilder von fremden Servern (`referrerpolicy="no-referrer"` am `<img>`).
 
 ## Risks / Trade-offs
 

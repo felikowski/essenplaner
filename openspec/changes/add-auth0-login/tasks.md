@@ -17,8 +17,9 @@
 ## 4. Schutz
 
 - [ ] 4.1 Auth-Middleware vor `/api/` (Ausnahmen: `/api/auth/*`, `/healthz`), inklusive erneuter Prüfung der Freigabeliste; Tests: 401 ohne Cookie, 401 nach Entfernen von der Liste, 200 mit gültiger Sitzung
-- [ ] 4.2 Origin-Prüfung für PUT/POST/DELETE; Tests: fremde Origin → 403, gleiche Origin → erlaubt
-- [ ] 4.3 Sicherheits-Header-Middleware; Test prüft die Header an einer HTML- und einer API-Antwort
+- [ ] 4.2 Origin-Prüfung für POST/PUT/PATCH/DELETE; Tests: fremde Origin → 403, gleiche Origin → erlaubt
+- [ ] 4.3 Ein Test durchläuft alle registrierten `/api/…`-Routen (außer Anmeldung) und prüft 401 ohne Sitzung, damit keine Route aus den früheren Changes ungeschützt bleibt
+- [ ] 4.4 Sicherheits-Header-Middleware; Test prüft die Header an einer HTML- und einer API-Antwort
 
 ## 5. Frontend
 

@@ -1,6 +1,6 @@
 ## Context
 
-Nach `add-recipe-editor` haben Zutaten `text`, `quantity`, `unit`, `name` und `note`, und es gibt einen Parser in Go und TypeScript mit einer festen Einheitentabelle. Nach `add-planner-flexibility` gibt es `plan_entries` mit Rezept-, Reste-, Notiz- und Einzelzutat-Einträgen, Portionen pro Eintrag und eine Registry für Haushalts-Einstellungen. Die App läuft hinter Login, die Familie nutzt sie überwiegend am Handy. Motivation und Umfang: siehe proposal.md.
+Nach `add-recipe-editor` haben Zutaten `text`, `quantity`, `unit`, `name` und `note`, und es gibt einen Parser in Go und TypeScript mit einer festen Einheitentabelle. Nach `add-planner-flexibility` gibt es `plan_entries` mit Rezept-, Reste-, Notiz- und Einzelzutat-Einträgen, Portionen pro Eintrag und eine Registry für Haushalts-Einstellungen. Die App läuft bis `add-auth0-login` nur lokal, die Familie nutzt sie später überwiegend am Handy. Motivation und Umfang: siehe proposal.md.
 
 ## Goals / Non-Goals
 

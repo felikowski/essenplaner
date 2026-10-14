@@ -119,7 +119,7 @@ Das System SHALL die nicht abgehakten Artikel als Text nach Kategorien gruppiert
 - **THEN** öffnet sich das Teilen-Menü mit einem Text wie „Obst & Gemüse\n- Zwiebeln: 4\n…“
 
 ### Requirement: Einkaufs-API
-Das System SHALL die Einkaufsliste unter `/api/shopping/…` bereitstellen: Liste lesen, Artikel anlegen, ändern, abhaken, löschen und zusammenführen, aus dem Plan übernehmen, erledigte entfernen sowie Kategorien, Geschäfte, gemerkte Zusammenführungen und Vorrat verwalten. Die Liste MUST mit einem `ETag` ausgeliefert werden, und eine Anfrage mit passendem `If-None-Match` MUST mit 304 beantwortet werden. Alle Endpunkte MUST den Regeln für geschützte API und einheitliche Fehlerantworten folgen.
+Das System SHALL die Einkaufsliste unter `/api/shopping/…` bereitstellen: Liste lesen, Artikel anlegen, ändern, abhaken, löschen und zusammenführen, aus dem Plan übernehmen, erledigte entfernen sowie Kategorien, Geschäfte, gemerkte Zusammenführungen und Vorrat verwalten. Die Liste MUST mit einem `ETag` ausgeliefert werden, und eine Anfrage mit passendem `If-None-Match` MUST mit 304 beantwortet werden. Alle Endpunkte MUST den einheitlichen Fehlerantworten folgen.
 
 #### Scenario: Unverändert
 - **WHEN** ein Client die Liste mit dem zuletzt erhaltenen `ETag` abfragt und sich nichts geändert hat

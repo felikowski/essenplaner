@@ -29,4 +29,4 @@ Nicht Teil dieser Change: Fotos hochladen, Kategorien und Tags, Suche nach Zutat
 - Backend: neue Endpunkte `POST /api/recipes` und `PUT /api/recipes/{id}`, `DELETE /api/recipes/{id}` auch für eigene Rezepte; neues Paket für das Zerlegen von Zutaten; Migration mit Umbau der Tabelle `recipes` (CHECK auf `source_kind`, Spalte `servings` als Zahl, Spalte `edited_fields`) und Umwandlung der vorhandenen Daten
 - Drive-Sync und URL-Import: überschreiben nur noch Felder, die nicht von Hand bearbeitet wurden
 - Frontend: Typen `Recipe` und `Ingredient`, neue Seiten `/rezepte/neu` und `/rezepte/:id/bearbeiten`, Anpassung von Detailansicht, Liste und Mock-Daten
-- Setzt `add-auth0-login`, `add-google-drive-recipes` und `add-recipe-url-import` voraus und wird in `openspec/config.yaml` hinten an die Reihenfolge angehängt
+- Setzt `add-google-drive-recipes` und `add-recipe-url-import` voraus. Den Schutz der neuen Endpunkte übernimmt später `add-auth0-login`.

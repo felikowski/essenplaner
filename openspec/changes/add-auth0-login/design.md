@@ -1,6 +1,6 @@
 ## Context
 
-Nach `add-go-backend` gibt es ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
+Diese Change wird nach allen Funktions-Changes bis einschließlich `add-freezer` umgesetzt. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
 
 ## Goals / Non-Goals
 
@@ -27,9 +27,9 @@ Routen: `GET /api/auth/login?returnTo=…` setzt ein kurzlebiges, signiertes Coo
 
 **Abmelden bei Auth0:** `POST /api/auth/logout` löscht die Sitzung und das Cookie. Danach leitet es auf den RP-Initiated-Logout-Endpunkt `https://<AUTH0_DOMAIN>/oidc/logout?client_id=…&post_logout_redirect_uri=<PUBLIC_URL>/login` weiter. Ohne diesen Schritt würde die weiterhin bestehende Auth0-Sitzung den Nutzer beim nächsten Klick auf „Anmelden“ sofort wieder einloggen. Die URL muss in Auth0 unter „Allowed Logout URLs“ eingetragen sein.
 
-**CSRF-Schutz:** `SameSite=Lax` sowie bei PUT/POST/DELETE eine Prüfung, dass `Origin` (ersatzweise `Sec-Fetch-Site: same-origin`) zur konfigurierten `PUBLIC_URL` passt. Weil API und UI dieselbe Origin haben, ist kein Token-Mechanismus nötig.
+**CSRF-Schutz:** `SameSite=Lax` sowie bei POST/PUT/PATCH/DELETE eine Prüfung, dass `Origin` (ersatzweise `Sec-Fetch-Site: same-origin`) zur konfigurierten `PUBLIC_URL` passt. Weil API und UI dieselbe Origin haben, ist kein Token-Mechanismus nötig.
 
-**Sicherheits-Header** für alle Antworten: `Content-Security-Policy` (default-src 'self'; img-src 'self' https: data:), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`, wenn die App über https läuft. Die Weiterleitungen zu Auth0 sind Navigationen und werden von der CSP nicht eingeschränkt.
+**Sicherheits-Header** für alle Antworten: `Content-Security-Policy` (default-src 'self'; img-src 'self' https: data:). `default-src 'self'` deckt über die Fallback-Kette auch `worker-src` für `/sw.js` ab. Bilder importierter Rezepte kommen von fremden https-Servern., `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`, wenn die App über https läuft. Die Weiterleitungen zu Auth0 sind Navigationen und werden von der CSP nicht eingeschränkt.
 
 **Lokale Entwicklung:** In derselben Auth0-Anwendung (oder in einer eigenen Dev-Anwendung) werden `http://localhost:5173/api/auth/callback` und `http://localhost:5173/login` als erlaubte URLs eingetragen. `PUBLIC_URL=http://localhost:5173`; Vite leitet `/api/auth/*` ebenfalls weiter. Das `Secure`-Flag entfällt nur, wenn `PUBLIC_URL` mit `http://localhost` beginnt.
 

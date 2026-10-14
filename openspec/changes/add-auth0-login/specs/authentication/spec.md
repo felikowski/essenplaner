@@ -49,14 +49,14 @@ Das System SHALL eine Abmeldung anbieten, die die Sitzung serverseitig ungültig
 - **THEN** ist die alte Sitzung ungültig, und Auth0 fragt erneut nach der Anmeldung, statt den Nutzer automatisch wieder anzumelden
 
 ### Requirement: Geschützte API
-Das System SHALL alle Endpunkte unter `/api/` außer den Anmelde-Endpunkten nur mit gültiger Sitzung beantworten. Ohne gültige Sitzung MUST die Antwort 401 mit `{"error": "unauthorized"}` lauten. Ändernde Anfragen (PUT, POST, DELETE) MUST abgewiesen werden, wenn sie von einer fremden Origin stammen. `/healthz` MUST ohne Anmeldung erreichbar bleiben.
+Das System SHALL alle Endpunkte unter `/api/` außer den Anmelde-Endpunkten nur mit gültiger Sitzung beantworten. Ohne gültige Sitzung MUST die Antwort 401 mit `{"error": "unauthorized"}` lauten. Ändernde Anfragen (POST, PUT, PATCH, DELETE) MUST abgewiesen werden, wenn sie von einer fremden Origin stammen. `/healthz` MUST ohne Anmeldung erreichbar bleiben.
 
 #### Scenario: Ohne Sitzung
 - **WHEN** ein Client ohne Sitzungs-Cookie `GET /api/recipes` aufruft
 - **THEN** antwortet das System mit 401
 
 #### Scenario: Fremde Origin
-- **WHEN** eine Seite auf einer anderen Domain im Browser eines angemeldeten Nutzers `PUT /api/days/2026-09-30` auslöst
+- **WHEN** eine Seite auf einer anderen Domain im Browser eines angemeldeten Nutzers `POST /api/entries` oder `PATCH /api/entries/{id}` auslöst
 - **THEN** antwortet das System mit 403, und der Plan bleibt unverändert
 
 #### Scenario: Sitzung abgelaufen im Frontend

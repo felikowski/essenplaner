@@ -12,7 +12,7 @@ Bisher läuft der Essenplaner nur lokal. Die Familie soll ihn am Handy von über
 - Eine frühere Version lässt sich manuell über den Workflow erneut deployen (Rollback)
 - Pull Requests werden ebenfalls getestet, aber nicht deployt
 - Geheimnisse (Auth0-Client-Secret, Freigabeliste) liegen nur auf dem VPS, nicht im Repository oder Image. Der Deploy-Zugang nutzt einen eigenen SSH-Schlüssel, der nur für CI gedacht ist.
-- Die Reihenfolge der Changes wird ergänzt: `add-auth0-login` → `add-vps-deployment` → `add-google-drive-recipes` → `add-recipe-url-import`
+- Die Change kommt direkt nach `add-auth0-login`, beide stehen hinter den Funktions-Changes (siehe `openspec/config.yaml`).
 
 ## Capabilities
 

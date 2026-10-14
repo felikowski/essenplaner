@@ -21,7 +21,7 @@
 ## 4. API
 
 - [ ] 4.1 Validierung gemäß „Eingaben prüfen“ mit 422 und `field`; Tabellentests für jede Grenze (Titel leer/201 Zeichen, Portionen 0/100/Text, 101 Zutaten, zu lange Zeile, Leerzeilen werden verworfen)
-- [ ] 4.2 `POST /api/recipes` (201) und `PUT /api/recipes/{id}` (200, 404, 422 bei Titel einer fremden Quelle); httptest-Tests, beide Endpunkte hinter Login und CSRF-Schutz
+- [ ] 4.2 `POST /api/recipes` (201) und `PUT /api/recipes/{id}` (200, 404, 422 bei Titel einer fremden Quelle); httptest-Tests
 - [ ] 4.3 `GET /api/recipes` liefert das neue Schema; Test für das Szenario „Strukturierte Zutat“ und für fehlende `quantity`/`unit`/`note`
 
 ## 5. Frontend
