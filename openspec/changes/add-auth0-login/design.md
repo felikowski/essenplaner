@@ -1,6 +1,6 @@
 ## Context
 
-Diese Change wird nach allen Funktions-Changes bis einschließlich `add-freezer` umgesetzt. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
+Diese Change wird nach allen Funktions-Changes umgesetzt, inklusive `add-nutrition` und `add-google-drive-recipes`. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
 
 ## Goals / Non-Goals
 

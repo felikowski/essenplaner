@@ -35,14 +35,14 @@ Das System SHALL erkennen, wenn eine Seite bereits importiert wurde. Grundlage i
 - **THEN** antwortet das System mit 200 und dem bestehenden Rezept, und im Katalog gibt es das Rezept nur einmal
 
 ### Requirement: Importiertes Rezept entfernen
-Das System SHALL unter `DELETE /api/recipes/{id}` ein per URL importiertes Rezept als nicht mehr verfügbar markieren. Rezepte aus anderen Quellen, etwa Drive-PDFs, MUST sich so nicht entfernen lassen.
+Das System SHALL unter `DELETE /api/recipes/{id}` ein per URL importiertes Rezept als nicht mehr verfügbar markieren. Rezepte aus anderen Quellen, etwa PDF-Rezepte, MUST sich so nicht entfernen lassen.
 
 #### Scenario: Entfernen
 - **WHEN** ein Nutzer ein importiertes Rezept entfernt, das noch in einem Wochenplan steht
 - **THEN** verschwindet es aus Katalog und Auswahl, und der Plan zeigt es mit dem Hinweis „Nicht mehr verfügbar“
 
-#### Scenario: Drive-Rezept
-- **WHEN** ein Client `DELETE /api/recipes/{id}` für ein Drive-Rezept aufruft
+#### Scenario: PDF-Rezept
+- **WHEN** ein Client `DELETE /api/recipes/{id}` für ein PDF-Rezept aufruft
 - **THEN** antwortet das System mit 409, und das Rezept bleibt unverändert
 
 ### Requirement: Sicheres Abrufen fremder Seiten

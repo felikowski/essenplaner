@@ -46,10 +46,10 @@ Das System SHALL unter `GET /api/sync/drive` den Zeitpunkt der letzten Synchroni
 - **THEN** bleiben alle Rezepte unverändert, und der Sync-Status zeigt den Fehler mit einem Hinweis auf die Ursache
 
 ### Requirement: PDF ansehen ohne eigenen Drive-Zugriff
-Das System SHALL die PDF eines Drive-Rezepts unter `GET /api/recipes/{id}/pdf` an angemeldete Nutzer ausliefern, und zwar mit `Content-Type: application/pdf` und zur Anzeige im Browser. Nutzer MUST dafür keinen eigenen Zugriff auf den Drive-Ordner benötigen. Der Link „PDF öffnen“ im Rezeptdetail MUST auf diese Adresse zeigen.
+Das System SHALL die PDF eines Drive-Rezepts unter `GET /api/recipes/{id}/pdf` an Nutzer des Essenplaners ausliefern, und zwar mit `Content-Type: application/pdf` und zur Anzeige im Browser. Nutzer MUST dafür keinen eigenen Zugriff auf den Drive-Ordner benötigen. Der Link „PDF öffnen“ im Rezeptdetail MUST auf diese Adresse zeigen.
 
 #### Scenario: PDF öffnen
-- **WHEN** ein angemeldetes Familienmitglied ohne Drive-Freigabe „PDF öffnen“ wählt
+- **WHEN** ein Familienmitglied ohne Drive-Freigabe „PDF öffnen“ wählt
 - **THEN** zeigt der Browser die PDF an
 
 #### Scenario: Nicht angemeldet
@@ -62,3 +62,10 @@ Das System SHALL für Drive-Rezepte ein Vorschaubild der ersten PDF-Seite als `i
 #### Scenario: Vorschau vorhanden
 - **WHEN** der Nutzer die Rezeptliste öffnet
 - **THEN** sehen Drive-Rezepte ein Vorschaubild ihrer PDF, sofern Drive eines erzeugt hat
+
+### Requirement: Nachgetragene Angaben bleiben bei der Synchronisierung erhalten
+Das System SHALL bei der Synchronisierung nur Titel, Verfügbarkeit, Ordnerpfad und Vorschaubild eines Drive-Rezepts aktualisieren. Von Hand gespeicherte Portionen, Zutaten und Zubereitung sowie Gang, Küche, Tags, Bewertung, „Ausprobieren“, Notizen und Zubereitungszeit MUST unverändert bleiben.
+
+#### Scenario: Umbenannt nach dem Nachtragen
+- **WHEN** ein Nutzer bei einem Drive-Rezept Zutaten nachgetragen und eine Notiz gespeichert hat und die PDF in Drive umbenannt wird
+- **THEN** übernimmt die nächste Synchronisierung den neuen Titel, und Zutaten und Notiz bleiben erhalten

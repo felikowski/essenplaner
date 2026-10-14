@@ -1,6 +1,6 @@
 ## Context
 
-Heute speichert `plan_days (date PRIMARY KEY, recipe_id)` ein Rezept pro Tag, und `PUT /api/days/{date}` setzt es. Das Frontend zeigt pro Tag eine `DayCard` mit einem Auswahldialog (`RecipePicker`). Nach `add-recipe-editor` sind Portionen eine Zahl. Nach `add-google-drive-recipes` haben Rezepte `available`. Motivation und Umfang: siehe proposal.md.
+Heute speichert `plan_days (date PRIMARY KEY, recipe_id)` ein Rezept pro Tag, und `PUT /api/days/{date}` setzt es. Das Frontend zeigt pro Tag eine `DayCard` mit einem Auswahldialog (`RecipePicker`). Nach `add-recipe-editor` sind Portionen eine Zahl. Nach `add-recipe-url-import` haben Rezepte `available`. Motivation und Umfang: siehe proposal.md.
 
 ## Goals / Non-Goals
 

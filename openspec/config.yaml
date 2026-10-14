@@ -22,10 +22,11 @@ context: |
   - UI-Texte auf Deutsch, Code und Bezeichner auf Englisch
 
   Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
-  add-google-drive-recipes -> add-recipe-url-import -> add-recipe-editor ->
-  add-planner-flexibility -> add-shopping-list -> add-recipe-organization ->
-  add-menus -> add-cooking-view -> add-freezer -> add-auth0-login ->
-  add-vps-deployment -> add-nutrition (optional).
+  add-recipe-url-import -> add-recipe-editor -> add-planner-flexibility ->
+  add-shopping-list -> add-recipe-organization -> add-menus ->
+  add-cooking-view -> add-freezer -> add-nutrition (optional) ->
+  add-google-drive-recipes -> add-auth0-login -> add-vps-deployment.
+  Zuerst die Plan-to-Eat-Funktionen, danach Drive, Login und Deployment.
   Bis add-auth0-login umgesetzt ist, laeuft die App nur lokal; oeffentlich
   deployt wird erst mit add-vps-deployment.
   Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.

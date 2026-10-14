@@ -1,6 +1,6 @@
 ## Context
 
-Das Frontend lädt heute alle Rezepte mit `GET /api/recipes` und filtert die Suche im Browser (`lib/recipes.ts`). Nach `add-recipe-editor` enthalten Rezepte strukturierte Zutaten, und `edited_fields` schützt Felder vor Drive-Sync und Import. Nach `add-planner-flexibility` gibt es den Verlauf, nach `add-shopping-list` die gemerkten Zusammenführungen (`shopping_aliases`). Motivation und Umfang: siehe proposal.md.
+Das Frontend lädt heute alle Rezepte mit `GET /api/recipes` und filtert die Suche im Browser (`lib/recipes.ts`). Nach `add-recipe-editor` enthalten Rezepte strukturierte Zutaten, und `edited_fields` schützt Felder vor einem erneuten Import. Nach `add-planner-flexibility` gibt es den Verlauf, nach `add-shopping-list` die gemerkten Zusammenführungen (`shopping_aliases`). Motivation und Umfang: siehe proposal.md.
 
 ## Goals / Non-Goals
 
@@ -19,9 +19,9 @@ Das Frontend lädt heute alle Rezepte mit `GET /api/recipes` und filtert die Suc
 
 **Spalten statt Schlüssel-Wert-Paaren.** `course`, `cuisine`, `rating`, `to_try`, `notes`, `total_minutes` werden Spalten an `recipes`, jeweils mit CHECK-Constraints. Tags kommen in `recipe_tags (recipe_id, tag, tag_key)` mit PK `(recipe_id, tag_key)`, wobei `tag_key` die Kleinschreibung ist. Die Schreibweise des ersten Vorkommens gewinnt. Beim Umbenennen und Zusammenführen ändert ein einziges `UPDATE … ON CONFLICT` alle Rezepte.
 
-**Getrennter Endpunkt für die Einordnung.** `PATCH /api/recipes/{id}/organization` statt `PUT /api/recipes/{id}` zu erweitern. Das `PUT` aus `add-recipe-editor` ersetzt das ganze Rezept. Für ein einzelnes Sternetippen wäre das unpassend, und Einordnung ist bei Drive-Rezepten ohnehin immer erlaubt. Im Formular „Bearbeiten“ wird die Einordnung als eigener Abschnitt gespeichert, mit `PUT` und `PATCH` nacheinander. Schlägt der zweite Aufruf fehl, meldet das Formular den Fehler gezielt für diesen Abschnitt.
+**Getrennter Endpunkt für die Einordnung.** `PATCH /api/recipes/{id}/organization` statt `PUT /api/recipes/{id}` zu erweitern. Das `PUT` aus `add-recipe-editor` ersetzt das ganze Rezept. Für ein einzelnes Sternetippen wäre das unpassend, und Einordnung ist bei PDF- und Web-Rezepten ohnehin immer erlaubt. Im Formular „Bearbeiten“ wird die Einordnung als eigener Abschnitt gespeichert, mit `PUT` und `PATCH` nacheinander. Schlägt der zweite Aufruf fehl, meldet das Formular den Fehler gezielt für diesen Abschnitt.
 
-**Schutz vor Überschreiben ohne `edited_fields`.** Die neuen Felder kommen aus keiner Quelle außer dem Import. Die Import-Funktion setzt sie nur, wenn sie `NULL` sind, und bei Tags nur, wenn das Rezept keine hat. Der Drive-Sync fasst sie nie an.
+**Schutz vor Überschreiben ohne `edited_fields`.** Die neuen Felder kommen aus keiner Quelle außer dem Import. Die Import-Funktion setzt sie nur, wenn sie `NULL` sind, und bei Tags nur, wenn das Rezept keine hat. Der spätere Drive-Sync fasst sie nie an (Requirement in `add-google-drive-recipes`).
 
 **Gang-Zuordnung beim Import.** Es gibt eine Tabelle mit deutschen und englischen Synonymen je Gang („Hauptspeise“, „Hauptgericht“, „Main Course“, „Abendessen“ → Hauptgericht; „Nachtisch“, „Dessert“ → Dessert; …). Der Vergleich ignoriert Groß- und Kleinschreibung. Ohne eindeutigen Treffer bleibt der Gang leer. `keywords` kann ein String mit Kommas oder eine Liste sein. Es werden die ersten zehn eindeutigen Einträge von 2 bis 30 Zeichen genommen.
 

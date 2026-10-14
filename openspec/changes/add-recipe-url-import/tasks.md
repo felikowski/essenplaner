@@ -11,16 +11,18 @@
 
 ## 3. API
 
-- [ ] 3.1 Migration `canonical_url` mit eindeutigem Teilindex; Migrationstest
-- [ ] 3.2 `POST /api/recipes/import`: 201 neu, 200 Duplikat (inklusive Reaktivierung), 400 ungültig/intern, 422 ohne Rezeptdaten, 502 bei Abruffehler; httptest-Tests mit Fake-Fetcher
-- [ ] 3.3 `DELETE /api/recipes/{id}`: `available = 0` für Web-Importe, 409 für andere Quellen, 404 unbekannt; Tests
+- [ ] 3.1 Migration `available` und `canonical_url` mit eindeutigem Teilindex; Migrationstest
+- [ ] 3.2 `available` in der Rezept-API: Liste ohne nicht verfügbare, Einzelabruf mit Flag, 422 beim Zuordnen per `PUT /api/days/{date}`; Tests
+- [ ] 3.3 `POST /api/recipes/import`: 201 neu, 200 Duplikat (inklusive Reaktivierung), 400 ungültig/intern, 422 ohne Rezeptdaten, 502 bei Abruffehler; httptest-Tests mit Fake-Fetcher
+- [ ] 3.4 `DELETE /api/recipes/{id}`: `available = 0` für Web-Importe, 409 für andere Quellen, 404 unbekannt; Tests
 
 ## 4. Frontend
 
 - [ ] 4.1 `importRecipe` und `deleteRecipe` in `PlannerApi` (Http- und Mock-Implementierung); Tests
 - [ ] 4.2 Dialog „Rezept hinzufügen“ mit URL-Feld, Ladezustand, Fehlermeldung ohne Verlust der Eingabe und Navigation zum Detail; Tests für Erfolg, Duplikat und Fehler
-- [ ] 4.3 „Entfernen“ im Detail von Web-Rezepten mit Bestätigung; Bilder mit `referrerpolicy="no-referrer"` und Ausblenden bei Ladefehler; Tests
-- [ ] 4.4 Ende-zu-Ende manuell prüfen: je ein echtes Rezept von drei verschiedenen Seiten importieren, einplanen, entfernen und erneut importieren
+- [ ] 4.3 Hinweis „Nicht mehr verfügbar“ im Plan und im Detail, Ausblenden in Liste und Auswahl; Tests
+- [ ] 4.4 „Entfernen“ im Detail von Web-Rezepten mit Bestätigung; Bilder mit `referrerpolicy="no-referrer"` und Ausblenden bei Ladefehler; Tests
+- [ ] 4.5 Ende-zu-Ende manuell prüfen: je ein echtes Rezept von drei verschiedenen Seiten importieren, einplanen, entfernen und erneut importieren
 
 ## 5. Abschluss
 

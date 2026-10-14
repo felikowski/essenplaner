@@ -1,6 +1,6 @@
 ## Context
 
-Es gibt ein Backend mit SQLite, das bis `add-auth0-login` nur lokal läuft. Rezepte haben `origin` (`seed`, `drive`, `web-import`) und `source_kind`. Die PDFs liegen in einem Drive-Ordner der Familie, der einem privaten Google-Konto gehört.
+Diese Change kommt nach allen Funktions-Changes (bis `add-freezer` bzw. `add-nutrition`). Es gibt ein Backend mit SQLite, das bis `add-auth0-login` nur lokal läuft. Rezepte haben `origin` (`seed`, `web-import`, `manual`, künftig `drive`), `source_kind`, `available` und `edited_fields`. Auf Rezepte verweisen Planeinträge, Menüs, die Einkaufsliste und das Gefrierfach. Die PDFs liegen in einem Drive-Ordner der Familie, der einem privaten Google-Konto gehört.
 
 ## Goals / Non-Goals
 
@@ -33,7 +33,9 @@ Abgleich in einer Transaktion: `drive_files(file_id PK, recipe_id, name, modifie
 
 **Vorschaubilder:** Die `thumbnailLink`s von Drive sind kurzlebig und brauchen Authentifizierung. Der Proxy lädt das Bild beim ersten Abruf mit dem Dienstkonto und legt es in einem kleinen Datei-Cache (`/data/thumbnails/<fileId>-<md5>.jpg`) ab. Ändert sich `md5Checksum`, wird es neu erzeugt.
 
-**Beispielrezepte:** Ist Drive konfiguriert, entfällt der Seed. Beim ersten erfolgreichen Drive-Sync werden Beispielrezepte (`origin = 'seed'`) samt ihren Plan-Einträgen gelöscht. Das sind ausschließlich Testdaten.
+**Beispielrezepte:** Ist Drive konfiguriert, entfällt der Seed. Beim ersten erfolgreichen Drive-Sync werden Beispielrezepte (`origin = 'seed'`) als nicht mehr verfügbar markiert, statt sie zu löschen. Bis dahin können Planeinträge, Menüs, Einkaufsliste und Gefrierfach auf sie verweisen, und Löschen würde diese Verweise brechen.
+
+**Bearbeitete Felder bleiben erhalten:** Der Sync schreibt über die gemeinsame Upsert-Funktion aus `add-recipe-editor`, die Felder in `edited_fields` auslässt. Er setzt nur Titel, `available`, `drive_path` und Vorschaubild. Zutaten, Portionen, Zubereitung und die Einordnung aus `add-recipe-organization` fasst er nie an.
 
 ## Risks / Trade-offs
 
@@ -44,4 +46,4 @@ Abgleich in einer Transaktion: `drive_files(file_id PK, recipe_id, name, modifie
 
 ## Migration Plan
 
-Neue Migration: `recipes.available` (Standard 1), `recipes.drive_path`, Tabellen `drive_files` und `sync_runs`. Deploy-Schritte: Dienstkonto anlegen, Ordner freigeben, Secret und `DRIVE_FOLDER_ID` setzen, deployen, im Frontend „Jetzt synchronisieren“ wählen. Rollback: Variablen entfernen und das vorherige Binary deployen; Drive-Rezepte bleiben in der Datenbank erhalten.
+Neue Migration: `recipes.drive_path`, Tabellen `drive_files` und `sync_runs`. Deploy-Schritte: Dienstkonto anlegen, Ordner freigeben, Secret und `DRIVE_FOLDER_ID` setzen, deployen, im Frontend „Jetzt synchronisieren“ wählen. Rollback: Variablen entfernen und das vorherige Binary deployen; Drive-Rezepte bleiben in der Datenbank erhalten.

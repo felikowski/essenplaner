@@ -1,6 +1,6 @@
 ## Context
 
-Die Tabelle `recipes` speichert Zutaten und Schritte als JSON-Listen von Strings (`ingredients_json`, `instructions_json`) und Portionen als Text (`servings`, zum Beispiel „4 Portionen“). `source_kind` ist per CHECK auf `pdf` und `web` begrenzt. Nach den vorangehenden Changes gibt es zusätzlich `origin` (`seed`, `drive`, `web-import`), `available` und `canonical_url`. Die Drive-Synchronisierung und der URL-Import schreiben Rezepte bisher vollständig.
+Die Tabelle `recipes` speichert Zutaten und Schritte als JSON-Listen von Strings (`ingredients_json`, `instructions_json`) und Portionen als Text (`servings`, zum Beispiel „4 Portionen“). `source_kind` ist per CHECK auf `pdf` und `web` begrenzt. Nach `add-recipe-url-import` gibt es zusätzlich `origin` (`seed`, `web-import`), `available` und `canonical_url`. Der URL-Import schreibt Rezepte bisher vollständig. Die Drive-Synchronisierung kommt erst später (`add-google-drive-recipes`).
 
 Migrationen sind nummerierte SQL-Dateien, die `internal/store` beim Start in je einer Transaktion ausführt. Das Frontend greift über das Interface `PlannerApi` zu, mit einer Http- und einer Mock-Implementierung.
 
@@ -36,9 +36,9 @@ Unbekannte Einheiten wie „1 Schuss Sahne“ ergeben Menge 1 und Name „Schuss
 
 **Portionen als ganze Zahl.** Für das Skalieren reicht eine ganze Zahl. Angaben wie „1 Kuchen (26 cm)“ verlieren beim Umwandeln die Form, und Teilportionen sind in Familienrezepten selten. Die Spalte wird `servings INTEGER`.
 
-**Geschützte Felder.** Eine neue Spalte `edited_fields` (JSON-Liste, zum Beispiel `["ingredients"]`) merkt sich, welche Felder von Hand geändert wurden. `PUT` fügt nur die Felder hinzu, deren Wert sich gegenüber dem gespeicherten Stand ändert. Wer nur Zutaten nachträgt, sperrt also nicht die Portionen. Drive-Sync und URL-Import schreiben über eine gemeinsame Store-Funktion, die Felder aus `edited_fields` auslässt. Eine Alternative wäre eine separate Tabelle mit Overrides, die beim Lesen darübergelegt werden. Das wäre sauberer im Sinne von „Quelle bleibt unverändert“, verdoppelt aber jede Leseabfrage.
+**Geschützte Felder.** Eine neue Spalte `edited_fields` (JSON-Liste, zum Beispiel `["ingredients"]`) merkt sich, welche Felder von Hand geändert wurden. `PUT` fügt nur die Felder hinzu, deren Wert sich gegenüber dem gespeicherten Stand ändert. Wer nur Zutaten nachträgt, sperrt also nicht die Portionen. Der URL-Import schreibt über eine gemeinsame Store-Funktion, die Felder aus `edited_fields` auslässt. Der spätere Drive-Sync nutzt dieselbe Funktion. Eine Alternative wäre eine separate Tabelle mit Overrides, die beim Lesen darübergelegt werden. Das wäre sauberer im Sinne von „Quelle bleibt unverändert“, verdoppelt aber jede Leseabfrage.
 
-**Titel nur bei eigenen Rezepten.** Bei Drive-Rezepten kommt der Titel aus dem Dateinamen, und die Familie benennt dort um. Ein zweiter Titel im Essenplaner würde verwirren. `PUT` akzeptiert `title` bei anderen Quellen nur unverändert, sonst gibt es 422. Das Formular zeigt den Titel dort als Text statt als Feld.
+**Titel nur bei eigenen Rezepten.** Bei PDF-Rezepten kommt der Titel künftig aus dem Dateinamen in Drive, und die Familie benennt dort um. Bei Web-Rezepten kommt er von der Seite. Ein zweiter Titel im Essenplaner würde verwirren. `PUT` akzeptiert `title` bei anderen Quellen nur unverändert, sonst gibt es 422. Das Formular zeigt den Titel dort als Text statt als Feld.
 
 **IDs eigener Rezepte.** Zufällige IDs mit Präfix (`m-` + 12 Hex-Zeichen aus `crypto/rand`) statt eines Slugs aus dem Titel. Titel sind änderbar und nicht eindeutig, und eine ID darf sich nicht ändern, weil Wochenpläne darauf zeigen.
 

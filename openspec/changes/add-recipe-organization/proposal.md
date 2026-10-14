@@ -1,6 +1,6 @@
 ## Why
 
-Mit Drive-PDFs, Web-Importen und eigenen Rezepten wächst der Katalog schnell auf mehrere hundert Rezepte. Eine Suche nur im Titel reicht dann nicht mehr. Die Familie will „schnelle Hauptgerichte, die alle mögen“ finden, „was mache ich mit der Zucchini?“ beantworten und neue Rezepte zum Ausprobieren vormerken. Siehe `docs/plantoeat-abgleich.md`, Abschnitt Rezeptbuch.
+Mit Web-Importen, eigenen Rezepten und später den Drive-PDFs wächst der Katalog schnell auf mehrere hundert Rezepte. Eine Suche nur im Titel reicht dann nicht mehr. Die Familie will „schnelle Hauptgerichte, die alle mögen“ finden, „was mache ich mit der Zucchini?“ beantworten und neue Rezepte zum Ausprobieren vormerken. Siehe `docs/plantoeat-abgleich.md`, Abschnitt Rezeptbuch.
 
 ## What Changes
 

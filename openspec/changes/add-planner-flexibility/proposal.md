@@ -32,4 +32,4 @@ Nicht Teil dieser Change: Drag & Drop, frei benennbare Mahlzeiten, Menüs (`add-
 - Backend: neue Tabelle `plan_entries` statt `plan_days` (Migration überführt bestehende Tage als Abendessen), neue Tabelle `household_settings`, neue Endpunkte unter `/api/entries`, `/api/weeks/{week}/copy`, `/api/settings` und `/api/recipes/{id}/history`
 - Frontend: `WeekPage` und `DayCard` werden umgebaut, neuer Dialog für Einträge, neue Seite `/einstellungen`, Druck-CSS, Verlauf in der Rezeptdetailansicht
 - Setzt `add-recipe-editor` voraus, weil Portionen dort zur Zahl werden
-- Die Anforderung „Nicht mehr verfügbare Rezepte“ (aus `add-google-drive-recipes`) nennt `PUT /api/days/{date}`; ihr Szenario wird beim Archivieren auf den neuen Endpunkt umgestellt.
+- Die Anforderung „Nicht mehr verfügbare Rezepte“ (aus `add-recipe-url-import`) nennt `PUT /api/days/{date}`; ihr Szenario wird beim Archivieren auf den neuen Endpunkt umgestellt.

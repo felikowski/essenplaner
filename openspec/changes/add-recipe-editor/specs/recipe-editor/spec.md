@@ -19,11 +19,11 @@ Das System SHALL unter `POST /api/recipes` ein Rezept mit der Quellenart `manual
 Das System SHALL unter `PUT /api/recipes/{id}` die Portionen, Zutaten und Zubereitung eines Rezepts ersetzen, unabhängig von seiner Quellenart. Den Titel MUST das System nur bei Rezepten der Quellenart `manual` ändern. Die Antwort MUST das vollständige, aktualisierte Rezept mit Status 200 enthalten. Im Frontend MUST das Bearbeiten über „Bearbeiten“ in der Detailansicht erreichbar sein. Verlässt der Nutzer das Formular mit ungespeicherten Änderungen, MUST das System nachfragen.
 
 #### Scenario: Zutaten zu einem PDF-Rezept nachtragen
-- **WHEN** ein Nutzer bei einem Drive-PDF-Rezept 4 Portionen und fünf Zutaten einträgt und speichert
+- **WHEN** ein Nutzer bei einem PDF-Rezept 4 Portionen und fünf Zutaten einträgt und speichert
 - **THEN** zeigt die Detailansicht die Zutaten und weiterhin den Link „PDF öffnen“
 
-#### Scenario: Titel eines Drive-Rezepts
-- **WHEN** ein Client `PUT /api/recipes/{id}` für ein Drive-Rezept mit einem geänderten `title` sendet
+#### Scenario: Titel eines PDF-Rezepts
+- **WHEN** ein Client `PUT /api/recipes/{id}` für ein PDF-Rezept mit einem geänderten `title` sendet
 - **THEN** antwortet das System mit 422, und das Rezept bleibt unverändert
 
 #### Scenario: Unbekanntes Rezept
@@ -84,18 +84,14 @@ Das Frontend SHALL im Formular unter jeder Zutatenzeile anzeigen, wie sie zerleg
 - **THEN** stimmen Menge, Einheit, Name und Hinweis überein
 
 ### Requirement: Eigenes Rezept entfernen
-Das System SHALL unter `DELETE /api/recipes/{id}` auch Rezepte der Quellenart `manual` als nicht mehr verfügbar markieren. Im Frontend MUST das Entfernen nach einer Bestätigung in der Detailansicht möglich sein. Drive-Rezepte MUST sich weiterhin nicht entfernen lassen.
+Das System SHALL unter `DELETE /api/recipes/{id}` auch Rezepte der Quellenart `manual` als nicht mehr verfügbar markieren. Im Frontend MUST das Entfernen nach einer Bestätigung in der Detailansicht möglich sein. PDF-Rezepte MUST sich weiterhin nicht entfernen lassen.
 
 #### Scenario: Entfernen
 - **WHEN** ein Nutzer ein eigenes Rezept entfernt, das in einem Wochenplan steht
 - **THEN** verschwindet es aus Katalog und Auswahl, und der Plan zeigt es mit dem Hinweis „Nicht mehr verfügbar“
 
 ### Requirement: Nachgetragene Angaben bleiben erhalten
-Das System SHALL von Hand gespeicherte Portionen, Zutaten und Zubereitung bei der Drive-Synchronisierung und bei einem erneuten Import derselben URL nicht überschreiben. Felder, die nie von Hand bearbeitet wurden, MUST weiterhin aus der Quelle aktualisiert werden.
-
-#### Scenario: Drive-Synchronisierung
-- **WHEN** ein Nutzer bei einem Drive-Rezept Zutaten nachgetragen hat und die PDF in Drive umbenannt wird
-- **THEN** übernimmt die nächste Synchronisierung den neuen Titel, und die Zutaten bleiben erhalten
+Das System SHALL von Hand gespeicherte Portionen, Zutaten und Zubereitung bei einem erneuten Import derselben URL nicht überschreiben. Felder, die nie von Hand bearbeitet wurden, MUST weiterhin aus der Quelle aktualisiert werden.
 
 #### Scenario: Erneuter Import
 - **WHEN** ein Nutzer die Zutaten eines importierten Rezepts korrigiert hat und dieselbe URL erneut importiert

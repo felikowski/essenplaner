@@ -1,6 +1,6 @@
 ## Context
 
-Rezepte haben bereits `source.kind = 'web'` (seit `add-frontend-mock-data`), `origin` und `available` (seit `add-google-drive-recipes`). Der Server läuft zunächst nur lokal, später öffentlich hinter Login (`add-auth0-login`, `add-vps-deployment`). Nach diesem Change darf er selbst Anfragen ins Internet stellen. Das ist das Hauptrisiko des Changes, und der SSRF-Schutz muss schon lokal vollständig sein, weil er beim späteren Deploy nicht erneut angefasst wird.
+Rezepte haben bereits `source.kind = 'web'` (seit `add-frontend-mock-data`), `origin` (`seed`, später `web-import`, `manual`, `drive`) seit `add-go-backend`. `available` führt diese Change ein. Der Server läuft zunächst nur lokal, später öffentlich hinter Login (`add-auth0-login`, `add-vps-deployment`). Nach diesem Change darf er selbst Anfragen ins Internet stellen. Das ist das Hauptrisiko des Changes, und der SSRF-Schutz muss schon lokal vollständig sein, weil er beim späteren Deploy nicht erneut angefasst wird.
 
 ## Goals / Non-Goals
 
@@ -54,4 +54,4 @@ Die Alternative, jede URL nur einmal vor dem Abruf per DNS zu prüfen, verwerfen
 
 ## Migration Plan
 
-Migration: `recipes.canonical_url` plus ein eindeutiger Teilindex `WHERE origin = 'web-import'`. Für das Rollback ist nichts nötig, weil importierte Rezepte als normale Web-Rezepte erhalten bleiben.
+Migration: `recipes.available` (INTEGER NOT NULL DEFAULT 1), `recipes.canonical_url` plus ein eindeutiger Teilindex `WHERE origin = 'web-import'`. Für das Rollback ist nichts nötig, weil importierte Rezepte als normale Web-Rezepte erhalten bleiben.

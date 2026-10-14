@@ -74,9 +74,12 @@ Erfassen oder eine Extraktion.
 
 ## Geplante Changes
 
-Alle Lücken sind als OpenSpec-Changes geplant. Sie folgen auf Drive und
-URL-Import, und erst danach kommen Auth0-Login und VPS-Deployment, weil die
-App bis dahin nur lokal läuft:
+Alle Lücken sind als OpenSpec-Changes geplant. Zuerst kommen die
+Plan-to-Eat-Funktionen, beginnend mit dem URL-Import (Gegenstück zum Recipe
+Clipper). Danach folgen Google Drive, Auth0-Login und VPS-Deployment. Bis
+dahin läuft die App nur lokal:
+
+0. `add-recipe-url-import`: Rezepte per Link importieren
 
 1. `add-recipe-editor`: Rezepte anlegen und bearbeiten, strukturierte Zutaten,
    Portionen als Zahl
@@ -91,9 +94,9 @@ App bis dahin nur lokal läuft:
 6. `add-cooking-view`: Kochansicht, Portionen umrechnen, Timer,
    Ersatz-Vorschläge, Rezept teilen und drucken
 7. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
-Danach `add-auth0-login` und `add-vps-deployment`, zum Schluss:
-
 8. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
+
+Danach: `add-google-drive-recipes` → `add-auth0-login` → `add-vps-deployment`.
 
 Die Planerflexibilität steht vor der Einkaufsliste, weil die Liste Portionen
 pro Eintrag, Einzelzutaten und Reste braucht.

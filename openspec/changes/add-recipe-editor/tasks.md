@@ -14,9 +14,9 @@
 ## 3. Store: Anlegen, Bearbeiten, geschützte Felder
 
 - [ ] 3.1 `CreateManualRecipe` mit ID `m-` + 12 Hex-Zeichen; Test prüft ID-Format, `origin`, `source_kind = 'manual'` und zerlegte Zutaten
-- [ ] 3.2 `UpdateRecipe` ersetzt Portionen, Zutaten und Schritte und ergänzt `edited_fields` nur für tatsächlich geänderte Felder; der Titel ist nur bei `manual` änderbar; Tests für alle drei Felder einzeln und für den Titel bei Drive
-- [ ] 3.3 Drive-Sync und URL-Import schreiben über eine gemeinsame Upsert-Funktion, die Felder aus `edited_fields` auslässt; Tests für die Szenarien „Drive-Synchronisierung“ und „Erneuter Import“
-- [ ] 3.4 Entfernen auf `manual` erweitern (Drive weiterhin 409); Test
+- [ ] 3.2 `UpdateRecipe` ersetzt Portionen, Zutaten und Schritte und ergänzt `edited_fields` nur für tatsächlich geänderte Felder; der Titel ist nur bei `manual` änderbar; Tests für alle drei Felder einzeln und für den Titel bei einem PDF-Rezept
+- [ ] 3.3 Der URL-Import schreibt über eine gemeinsame Upsert-Funktion, die Felder aus `edited_fields` auslässt (sie ist für den späteren Drive-Sync wiederverwendbar); Test für das Szenario „Erneuter Import“
+- [ ] 3.4 Entfernen auf `manual` erweitern (PDF-Rezepte weiterhin 409); Test
 
 ## 4. API
 

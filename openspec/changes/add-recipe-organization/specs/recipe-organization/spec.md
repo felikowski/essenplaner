@@ -5,7 +5,7 @@ Einen wachsenden Rezeptkatalog so einordnen, dass die Familie schnell das passen
 ## ADDED Requirements
 
 ### Requirement: Rezepte einordnen
-Das System SHALL für jedes Rezept unabhängig von seiner Quelle die folgenden Angaben speichern und bearbeiten lassen: Gang (einer aus Hauptgericht, Beilage, Suppe, Salat, Vorspeise, Dessert, Frühstück, Snack, Gebäck, Getränk, Sauce & Dip), Küche (Text bis 50 Zeichen), Tags (bis 20, je bis 30 Zeichen, ohne Groß- und Kleinschreibung eindeutig), Bewertung (1 bis 5 oder keine), „Ausprobieren“ (ja/nein), Notizen (bis 2000 Zeichen) und Zubereitungszeit (1 bis 1440 Minuten oder keine). Alle Angaben MUST optional sein. Drive-Synchronisierung und URL-Import MUST gesetzte Angaben nicht überschreiben. Die Detailansicht MUST die gesetzten Angaben zeigen, die Bewertung als Sterne, die sich direkt antippen lassen.
+Das System SHALL für jedes Rezept unabhängig von seiner Quelle die folgenden Angaben speichern und bearbeiten lassen: Gang (einer aus Hauptgericht, Beilage, Suppe, Salat, Vorspeise, Dessert, Frühstück, Snack, Gebäck, Getränk, Sauce & Dip), Küche (Text bis 50 Zeichen), Tags (bis 20, je bis 30 Zeichen, ohne Groß- und Kleinschreibung eindeutig), Bewertung (1 bis 5 oder keine), „Ausprobieren“ (ja/nein), Notizen (bis 2000 Zeichen) und Zubereitungszeit (1 bis 1440 Minuten oder keine). Alle Angaben MUST optional sein. Ein erneuter URL-Import MUST gesetzte Angaben nicht überschreiben. Die Detailansicht MUST die gesetzten Angaben zeigen, die Bewertung als Sterne, die sich direkt antippen lassen.
 
 #### Scenario: Einordnen
 - **WHEN** ein Nutzer bei „Hähnchen-Curry“ Gang „Hauptgericht“, Küche „Indisch“, die Tags „schnell“ und „Kinder mögen’s“ und 4 Sterne speichert
@@ -20,8 +20,8 @@ Das System SHALL für jedes Rezept unabhängig von seiner Quelle die folgenden A
 - **THEN** speichert das System den Tag nur einmal
 
 #### Scenario: Notiz
-- **WHEN** ein Nutzer bei einem Drive-Rezept die Notiz „mit halber Chilimenge“ speichert
-- **THEN** zeigt die Detailansicht die Notiz, und die nächste Synchronisierung ändert sie nicht
+- **WHEN** ein Nutzer bei einem PDF-Rezept die Notiz „mit halber Chilimenge“ speichert
+- **THEN** zeigt die Detailansicht die Notiz
 
 ### Requirement: Vorbelegung beim Import
 Das System SHALL beim URL-Import Gang, Küche, Tags und Zeit aus den Rezeptdaten übernehmen, sofern das Rezept diese Angaben noch nicht hat. `recipeCategory` MUST nur übernommen werden, wenn es sich eindeutig einem Gang zuordnen lässt. `keywords` MUST höchstens zehn Tags ergeben, `totalTime` MUST aus der ISO-8601-Dauer in Minuten umgerechnet werden.
