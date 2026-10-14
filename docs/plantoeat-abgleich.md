@@ -72,24 +72,28 @@ Der Essenplaner kennt Rezepte bisher nur als Titel, Drive-PDFs liefern gar
 keine Zutaten. Der URL-Import liefert sie, für PDFs bräuchte es manuelles
 Erfassen oder eine Extraktion.
 
-## Vorschlag für neue Changes
+## Geplante Changes
 
-Nach den bereits geplanten Changes (Auth0 → VPS → Drive → URL-Import):
+Alle Lücken sind als OpenSpec-Changes geplant, in dieser Reihenfolge nach
+Auth0 → VPS → Drive → URL-Import:
 
-1. `add-recipe-editor`: Rezepte anlegen und bearbeiten, strukturierte Zutaten
-   (Menge, Einheit, Name), Portionen, Zubereitungsschritte; Zutaten auch für
-   Drive-Rezepte nachtragen
-2. `add-shopping-list`: Einkaufsliste aus einer Woche erzeugen, zusammenfassen,
-   eigene Artikel, Kategorien/Gänge, abhaken, Vorratsliste
-3. `add-recipe-organization`: Tags, Gang, Bewertung, Filter, Suche nach Zutat,
-   Warteschlange
-4. `add-planner-flexibility`: mehrere Mahlzeiten pro Tag, Notizen, Verschieben,
-   Portionen im Plan, Reste, Woche kopieren
-5. `add-menus`: Pläne als Menü speichern und in eine Woche übernehmen
-6. `add-cooking-view`: Kochansicht mit Wake Lock, Schrittmodus, Timer,
-   Portionen skalieren
-7. `add-freezer`: vorgekochte Gerichte mit Menge und Datum
-8. optional `add-nutrition`: Nährwerte, sinnvoll erst mit stabilem Zutatenmodell
+1. `add-recipe-editor`: Rezepte anlegen und bearbeiten, strukturierte Zutaten,
+   Portionen als Zahl
+2. `add-planner-flexibility`: Mahlzeiten, mehrere Einträge, Notizen,
+   Einzelzutaten, Portionen pro Eintrag, Reste, Verschieben, Woche kopieren,
+   Verlauf, Drucken, Einstellungsseite
+3. `add-shopping-list`: Einkaufsliste aus dem Plan, Zusammenfassen,
+   Kategorien, Geschäfte, Abhaken, Vorratsliste, Teilen
+4. `add-recipe-organization`: Gang, Küche, Tags, Bewertung, Ausprobieren,
+   Notizen, Zeit, Filter, Suche nach Zutaten
+5. `add-menus`: Pläne als Menü speichern und einplanen
+6. `add-cooking-view`: Kochansicht, Portionen umrechnen, Timer,
+   Ersatz-Vorschläge, Rezept teilen und drucken
+7. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
+8. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
+
+Die Planerflexibilität steht vor der Einkaufsliste, weil die Liste Portionen
+pro Eintrag, Einzelzutaten und Reste braucht.
 
 Bewusst weggelassen: Lieferdienste, Freunde/Teilen zwischen Accounts,
-Umrechnung ins metrische System.
+Umrechnung ins metrische System, Cooking Challenges.
