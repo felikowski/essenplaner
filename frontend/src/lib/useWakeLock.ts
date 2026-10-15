@@ -13,6 +13,7 @@ interface WakeLockLike {
  * unsichtbar wird; beim Zurückkehren wird sie neu angefordert. Ohne Unterstützung passiert nichts.
  */
 export function useWakeLock() {
+  const supported = Boolean((navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock)
   useEffect(() => {
     const wakeLock = (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock
     if (!wakeLock) return
@@ -39,4 +40,5 @@ export function useWakeLock() {
       void sentinel?.release().catch(() => {})
     }
   }, [])
+  return { supported }
 }

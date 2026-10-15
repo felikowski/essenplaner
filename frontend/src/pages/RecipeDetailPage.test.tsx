@@ -27,7 +27,7 @@ function ingredientTexts() {
   const list = screen.getByRole('heading', { name: /^Zutaten/ }).parentElement!.querySelector('ul')!
   return within(list)
     .getAllByRole('listitem')
-    .map((item) => item.textContent)
+    .map((item) => item.querySelector(':scope > span:first-child')?.textContent ?? item.textContent)
 }
 
 function stepTexts() {
@@ -97,6 +97,7 @@ describe('Rezeptdetail', () => {
     expect(screen.queryByRole('link', { name: 'Original ansehen' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /^Zutaten/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Zubereitung' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Kochen' })).not.toBeInTheDocument()
   })
 
   it('meldet ein unbekanntes Rezept und führt zurück zur Liste', async () => {

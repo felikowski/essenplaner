@@ -33,7 +33,10 @@ func Handler(fsys fs.FS) http.Handler {
 
 		name := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
 		if name != "" && name != "index.html" && isFile(fsys, name) {
-			if strings.HasPrefix(name, "assets/") {
+			if name == "sw.js" {
+				// Der Browser muss Aktualisierungen des Service Workers immer prüfen.
+				w.Header().Set("Cache-Control", "no-cache")
+			} else if strings.HasPrefix(name, "assets/") {
 				// Vite versieht diese Dateien mit einem Hash im Namen.
 				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 			}

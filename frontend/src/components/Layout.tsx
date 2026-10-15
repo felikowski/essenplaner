@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { SettingsProvider } from '../lib/settings'
+import { TimerProvider } from '../lib/timers'
+import { TimerBar } from './TimerBar'
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -28,11 +30,14 @@ export function Layout() {
           </nav>
         </div>
       </header>
-      <main className="app-main">
-        <SettingsProvider>
-          <Outlet />
-        </SettingsProvider>
-      </main>
+      <TimerProvider>
+        <TimerBar />
+        <main className="app-main">
+          <SettingsProvider>
+            <Outlet />
+          </SettingsProvider>
+        </main>
+      </TimerProvider>
     </div>
   )
 }

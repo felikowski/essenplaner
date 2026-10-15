@@ -12,6 +12,7 @@ import { StaplesPage } from './pages/StaplesPage'
 import { WeekPage } from './pages/WeekPage'
 import { MenusPage } from './pages/MenusPage'
 import { MenuDetailPage } from './pages/MenuDetailPage'
+import { CookingPage } from './pages/CookingPage'
 
 export function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ export function AppRoutes() {
         <Route path="rezepte/neu" element={<RecipeEditPage />} />
         <Route path="rezepte/zutaten" element={<IngredientSearchPage />} />
         <Route path="rezepte/:id" element={<RecipeDetailPage />} />
+        <Route path="rezepte/:id/kochen" element={<CookingPage />} />
         <Route path="rezepte/:id/bearbeiten" element={<RecipeEditPage />} />
         <Route path="einkauf" element={<ShoppingPage />} />
         <Route path="einkauf/vorrat" element={<StaplesPage />} />

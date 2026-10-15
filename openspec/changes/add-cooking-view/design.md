@@ -1,6 +1,6 @@
 ## Context
 
-Nach `add-servings-scaling` gibt es in der Detailansicht eine Portionenauswahl mit URL-Parameter `?portionen=`, die Umrechnung in `lib/scale.ts` und die Auflösung von Mengen-Varianten in Schritten (`lib/stepAmounts.ts`). Der Wochenplan verlinkt bereits mit den Portionen des Eintrags. `add-shopping-list` bringt einen Wake-Lock-Hook mit. Die App ist eine normale Vite-SPA ohne Service Worker. Motivation und Umfang: siehe proposal.md.
+Nach `add-servings-scaling` gibt es in der Detailansicht eine Portionenauswahl mit URL-Parameter `?portionen=`, die Umrechnung in `lib/scale.ts` und die Auflösung von Mengen-Varianten in Schritten (`lib/stepAmounts.ts`). Der Wochenplan verlinkt bereits mit den Portionen des Eintrags. `add-shopping-list` hat den gemeinsam nutzbaren Hook `lib/useWakeLock.ts` bereits eingeführt. Die App ist eine normale Vite-SPA ohne Service Worker. Motivation und Umfang: siehe proposal.md.
 
 ## Goals / Non-Goals
 
@@ -35,7 +35,9 @@ Nach `add-servings-scaling` gibt es in der Detailansicht eine Portionenauswahl m
 
 **Ersatz-Tabelle** als statische Datei `lib/substitutions.ts`: Schlüssel ist der Zutatenname in Kleinbuchstaben inklusive Varianten, Wert ist eine Liste von Vorschlägen mit Verhältnis. Etwa 30 bis 40 Einträge, recherchiert aus allgemeinem Küchenwissen und in eigenen Worten formuliert.
 
-**Wake Lock:** Der Hook aus `add-shopping-list` wird nach `lib/useWakeLock.ts` verschoben und von beiden Seiten genutzt.
+**Wake Lock:** Der vorhandene Hook `lib/useWakeLock.ts` wird von Einkaufsliste und Kochansicht genutzt. Er wird um einen Status ergänzt, damit die Kochansicht fehlende Browser-Unterstützung dezent erklären kann; die Einkaufsliste braucht diesen Status nicht auszuwerten.
+
+**Einbindung in die bestehende App-Hülle.** Der `TimerProvider` umschließt im `Layout` die Timer-Leiste und den Seiteninhalt. Der vorhandene `SettingsProvider` bleibt für alle Seiten wirksam. So sind Timer auf jeder Route sichtbar, ohne einen zusätzlichen Hauptnavigationspunkt in die bei 375 px bereits volle Kopfzeile einzubauen.
 
 ## Risks / Trade-offs
 

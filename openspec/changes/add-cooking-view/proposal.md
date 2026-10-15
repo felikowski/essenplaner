@@ -25,6 +25,6 @@ Nicht Teil dieser Change: Sprachsteuerung, Umrechnung zwischen Einheitensystemen
 
 ## Impact
 
-- Frontend: neue Route `/rezepte/:id/kochen`, Timer-Leiste im Layout, Timer-Speicher im `localStorage`, Wake-Lock-Hook (gemeinsam mit der Einkaufsliste), statische Ersatz-Tabelle, Druck-Stylesheet für Rezepte, Service Worker für Benachrichtigungen
+- Frontend: neue Route `/rezepte/:id/kochen`, Timer-Leiste im Layout, Timer-Speicher im `localStorage`, vorhandener Wake-Lock-Hook (gemeinsam mit der Einkaufsliste), statische Ersatz-Tabelle, Druck-Stylesheet für Rezepte, Service Worker für Benachrichtigungen
 - Backend: keine Änderung außer der Auslieferung des Service Workers mit passendem Scope und Cache-Header
 - Setzt `add-servings-scaling` (Portionenauswahl, Umrechnung, Links aus dem Plan) voraus

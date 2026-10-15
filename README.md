@@ -159,6 +159,22 @@ mit den Portionen des Eintrags. Schritte mit Mengen in eckigen Klammern, wie Hel
 passende, wird umgerechnet und die Menge kursiv markiert. Gespeichert wird dabei nichts. Die Regeln stehen
 in `frontend/src/lib/scale.ts` und `frontend/src/lib/stepAmounts.ts`.
 
+## Kochen und Timer
+
+Rezepte mit Zutaten oder Zubereitung haben eine Kochansicht mit großer Schrift. Im Überblick lassen sich
+Zutaten und Schritte für die aktuelle Sitzung abhaken; „Schritt für Schritt“ zeigt immer nur einen Schritt
+und wechselt per Wischen, Pfeiltasten oder großen Knöpfen. Die gewählten Portionen und umgerechneten Mengen
+werden aus Detailansicht und Wochenplan übernommen. Zeitangaben wie „10 Minuten“ oder „5–7 Minuten“ starten
+direkt einen benannten Timer. Gängige Zutaten zeigen auf Wunsch Ersatzmöglichkeiten. In der Detailansicht
+lassen sich Rezepte außerdem teilen oder drucken.
+
+Mehrere freie oder aus Schritten gestartete Timer laufen parallel und erscheinen auf jeder Seite. Sie
+werden auf diesem Gerät gespeichert und stimmen nach einem Neuladen weiter. Solange die App geöffnet ist,
+meldet ein abgelaufener Timer sich mit Dialog, Ton und – wenn unterstützt – Vibration beziehungsweise
+Browser-Benachrichtigung. Mobile Browser können eine geschlossene oder eingefrorene App beenden; dann kann
+kein zuverlässiger Alarm erfolgen. Beim nächsten Öffnen zeigt die App, wie lange der Timer bereits
+abgelaufen ist.
+
 **Vor einem Update mit Datenbank-Migration sichern.** Manche Versionen bauen beim Start Tabellen um
 (zum Beispiel die Umstellung auf zerlegte Zutaten). Die alte Version kann die neue Datenbank danach nicht
 mehr lesen, ein Rollback heißt also: Sicherung zurückspielen. Sicherung bei laufendem Server:

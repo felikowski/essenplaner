@@ -4,4 +4,6 @@ import { afterEach } from 'vitest'
 
 afterEach(() => {
   cleanup()
+  localStorage.removeItem('essenplaner.timer.v1')
+  localStorage.removeItem('essenplaner.timer-benachrichtigung-gefragt')
 })

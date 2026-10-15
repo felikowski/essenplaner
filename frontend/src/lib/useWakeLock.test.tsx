@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useWakeLock } from './useWakeLock'
 
 function Probe() {
-  useWakeLock()
-  return null
+  const { supported } = useWakeLock()
+  return <output>{supported ? 'unterstützt' : 'nicht unterstützt'}</output>
 }
 
 describe('useWakeLock', () => {
@@ -20,6 +20,7 @@ describe('useWakeLock', () => {
     const { unmount } = render(<Probe />)
     await act(async () => {})
     expect(request).toHaveBeenCalledWith('screen')
+    expect(document.querySelector('output')).toHaveTextContent('unterstützt')
 
     await act(async () => {
       document.dispatchEvent(new Event('visibilitychange'))
@@ -32,5 +33,6 @@ describe('useWakeLock', () => {
 
   it('tut ohne Unterstützung nichts', () => {
     expect(() => render(<Probe />)).not.toThrow()
+    expect(document.querySelector('output')).toHaveTextContent('nicht unterstützt')
   })
 })

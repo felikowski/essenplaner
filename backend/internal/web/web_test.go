@@ -21,6 +21,7 @@ var dist = fstest.MapFS{
 	"index.html":          {Data: []byte(indexHTML)},
 	"assets/index-abc.js": {Data: []byte("console.log(1)")},
 	"mock/images/a.svg":   {Data: []byte("<svg/>")},
+	"sw.js":               {Data: []byte("self.addEventListener('notificationclick',()=>{})")},
 }
 
 // emptyStore liefert leere Daten. Die eingebetteten Interfaces decken Methoden ab, die diese Tests nicht aufrufen.
@@ -73,6 +74,16 @@ func TestStaticFiles(t *testing.T) {
 	}
 	if rec := get(app(), "/mock/images/a.svg"); rec.Code != http.StatusOK || rec.Body.String() != "<svg/>" {
 		t.Errorf("mock-bild: status %d", rec.Code)
+	}
+}
+
+func TestServiceWorkerIsNotCached(t *testing.T) {
+	rec := get(app(), "/sw.js")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "notificationclick") {
+		t.Fatalf("status %d, body %q", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Errorf("Cache-Control = %q, erwartet no-cache", got)
 	}
 }
 

@@ -1,13 +1,17 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
 import { RecipeHistory } from '../components/RecipeHistory'
 import { RecipeImage } from '../components/RecipeImage'
+import { ServingsPicker } from '../components/ServingsPicker'
 import { LoadError, Loading } from '../components/Status'
+import { SubstitutionHint } from '../components/SubstitutionHint'
+import { recipeShareText } from '../lib/recipeShare'
 import { formatServings, sourceLabel } from '../lib/recipes'
 import { scaleIngredient } from '../lib/scale'
 import { resolveStepAmounts } from '../lib/stepAmounts'
 import { useAsyncData } from '../lib/useAsyncData'
+import { useServingsParam } from '../lib/useServingsParam'
 import type { Recipe, RecipeOrganizationPatch } from '../types'
 
 export function RecipeDetailPage() {
@@ -40,11 +44,15 @@ export function RecipeDetailPage() {
 
 function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
   const api = usePlannerApi()
+  const location = useLocation()
   const [recipe, setRecipe] = useState(initialRecipe)
   const [organizationError, setOrganizationError] = useState<string | null>(null)
+  const [actionNotice, setActionNotice] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const { source } = recipe
   const unavailable = recipe.available === false
   const hasIngredients = (recipe.ingredients?.length ?? 0) > 0
+  const hasInstructions = (recipe.instructions?.length ?? 0) > 0
   const [servings, setServings] = useServingsParam(recipe.servings)
   const factor = servings !== undefined && recipe.servings !== undefined ? servings / recipe.servings : 1
   const askHowItWas = recipe.toTry && recipe.lastPlannedOn !== undefined && recipe.lastPlannedOn < localToday()
@@ -55,6 +63,27 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
       setRecipe(await api.updateRecipeOrganization(recipe.id, patch))
     } catch {
       setOrganizationError('Die Einordnung konnte nicht gespeichert werden.')
+    }
+  }
+
+  async function shareRecipe() {
+    setActionNotice(null)
+    setActionError(null)
+    const text = recipeShareText(recipe, servings)
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    if (nav.share) {
+      try {
+        await nav.share({ title: recipe.title, text })
+      } catch {
+        // Das Teilen-Menü wurde geschlossen.
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(text)
+      setActionNotice('Das Rezept wurde in die Zwischenablage kopiert.')
+    } catch {
+      setActionError('Das Rezept konnte nicht kopiert werden.')
     }
   }
 
@@ -97,7 +126,18 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
         </section>
       )}
       <RecipeHistory recipeId={recipe.id} />
-      <div className="recipe-detail__actions">
+      <div className="recipe-detail__actions no-print">
+        {(hasIngredients || hasInstructions) && (
+          <Link className="button" to={`/rezepte/${recipe.id}/kochen${location.search}`}>
+            Kochen
+          </Link>
+        )}
+        <button type="button" className="button button--secondary" onClick={() => void shareRecipe()}>
+          Teilen
+        </button>
+        <button type="button" className="button button--secondary" onClick={() => window.print()}>
+          Drucken
+        </button>
         {source.kind !== 'manual' && (
           <a
             className="button"
@@ -114,15 +154,20 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
           </Link>
         )}
       </div>
+      {actionNotice && <p className="notice no-print" role="status">{actionNotice}</p>}
+      {actionError && <p className="form__error no-print" role="alert">{actionError}</p>}
       {hasIngredients ? (
-        <section>
+        <section className="recipe-detail__ingredients-section">
           <h2>{servings !== undefined ? `Zutaten für ${formatServings(servings)}` : 'Zutaten'}</h2>
           {servings !== undefined && recipe.servings !== undefined && (
             <ServingsPicker servings={servings} recipeServings={recipe.servings} onChange={setServings} />
           )}
           <ul className="recipe-detail__ingredients">
             {recipe.ingredients?.map((ingredient, index) => (
-              <li key={index}>{scaleIngredient(ingredient, factor)}</li>
+              <li key={index}>
+                <span>{scaleIngredient(ingredient, factor)}</span>
+                <SubstitutionHint ingredient={ingredient} factor={factor} />
+              </li>
             ))}
           </ul>
         </section>
@@ -135,7 +180,7 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
         )
       )}
       {recipe.instructions && recipe.instructions.length > 0 && (
-        <section>
+        <section className="recipe-detail__instructions-section">
           <h2>Zubereitung</h2>
           <ol className="recipe-detail__steps">
             {recipe.instructions.map((step, index) => (
@@ -168,73 +213,6 @@ function localToday() {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   return `${now.getFullYear()}-${month}-${day}`
-}
-
-const MIN_SERVINGS = 1
-const MAX_SERVINGS = 99
-
-/**
- * Gewählte Portionen aus `?portionen=`, sonst die des Rezepts. Ändern schreibt den Parameter ohne neuen
- * Verlaufseintrag; bei den Rezeptportionen entfällt er. Ohne Rezeptportionen gibt es keine Auswahl.
- */
-function useServingsParam(recipeServings: number | undefined): [number | undefined, (servings: number) => void] {
-  const [searchParams, setSearchParams] = useSearchParams()
-  if (recipeServings === undefined) return [undefined, () => {}]
-
-  const param = searchParams.get('portionen') ?? ''
-  const parsed = /^\d+$/.test(param) ? Number(param) : NaN
-  const servings = parsed >= MIN_SERVINGS && parsed <= MAX_SERVINGS ? parsed : recipeServings
-
-  function setServings(next: number) {
-    setSearchParams(
-      (params) => {
-        if (next === recipeServings) params.delete('portionen')
-        else params.set('portionen', String(next))
-        return params
-      },
-      { replace: true },
-    )
-  }
-  return [servings, setServings]
-}
-
-interface ServingsPickerProps {
-  servings: number
-  recipeServings: number
-  onChange: (servings: number) => void
-}
-
-function ServingsPicker({ servings, recipeServings, onChange }: ServingsPickerProps) {
-  return (
-    <div className="servings-picker" role="group" aria-label="Portionen">
-      <button
-        type="button"
-        className="icon-button"
-        onClick={() => onChange(servings - 1)}
-        disabled={servings <= MIN_SERVINGS}
-        aria-label="Weniger Portionen"
-      >
-        −
-      </button>
-      <output className="servings-picker__value" aria-live="polite">
-        {servings}
-      </output>
-      <button
-        type="button"
-        className="icon-button"
-        onClick={() => onChange(servings + 1)}
-        disabled={servings >= MAX_SERVINGS}
-        aria-label="Mehr Portionen"
-      >
-        +
-      </button>
-      {servings !== recipeServings && (
-        <button type="button" className="link-button" onClick={() => onChange(recipeServings)}>
-          Rezept: {recipeServings}
-        </button>
-      )}
-    </div>
-  )
 }
 
 /** Zubereitungsschritt mit aufgelösten Mengen-Varianten; umgerechnete Mengen sind kursiv. */
