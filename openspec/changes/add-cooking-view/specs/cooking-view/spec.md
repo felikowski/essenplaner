@@ -1,6 +1,6 @@
 ## Purpose
 
-Mit dem Handy in der Küche kochen: eine gut lesbare Ansicht, die wach bleibt, Mengen für die gewünschten Portionen umrechnet und Timer direkt aus den Schritten startet.
+Mit dem Handy in der Küche kochen: eine gut lesbare Ansicht, die wach bleibt, die gewählten Portionen übernimmt und Timer direkt aus den Schritten startet.
 
 ## ADDED Requirements
 
@@ -26,24 +26,12 @@ Das System SHALL, solange die Kochansicht angezeigt wird, verhindern, dass der B
 - **WHEN** der Nutzer während des Kochens kurz eine Nachricht beantwortet und zurückkehrt
 - **THEN** bleibt der Bildschirm wieder an, ohne dass der Nutzer etwas tun muss
 
-### Requirement: Portionen umrechnen
-Das System SHALL in Detail- und Kochansicht eine Portionenauswahl (1 bis 99) anbieten, sofern das Rezept Portionen hat. Alle Zutaten mit Menge MUST mit dem Faktor gewählte Portionen geteilt durch Rezeptportionen umgerechnet werden. Bei Faktor 1 MUST der eingegebene Text unverändert erscheinen. Umgerechnete Mengen MUST lesbar gerundet werden: g und ml auf ganze Zahlen (ab 100 auf Fünfer), kg und l auf eine Nachkommastelle, ab 1000 g bzw. 1000 ml in kg bzw. l. TL, EL, Tasse und Prise MUST auf Viertel gerundet und als Bruch (¼, ½, ¾) angezeigt werden. Alle übrigen Mengen MUST auf Halbe gerundet werden, mindestens aber ½ betragen. Zutaten ohne Menge MUST unverändert bleiben. Wird die Ansicht aus einem Planeintrag geöffnet, MUST dessen Portionenzahl voreingestellt sein. Die Rezeptdaten MUST dabei unverändert bleiben.
-
-#### Scenario: Verdoppeln
-- **WHEN** der Nutzer bei einem Rezept für 4 Portionen mit „600 g Hähnchenbrust“ und „1 EL Currypulver“ 8 Portionen wählt
-- **THEN** zeigt das System „1,2 kg Hähnchenbrust“ und „2 EL Currypulver“
-
-#### Scenario: Halbieren
-- **WHEN** der Nutzer bei „1 TL Salz“ und „3 Eier“ (4 Portionen) 2 Portionen wählt
-- **THEN** zeigt das System „½ TL Salz“ und „1½ Eier“
+### Requirement: Portionen in der Kochansicht
+Das System SHALL in der Kochansicht dieselbe Portionenauswahl und Umrechnung anbieten wie in der Detailansicht (siehe `servings-scaling`). Wird die Kochansicht aus der Detailansicht oder aus einem Planeintrag geöffnet, MUST die dort gewählte Portionenzahl voreingestellt sein.
 
 #### Scenario: Aus dem Plan
 - **WHEN** der Nutzer im Plan einen Eintrag „Linsensuppe · 8 Portionen“ (Rezept: 6) öffnet und „Kochen“ wählt
 - **THEN** ist 8 voreingestellt, und die Mengen sind umgerechnet
-
-#### Scenario: Ohne Menge
-- **WHEN** das Rezept „Salz und Pfeffer“ enthält und umgerechnet wird
-- **THEN** bleibt „Salz und Pfeffer“ unverändert
 
 ### Requirement: Timer aus Schritten
 Das System SHALL in Schritten Zeitangaben in Minuten und Stunden erkennen („10 Minuten“, „10 Min.“, „1 Std.“, „1 ½ Stunden“, „5–7 Minuten“) und sie als antippbares Element hervorheben. Ein Tippen MUST einen Timer mit dieser Dauer starten, bei Spannen mit der unteren Grenze. Benannt wird er nach dem Rezept und der Schrittnummer („Curry · Schritt 4“).

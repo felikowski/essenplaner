@@ -86,15 +86,17 @@ dahin läuft die App nur lokal:
 2. `add-planner-flexibility`: Mahlzeiten, mehrere Einträge, Notizen,
    Einzelzutaten, Portionen pro Eintrag, Reste, Verschieben, Woche kopieren,
    Verlauf, Drucken, Einstellungsseite
-3. `add-shopping-list`: Einkaufsliste aus dem Plan, Zusammenfassen,
+3. `add-servings-scaling`: Portionen in der Detailansicht umrechnen,
+   Mengen-Varianten in HelloFresh-Schritten, Links aus dem Plan
+4. `add-shopping-list`: Einkaufsliste aus dem Plan, Zusammenfassen,
    Kategorien, Geschäfte, Abhaken, Vorratsliste, Teilen
-4. `add-recipe-organization`: Gang, Küche, Tags, Bewertung, Ausprobieren,
+5. `add-recipe-organization`: Gang, Küche, Tags, Bewertung, Ausprobieren,
    Notizen, Zeit, Filter, Suche nach Zutaten
-5. `add-menus`: Pläne als Menü speichern und einplanen
-6. `add-cooking-view`: Kochansicht, Portionen umrechnen, Timer,
+6. `add-menus`: Pläne als Menü speichern und einplanen
+7. `add-cooking-view`: Kochansicht, Timer,
    Ersatz-Vorschläge, Rezept teilen und drucken
-7. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
-8. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
+8. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
+9. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
 
 Danach: `add-google-drive-recipes` → `add-auth0-login` → `add-vps-deployment`.
 

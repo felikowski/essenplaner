@@ -23,7 +23,7 @@ context: |
 
   Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
   add-recipe-url-import -> add-recipe-editor -> add-planner-flexibility ->
-  add-shopping-list -> add-recipe-organization -> add-menus ->
+  add-servings-scaling -> add-shopping-list -> add-recipe-organization -> add-menus ->
   add-cooking-view -> add-freezer -> add-nutrition (optional) ->
   add-google-drive-recipes -> add-auth0-login -> add-vps-deployment.
   Zuerst die Plan-to-Eat-Funktionen, danach Drive, Login und Deployment.
