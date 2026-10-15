@@ -152,6 +152,7 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
                 key={date}
                 date={date}
                 entries={state.data.plan.days[date] ?? []}
+                weekEntries={Object.values(state.data.plan.days).flat()}
                 visibleMeals={settings.visibleMeals}
                 recipes={state.data.planned}
                 isToday={date === today}

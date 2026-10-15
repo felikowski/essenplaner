@@ -117,6 +117,16 @@ die Grundlage für Einkaufsliste und Portionen. Die Regeln stehen in `backend/in
 
 Von Hand geänderte Angaben bleiben erhalten, wenn ein Rezept erneut per Link importiert wird.
 
+## Portionen umrechnen
+
+Hat ein Rezept Portionen, lassen sie sich in der Detailansicht mit „−“ und „+“ ändern (1 bis 99). Die
+Zutaten werden dann umgerechnet und auf abmessbare Werte gerundet („375 g“, „1,2 kg“, „¾ TL“, „1½ Eier“),
+die Auswahl steht in der Adresse (`/rezepte/<id>?portionen=6`). Der Wochenplan öffnet Rezepte und Reste
+mit den Portionen des Eintrags. Schritte mit Mengen in eckigen Klammern, wie HelloFresh sie schreibt
+(„200 ml [300 ml | 400 ml] Milch“), zeigen nur die Menge für die gewählten Portionen; gibt es keine
+passende, wird umgerechnet und die Menge kursiv markiert. Gespeichert wird dabei nichts. Die Regeln stehen
+in `frontend/src/lib/scale.ts` und `frontend/src/lib/stepAmounts.ts`.
+
 **Vor einem Update mit Datenbank-Migration sichern.** Manche Versionen bauen beim Start Tabellen um
 (zum Beispiel die Umstellung auf zerlegte Zutaten). Die alte Version kann die neue Datenbank danach nicht
 mehr lesen, ein Rollback heißt also: Sicherung zurückspielen. Sicherung bei laufendem Server:

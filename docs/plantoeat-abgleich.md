@@ -18,7 +18,7 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 | Kategorien: Gang, Küche, Hauptzutat, Tags | ❌ | |
 | Bewertung | ❌ | |
 | Filtern nach Kategorie, Suche nach Zutat | ❌ | |
-| Portionen skalieren | ❌ | braucht strukturierte Zutaten (Menge, Einheit) |
+| Portionen skalieren | ✅ `servings-scaling` | Detailansicht, auch HelloFresh-Mengen in eckigen Klammern |
 | Kochansicht (Bildschirm bleibt an, Schritt für Schritt) | ❌ | Wake Lock API |
 | Benannte Timer | ❌ | |
 | Notizen zur Vorbereitung | ❌ | |

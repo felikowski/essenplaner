@@ -2,12 +2,14 @@ import { Link } from 'react-router'
 import { formatDayMonth, formatShortDate, formatWeekday } from '../lib/isoWeek'
 import { MEAL_LABELS } from '../lib/meals'
 import { formatServings } from '../lib/recipes'
-import { entryTitle } from '../lib/entries'
+import { entryTitle, recipeLinkTarget } from '../lib/entries'
 import type { IsoDate, Meal, PlanEntry, Recipe } from '../types'
 
 interface Props {
   date: IsoDate
   entries: PlanEntry[]
+  /** Alle Einträge der angezeigten Woche, damit Reste die Portionen ihres Originals finden */
+  weekEntries: PlanEntry[]
   visibleMeals: Meal[]
   recipes: Recipe[]
   isToday: boolean
@@ -16,7 +18,7 @@ interface Props {
   onOpenEntry: (entry: PlanEntry) => void
 }
 
-export function DayCard({ date, entries, visibleMeals, recipes, isToday, busy, onAdd, onOpenEntry }: Props) {
+export function DayCard({ date, entries, weekEntries, visibleMeals, recipes, isToday, busy, onAdd, onOpenEntry }: Props) {
   const weekday = formatWeekday(date)
   const showMealHeadings = visibleMeals.length > 1
   const visibleEntries = entries.filter((entry) => visibleMeals.includes(entry.meal))
@@ -41,6 +43,7 @@ export function DayCard({ date, entries, visibleMeals, recipes, isToday, busy, o
                     key={entry.id}
                     entry={entry}
                     recipe={recipes.find((recipe) => recipe.id === entry.recipeId)}
+                    weekEntries={weekEntries}
                     busy={busy}
                     onOpen={() => onOpenEntry(entry)}
                   />
@@ -66,16 +69,17 @@ export function DayCard({ date, entries, visibleMeals, recipes, isToday, busy, o
 interface EntryRowProps {
   entry: PlanEntry
   recipe: Recipe | undefined
+  weekEntries: PlanEntry[]
   busy: boolean
   onOpen: () => void
 }
 
-function EntryRow({ entry, recipe, busy, onOpen }: EntryRowProps) {
+function EntryRow({ entry, recipe, weekEntries, busy, onOpen }: EntryRowProps) {
   const title = entryTitle(entry, recipe)
   return (
     <li className="entry">
       <div className="entry__main">
-        <EntryContent entry={entry} recipe={recipe} />
+        <EntryContent entry={entry} recipe={recipe} weekEntries={weekEntries} />
       </div>
       <button
         type="button"
@@ -90,9 +94,9 @@ function EntryRow({ entry, recipe, busy, onOpen }: EntryRowProps) {
   )
 }
 
-function EntryContent({ entry, recipe }: { entry: PlanEntry; recipe: Recipe | undefined }) {
+function EntryContent({ entry, recipe, weekEntries }: { entry: PlanEntry; recipe: Recipe | undefined; weekEntries: PlanEntry[] }) {
   const recipeLink = entry.recipeId ? (
-    <Link to={recipeLinkTarget(entry)} className="entry__recipe">
+    <Link to={recipeLinkTarget(entry, recipe, weekEntries)} className="entry__recipe">
       {recipe?.title ?? 'Unbekanntes Rezept'}
     </Link>
   ) : null
@@ -126,8 +130,4 @@ function EntryContent({ entry, recipe }: { entry: PlanEntry; recipe: Recipe | un
         </>
       )
   }
-}
-
-function recipeLinkTarget(entry: PlanEntry): string {
-  return `/rezepte/${entry.recipeId}`
 }

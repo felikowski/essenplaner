@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Portionen wählen
-Das System SHALL in der Rezeptdetailansicht eine Portionenauswahl von 1 bis 99 anbieten, sofern das Rezept Portionen hat. Voreingestellt MUST die Portionenzahl des Rezepts sein, oder die aus dem URL-Parameter `portionen`, wenn er eine Zahl von 1 bis 99 enthält. Eine Änderung der Auswahl MUST den URL-Parameter aktualisieren, ohne einen neuen Eintrag im Browserverlauf anzulegen; entspricht sie den Rezeptportionen, MUST der Parameter entfallen. Weicht die Auswahl ab, MUST die Überschrift „Zutaten für N Portionen“ lauten und ein Weg zurück zu den Rezeptportionen angeboten werden. Die Rezeptdaten MUST unverändert bleiben.
+Das System SHALL in der Rezeptdetailansicht eine Portionenauswahl von 1 bis 99 anbieten, sofern das Rezept Portionen hat. Voreingestellt MUST die Portionenzahl des Rezepts sein, oder die aus dem URL-Parameter `portionen`, wenn er eine Zahl von 1 bis 99 enthält. Eine Änderung der Auswahl MUST den URL-Parameter aktualisieren, ohne einen neuen Eintrag im Browserverlauf anzulegen; entspricht sie den Rezeptportionen, MUST der Parameter entfallen. Die Überschrift der Zutaten MUST dann „Zutaten für N Portionen“ mit den gewählten Portionen lauten. Weicht die Auswahl ab, MUST ein Weg zurück zu den Rezeptportionen angeboten werden. Die Rezeptdaten MUST unverändert bleiben.
 
 #### Scenario: Mehr Portionen
 - **WHEN** der Nutzer bei einem Rezept für 2 Portionen zweimal „+“ tippt

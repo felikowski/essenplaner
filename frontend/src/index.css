@@ -487,6 +487,40 @@ img {
   margin-top: var(--space-2);
 }
 
+/* Portionen umrechnen */
+
+.servings-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.servings-picker__value {
+  min-width: 2.5rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.link-button {
+  min-height: 2.75rem;
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.scaled-amount {
+  font-style: italic;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
 /* Seitenkopf mit Aktion */
 
 .page-header {

@@ -51,7 +51,7 @@ const units = new Map<string, string>(
 const fractions: Record<string, number> = { '½': 0.5, '⅓': 1 / 3, '⅔': 2 / 3, '¼': 0.25, '¾': 0.75, '⅛': 0.125, '⅕': 0.2 }
 
 // Reihenfolge zählt: Brüche („1/2“) vor ganzen Zahlen, sonst würde nur „1“ erkannt.
-const numberPattern = String.raw`(?:\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[½⅓⅔¼¾⅛⅕]|\s+\d+\/\d+)?|[½⅓⅔¼¾⅛⅕])`
+export const numberPattern = String.raw`(?:\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[½⅓⅔¼¾⅛⅕]|\s+\d+\/\d+)?|[½⅓⅔¼¾⅛⅕])`
 const bulletPrefix = /^[-–•*·]\s+/
 const approxPrefix = /^(?:ca\.?|etwa|circa)\s+/i
 const quantityStart = new RegExp(String.raw`^(${numberPattern})(?:\s*(?:-|–|—|bis)\s*(${numberPattern}))?`)
@@ -77,7 +77,7 @@ export function parseIngredient(line: string): ParsedIngredient {
   let unit: string | undefined
   const [word, remainder] = splitFirstWord(rest)
   if (word && remainder) {
-    const canonical = units.get(word.toLowerCase().replace(/\.$/, ''))
+    const canonical = canonicalUnit(word)
     if (canonical) {
       unit = canonical
       rest = remainder
@@ -102,6 +102,11 @@ export function parseIngredients(lines: string[]): ParsedIngredient[] {
   return lines.filter((line) => line.trim() !== '').map(parseIngredient)
 }
 
+/** Einheit in Kurzform, etwa „Teelöffel“ → „TL“; undefined, wenn das Wort keine bekannte Einheit ist. */
+export function canonicalUnit(word: string): string | undefined {
+  return units.get(word.toLowerCase().replace(/\.$/, ''))
+}
+
 function splitFirstWord(s: string): [string, string] {
   const space = s.search(/\s/)
   if (space < 0) return [s, '']
@@ -109,7 +114,7 @@ function splitFirstWord(s: string): [string, string] {
 }
 
 /** Liest „2“, „1,5“, „1.5“, „1/2“, „½“, „1½“, „1 ½“ und „1 1/2“. */
-function parseNumber(s: string): number | null {
+export function parseNumber(s: string): number | null {
   const parts = s.trim().split(/\s+/)
   let total = 0
   for (const part of parts) {

@@ -210,6 +210,37 @@ describe('Wochenplan', () => {
       expect(await within(dayCard('Donnerstag')).findByText('8 Portionen')).toBeInTheDocument()
     })
 
+    it('öffnet Rezept und Reste mit abweichenden Portionen des Eintrags', async () => {
+      const { user } = renderApp('/woche/2026-W40')
+
+      const soup = await within(await findDayCard('Donnerstag')).findByRole('link', { name: 'Linsensuppe' })
+      expect(soup).toHaveAttribute('href', '/rezepte/linsensuppe')
+
+      await user.click(screen.getByRole('button', { name: 'Linsensuppe: Optionen' }))
+      const servings = screen.getByLabelText('Portionen')
+      await user.clear(servings)
+      await user.type(servings, '8')
+      await user.click(screen.getByRole('button', { name: 'Übernehmen' }))
+      await within(dayCard('Donnerstag')).findByText('8 Portionen')
+
+      await user.click(within(dayCard('Donnerstag')).getByRole('button', { name: 'Linsensuppe: Optionen' }))
+      await user.click(screen.getByRole('button', { name: 'Reste einplanen' }))
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Reste einplanen' }))
+      await within(dayCard('Freitag')).findByText('Reste:')
+
+      expect(within(dayCard('Donnerstag')).getByRole('link', { name: 'Linsensuppe' })).toHaveAttribute(
+        'href',
+        '/rezepte/linsensuppe?portionen=8',
+      )
+      expect(within(dayCard('Freitag')).getByRole('link', { name: 'Linsensuppe' })).toHaveAttribute(
+        'href',
+        '/rezepte/linsensuppe?portionen=8',
+      )
+
+      await user.click(within(dayCard('Freitag')).getByRole('link', { name: 'Linsensuppe' }))
+      expect(await screen.findByRole('heading', { name: 'Zutaten für 8 Portionen' })).toBeInTheDocument()
+    })
+
     it('plant Reste am nächsten Tag ein; ohne Original bleiben sie als Notiz', async () => {
       const { user } = renderApp('/woche/2026-W40')
 

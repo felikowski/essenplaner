@@ -5,6 +5,7 @@ import { AppRoutes } from '../App'
 import { PlannerApiContext } from '../api/context'
 import { MockPlannerApi } from '../api/MockPlannerApi'
 import type { PlannerApi } from '../api/PlannerApi'
+import { LocationProbe } from './LocationProbe'
 import { loadMockFiles } from './mockData'
 
 /** Rendert die ganze App unter `path`, standardmäßig mit den Dummy-Daten. */
@@ -14,8 +15,14 @@ export function renderApp(path: string, api: PlannerApi = new MockPlannerApi(loa
     <PlannerApiContext value={api}>
       <MemoryRouter initialEntries={[path]}>
         <AppRoutes />
+        <LocationProbe />
       </MemoryRouter>
     </PlannerApiContext>,
   )
   return { user, api }
+}
+
+/** Aktuelle Adresse samt Query, etwa „/rezepte/linsensuppe?portionen=8“. */
+export function currentUrl(): string | null {
+  return document.querySelector('[data-testid="location"]')?.textContent ?? null
 }

@@ -26,7 +26,7 @@ Nach `add-recipe-editor` haben Zutaten `text`, `quantity`, `unit`, `name` und `n
 
 **Portionen im URL-Parameter.** `/rezepte/:id?portionen=8`. Die Auswahl schreibt den Parameter mit `replace`; entspricht sie den Rezeptportionen, verschwindet er. Ungültige Werte (keine Zahl, außerhalb 1 bis 99) werden ignoriert. Kein globaler Zustand nötig, Neuladen und Teilen funktionieren, und die Kochansicht kann denselben Parameter übernehmen.
 
-**Bedienung.** Eine Zeile „Portionen“ mit „−“, Zahl und „+“ (Tippflächen ab 44 px) über den Zutaten, daneben bei Abweichung „Rezept: 2“ zum Zurücksetzen. Die Überschrift lautet „Zutaten für N Portionen“. Ohne Rezeptportionen gibt es keine Auswahl, und Schritte zeigen die Grundvariante.
+**Bedienung.** Unter der Überschrift „Zutaten für N Portionen“ eine Zeile mit „−“, Zahl und „+“ (Tippflächen ab 44 px), daneben bei Abweichung „Rezept: 2“ zum Zurücksetzen. Ohne Rezeptportionen gibt es keine Auswahl, und Schritte zeigen die Grundvariante.
 
 **Klammer-Varianten in Schritten.** `lib/stepAmounts.ts` zerlegt einen Schritt in Textstücke und Mengen-Elemente; gerendert wird ohne `dangerouslySetInnerHTML`.
 - Erkannt wird eine Grundmenge (Zahl wie im Zutaten-Parser, optional ein Einheitenwort) direkt vor einer eckigen Klammer mit mindestens einem „|“: „200 ml [300 ml | 400 ml]“, „6 [9 | 12]“.
