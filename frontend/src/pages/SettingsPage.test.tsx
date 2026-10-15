@@ -62,3 +62,42 @@ describe('Planungsverlauf im Rezept', () => {
     expect(await screen.findByText('Noch nie geplant')).toBeInTheDocument()
   })
 })
+
+describe('Einstellungen der Einkaufsliste', () => {
+  it('benennt Kategorien um, legt sie an, sortiert und löscht sie', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const { user } = renderApp('/einstellungen', api)
+
+    const drinks = await screen.findByRole('textbox', { name: 'Kategorie Getränke' })
+    await user.click(screen.getByRole('button', { name: 'Getränke nach oben' }))
+    await vi.waitFor(async () => expect((await api.getShoppingList())?.categories[10].name).toBe('Getränke'))
+
+    await user.clear(drinks)
+    await user.type(drinks, 'Trinken{Enter}')
+    await vi.waitFor(async () => expect((await api.getShoppingList())?.categories[10].name).toBe('Trinken'))
+
+    await user.type(screen.getByRole('textbox', { name: 'Neue Kategorie' }), 'Käsetheke{Enter}')
+    expect(await screen.findByRole('textbox', { name: 'Kategorie Käsetheke' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Käsetheke löschen' }))
+    await vi.waitFor(() => expect(screen.queryByRole('textbox', { name: 'Kategorie Käsetheke' })).not.toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Sonstiges löschen' })).not.toBeInTheDocument()
+  })
+
+  it('verwaltet Geschäfte und gemerkte Zusammenführungen', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    await api.addShoppingItem('Zwiebel')
+    const list = await api.addShoppingItem('Zwiebeln')
+    await api.mergeShoppingItem(list.items[0].id, list.items[1].id)
+    const { user } = renderApp('/einstellungen', api)
+
+    await user.type(await screen.findByRole('textbox', { name: 'Neues Geschäft' }), 'Wochenmarkt{Enter}')
+    expect(await screen.findByRole('textbox', { name: 'Geschäft Wochenmarkt' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Wochenmarkt löschen' }))
+    await vi.waitFor(() => expect(screen.queryByRole('textbox', { name: 'Geschäft Wochenmarkt' })).not.toBeInTheDocument())
+
+    expect(screen.getByText('Zwiebel → Zwiebeln')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Zusammenführung Zwiebel entfernen' }))
+    expect(await screen.findByText(/Noch keine/)).toBeInTheDocument()
+    expect(await api.listShoppingAliases()).toEqual([])
+  })
+})

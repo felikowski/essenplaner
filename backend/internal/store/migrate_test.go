@@ -20,7 +20,25 @@ func openAtVersion(t *testing.T, version int, setup string) string {
 		t.Fatal(err)
 	}
 	defer raw.Close()
-	if _, err := raw.Exec("DROP TABLE IF EXISTS plan_entries; DROP TABLE IF EXISTS household_settings; DROP TABLE IF EXISTS recipes; DELETE FROM schema_migrations"); err != nil {
+	rows, err := raw.Query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('schema_migrations', 'sqlite_sequence')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tables []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			t.Fatal(err)
+		}
+		tables = append(tables, name)
+	}
+	rows.Close()
+	for _, table := range tables {
+		if _, err := raw.Exec("DROP TABLE " + table); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := raw.Exec("DELETE FROM schema_migrations"); err != nil {
 		t.Fatal(err)
 	}
 	for v := 1; v <= version; v++ {

@@ -1,0 +1,101 @@
+{
+  "obst-gemuese": [
+    "apfel", "äpfel", "birne", "birnen", "banane", "bananen", "orange", "orangen", "zitrone", "zitronen",
+    "limette", "limetten", "mandarine", "mandarinen", "clementine", "clementinen", "grapefruit", "kiwi", "kiwis",
+    "mango", "mangos", "ananas", "melone", "wassermelone", "honigmelone", "trauben", "weintrauben", "erdbeere",
+    "erdbeeren", "himbeere", "himbeeren", "heidelbeere", "heidelbeeren", "blaubeeren", "johannisbeeren", "kirsche",
+    "kirschen", "pflaume", "pflaumen", "zwetschgen", "pfirsich", "pfirsiche", "nektarine", "nektarinen", "aprikose",
+    "aprikosen", "avocado", "avocados", "granatapfel", "rhabarber", "beeren", "obst",
+    "zwiebel", "zwiebeln", "rote zwiebel", "rote zwiebeln", "frühlingszwiebel", "frühlingszwiebeln", "lauchzwiebeln",
+    "schalotte", "schalotten", "knoblauch", "knoblauchzehe", "knoblauchzehen", "ingwer", "kartoffel", "kartoffeln",
+    "süßkartoffel", "süßkartoffeln", "karotte", "karotten", "möhre", "möhren", "pastinake", "pastinaken",
+    "petersilienwurzel", "sellerie", "knollensellerie", "staudensellerie", "stangensellerie", "lauch", "porree",
+    "paprika", "paprikaschote", "paprikaschoten", "tomate", "tomaten", "kirschtomaten", "cherrytomaten",
+    "gurke", "gurken", "salatgurke", "zucchini", "aubergine", "auberginen", "kürbis", "hokkaido", "butternut",
+    "brokkoli", "blumenkohl", "rosenkohl", "grünkohl", "weißkohl", "rotkohl", "spitzkohl", "wirsing", "kohlrabi",
+    "spinat", "babyspinat", "mangold", "salat", "kopfsalat", "eisbergsalat", "feldsalat", "rucola", "romanasalat",
+    "chicorée", "radieschen", "rettich", "rote bete", "fenchel", "spargel", "champignons", "pilze", "pfifferlinge",
+    "steinpilze", "erbsenschoten", "zuckerschoten", "bohnen", "grüne bohnen", "brechbohnen", "mais", "maiskolben",
+    "chili", "chilischote", "chilischoten", "peperoni", "jalapeños", "okra", "artischocke", "artischocken",
+    "petersilie", "schnittlauch", "dill", "basilikum", "koriander", "minze", "thymian", "rosmarin", "salbei",
+    "oregano", "majoran", "kerbel", "estragon", "zitronengras", "kräuter", "gemüse", "suppengrün", "sprossen"
+  ],
+  "brot": [
+    "brot", "brötchen", "baguette", "vollkornbrot", "toast", "toastbrot", "ciabatta", "fladenbrot", "laugenbrezel",
+    "brezel", "brezeln", "croissant", "croissants", "knäckebrot", "zwieback", "tortilla", "tortillas", "wraps",
+    "pita", "burgerbrötchen", "semmelbrösel", "paniermehl", "hefezopf", "kuchen"
+  ],
+  "milch": [
+    "milch", "vollmilch", "hafermilch", "sojamilch", "mandelmilch", "buttermilch", "sahne", "schlagsahne",
+    "kochsahne", "saure sahne", "schmand", "crème fraîche", "creme fraiche", "joghurt", "naturjoghurt",
+    "griechischer joghurt", "quark", "magerquark", "skyr", "butter", "margarine", "ei", "eier", "eigelb", "eiweiß",
+    "kefir", "dickmilch", "pudding", "frischkäse", "hüttenkäse", "körniger frischkäse"
+  ],
+  "kaese": [
+    "käse", "gouda", "emmentaler", "bergkäse", "parmesan", "pecorino", "grana padano", "mozzarella", "burrata",
+    "feta", "schafskäse", "hirtenkäse", "halloumi", "ricotta", "mascarpone", "camembert", "brie", "cheddar",
+    "gorgonzola", "ziegenkäse", "reibekäse", "geriebener käse", "raclettekäse", "butterkäse", "tilsiter", "edamer"
+  ],
+  "fleisch": [
+    "hähnchen", "hähnchenbrust", "hähnchenbrustfilet", "hähnchenschenkel", "hühnchen", "huhn", "putenbrust",
+    "pute", "putenfleisch", "rindfleisch", "rinderhack", "hackfleisch", "gemischtes hackfleisch", "rinderfilet",
+    "steak", "steaks", "rumpsteak", "gulasch", "schweinefleisch", "schweinefilet", "schnitzel", "kotelett",
+    "schweinebauch", "speck", "bacon", "schinken", "kochschinken", "schinkenwürfel", "salami", "wurst", "würstchen",
+    "wiener", "bratwurst", "bratwürste", "chorizo", "lamm", "lammfleisch", "lachs", "lachsfilet", "räucherlachs",
+    "thunfischsteak", "fisch", "fischfilet", "kabeljau", "seelachs", "forelle", "garnelen", "shrimps", "krabben",
+    "muscheln", "aufschnitt", "leberkäse", "geschnetzeltes", "ente", "entenbrust"
+  ],
+  "tiefkuehl": [
+    "tiefkühlerbsen", "erbsen", "tk-erbsen", "tiefkühlspinat", "rahmspinat", "tiefkühlgemüse", "tk-gemüse",
+    "pommes", "pommes frites", "fischstäbchen", "eis", "speiseeis", "tiefkühlpizza", "pizza", "tk-beeren",
+    "blätterteig", "kroketten", "rösti"
+  ],
+  "getreide": [
+    "nudeln", "pasta", "spaghetti", "penne", "fusilli", "farfalle", "tagliatelle", "lasagneplatten",
+    "lasagnenudeln", "makkaroni", "rigatoni", "gnocchi", "spätzle", "eiernudeln", "reisnudeln", "glasnudeln",
+    "mie-nudeln", "reis", "basmatireis", "jasminreis", "risottoreis", "milchreis", "vollkornreis", "couscous",
+    "bulgur", "quinoa", "hirse", "polenta", "haferflocken", "müsli", "cornflakes", "linsen", "rote linsen",
+    "tellerlinsen", "berglinsen", "grieß", "graupen", "buchweizen"
+  ],
+  "konserven": [
+    "tomaten aus der dose", "dosentomaten", "gehackte tomaten", "passierte tomaten", "stückige tomaten",
+    "tomatenmark", "kokosmilch", "kichererbsen", "kidneybohnen", "weiße bohnen", "schwarze bohnen", "mais aus der dose",
+    "thunfisch", "oliven", "kapern", "gewürzgurken", "essiggurken", "sauerkraut", "rotkraut", "gemüsebrühe",
+    "hühnerbrühe", "rinderbrühe", "brühe", "fond", "ketchup", "senf", "mayonnaise", "mayo", "sojasoße", "sojasauce",
+    "teriyakisauce", "currypaste", "rote currypaste", "pesto", "tomatensoße", "tomatensauce", "worcestersauce",
+    "tabasco", "sambal oelek", "sriracha", "apfelmus", "marmelade", "konfitüre", "honig", "nutella", "erdnussbutter",
+    "ahornsirup", "tahini", "ajvar", "bohnen aus der dose"
+  ],
+  "backen": [
+    "mehl", "weizenmehl", "dinkelmehl", "vollkornmehl", "speisestärke", "stärke", "zucker", "puderzucker",
+    "brauner zucker", "rohrzucker", "vanillezucker", "vanilleschote", "backpulver", "natron", "hefe", "trockenhefe",
+    "frische hefe", "kakao", "kakaopulver", "schokotropfen", "kuvertüre", "zartbitterschokolade", "mandeln",
+    "gemahlene mandeln", "haselnüsse", "gemahlene haselnüsse", "walnüsse", "nüsse", "rosinen", "kokosraspeln",
+    "gelatine", "sahnesteif", "streusel", "pinienkerne", "sonnenblumenkerne", "kürbiskerne", "sesam",
+    "leinsamen", "chiasamen"
+  ],
+  "gewuerze": [
+    "salz", "meersalz", "pfeffer", "schwarzer pfeffer", "salz und pfeffer", "paprikapulver", "edelsüß",
+    "rosenpaprika", "currypulver", "curry", "kreuzkümmel", "kümmel", "zimt", "muskat", "muskatnuss", "kurkuma",
+    "chiliflocken", "chilipulver", "cayennepfeffer", "lorbeerblatt", "lorbeerblätter", "nelken", "piment",
+    "kardamom", "garam masala", "italienische kräuter", "kräuter der provence", "getrockneter oregano",
+    "knoblauchpulver", "zwiebelpulver", "gewürze", "öl", "olivenöl", "rapsöl", "sonnenblumenöl", "sesamöl",
+    "kokosöl", "pflanzenöl", "essig", "balsamico", "balsamicoessig", "weißweinessig", "apfelessig", "rotweinessig",
+    "brühwürfel", "gemüsebrühepulver", "vanilleextrakt"
+  ],
+  "suesses": [
+    "schokolade", "chips", "kekse", "gummibärchen", "bonbons", "salzstangen", "cracker", "popcorn", "müsliriegel",
+    "studentenfutter", "erdnüsse", "pralinen", "lakritz", "waffeln", "nachtisch"
+  ],
+  "getraenke": [
+    "wasser", "mineralwasser", "sprudel", "saft", "apfelsaft", "orangensaft", "traubensaft", "limonade", "cola",
+    "eistee", "tee", "kaffee", "kaffeebohnen", "espresso", "bier", "wein", "weißwein", "rotwein", "sekt", "prosecco",
+    "schorle", "apfelschorle", "sirup", "kakao zum trinken"
+  ],
+  "drogerie": [
+    "spülmittel", "geschirrspültabs", "spülmaschinentabs", "waschmittel", "weichspüler", "toilettenpapier",
+    "klopapier", "küchenrolle", "küchenpapier", "taschentücher", "müllbeutel", "alufolie", "frischhaltefolie",
+    "backpapier", "gefrierbeutel", "zahnpasta", "zahnbürste", "shampoo", "duschgel", "seife", "handseife",
+    "deo", "windeln", "feuchttücher", "schwämme", "putzmittel", "allzweckreiniger", "batterien"
+  ]
+}

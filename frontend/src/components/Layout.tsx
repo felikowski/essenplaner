@@ -19,6 +19,9 @@ export function Layout() {
             <NavLink to="/rezepte" className="app-nav__link">
               Rezepte
             </NavLink>
+            <NavLink to="/einkauf" className="app-nav__link">
+              Einkauf
+            </NavLink>
             <NavLink to="/einstellungen" className="app-nav__link app-nav__link--icon" aria-label="Einstellungen">
               ⚙
             </NavLink>

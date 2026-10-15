@@ -18,12 +18,12 @@ Nach `add-recipe-editor` haben Zutaten `text`, `quantity`, `unit`, `name` und `n
 ## Decisions
 
 **Artikel bestehen aus Anteilen.**
-- `shopping_items (id, key, name, category_id, store_id NULL, checked, position_hint, created_at)`
-- `shopping_item_parts (id, item_id ON DELETE CASCADE, quantity REAL NULL, unit TEXT NULL, source_kind ('plan','manual','staple'), entry_id NULL, recipe_title NULL, date NULL, text)`
+- `shopping_items (id, key, name, category_id, store_id NULL, checked, created_at)`; innerhalb einer Kategorie wird nach Namen sortiert, eine eigene Position braucht es nicht
+- `shopping_item_parts (id, item_id ON DELETE CASCADE, quantity REAL NULL, unit TEXT, source_kind ('plan','manual','staple'), entry_id NULL, recipe_id NULL, recipe_title NULL, date NULL, text)`
 
 Jede übernommene Zutat wird ein Anteil. Die angezeigte Menge wird beim Lesen aus den Anteilen berechnet. So ist die Herkunft („Linsensuppe (Fr 02.10.): 2 Karotten“) ohne Zusatzaufwand verfügbar, und Fehler in der Mengenarithmetik lassen sich korrigieren, ohne Daten zu migrieren. Gespeicherte Summen wären einfacher zu lesen, aber sie verlieren die Herkunft, und Fehler blieben dauerhaft in den Daten. Ändert der Nutzer die Menge eines Artikels von Hand, ersetzt ein einzelner Anteil `manual` alle bisherigen. Die Herkunft geht dann bewusst verloren.
 
-**Schlüssel und Zusammenführungen.** `key` = Name in Kleinbuchstaben, Leerraum zusammengezogen, „ß“ bleibt. Danach wird über `shopping_aliases (from_key PK, to_key)` aufgelöst, höchstens eine Stufe. Beim Anlegen einer Ziel-Zusammenführung werden Ketten flachgezogen. Ein Artikel ist eindeutig pro `(key, checked = 0)`: Neue Anteile hängen sich an den offenen Artikel, abgehakte Artikel bleiben unberührt. Wer schon Milch im Wagen hat und neu übernimmt, bekommt einen neuen offenen Artikel „Milch“.
+**Schlüssel und Zusammenführungen.** `key` = Name in Kleinbuchstaben, Leerraum zusammengezogen, „ß“ bleibt. Danach wird über `shopping_aliases (from_key PK, from_name, to_key, to_name)` aufgelöst, höchstens eine Stufe; die Namen braucht es für die Anzeige in den Einstellungen und für neue Artikel unter dem Zielnamen. Beim Anlegen einer Ziel-Zusammenführung werden Ketten flachgezogen. Neue Anteile hängen sich an den ältesten offenen Artikel mit dem Schlüssel, abgehakte Artikel bleiben unberührt. Einen eindeutigen Index auf `(key, checked = 0)` gibt es nicht, weil sonst das Zurücksetzen eines abgehakten Artikels scheitern könnte. Wer schon Milch im Wagen hat und neu übernimmt, bekommt einen neuen offenen Artikel „Milch“.
 
 **Übernahme merkt sich Einträge.** `shopping_imported_entries (entry_id PK, imported_at)` verhindert doppelte Übernahme, auch nachdem Artikel gelöscht wurden. Der Eintrag wird über `ON DELETE CASCADE` an `plan_entries` gebunden. Verschwindet ein Eintrag aus dem Plan und wird neu angelegt, gilt er als neu. Die Übernahme läuft serverseitig in einer Transaktion: Einträge lesen, Faktor bilden, Zutaten mit Menge × Faktor als Anteile anlegen. Einzelzutaten werden mit dem Parser zerlegt.
 
@@ -35,8 +35,8 @@ Jede übernommene Zutat wird ein Anteil. Die angezeigte Menge wird beim Lesen au
 
 **Kategorien und Vorschläge.**
 - `shopping_categories (id, name, position, builtin_slug NULL)`, vorbelegt mit 13 Kategorien: Obst & Gemüse, Brot & Backwaren, Milchprodukte & Eier, Käse, Fleisch & Fisch, Tiefkühl, Nudeln/Reis/Getreide, Konserven & Saucen, Backen, Gewürze & Öle, Süßes & Snacks, Getränke, Drogerie & Haushalt, dazu „Sonstiges“ (nicht löschbar).
-- Vorschläge kommen aus einer eingebetteten Datei `suggestions.json` (Schlüssel → `builtin_slug`) mit rund 400 deutschen Zutaten in Ein- und Mehrzahl.
-- Reihenfolge der Suche: gemerkte Wahl in `shopping_name_prefs (key PK, category_id NULL, store_id NULL)` → exakter Vorschlag → längster bekannter Wortanfang oder Wortende bei zusammengesetzten Wörtern („Rinderhackfleisch“ → „hackfleisch“) → Sonstiges.
+- Vorschläge kommen aus einer eingebetteten Datei `internal/shopping/suggestions.json` (`builtin_slug` → Liste von Schlüsseln) mit rund 400 deutschen Zutaten in Ein- und Mehrzahl. Die eingebauten Kategorien legt ein Go-Schritt der Migration aus derselben Liste an, die IDs sind `cat-<slug>`.
+- Reihenfolge der Suche: gemerkte Wahl in `shopping_name_prefs (key PK, category_id NULL, store_id NULL)` → exakter Vorschlag → längstes bekanntes Wortende bei zusammengesetzten Wörtern („Rinderhackfleisch“ → „hackfleisch“, „Kartoffelmehl“ → „mehl“), ohne ein solches der längste Wortanfang; geprüft werden der ganze Name und jedes Wort darin; Wortteile unter vier Buchstaben zählen nicht („Brei“ ist kein Ei) → Sonstiges.
 - Wurde die vorgeschlagene Kategorie gelöscht, greift „Sonstiges“.
 - Ein Dienst im Netz (zum Beispiel ein LLM) wäre treffsicherer, aber er bringt eine externe Abhängigkeit und Kosten mit sich und schickt Daten nach außen. Die gelernte Wahl gleicht die Lücken schnell aus.
 
@@ -53,16 +53,19 @@ Jede übernommene Zutat wird ein Anteil. Die angezeigte Menge wird beim Lesen au
 - `POST /api/shopping/items/{id}/merge-into/{targetId}`
 - `POST /api/shopping/import` (`from`, `to`; Antwort: Liste und `withoutIngredients`)
 - `POST /api/shopping/clear-checked`
-- CRUD unter `/api/shopping/categories`, `/api/shopping/stores`, `/api/shopping/aliases` und `/api/shopping/staples`, dazu `POST /api/shopping/staples/add` (IDs)
-- Schreibende Antworten liefern die vollständige Liste.
+- `POST /api/shopping/categories`, `PATCH`/`DELETE /api/shopping/categories/{id}`, `PUT /api/shopping/categories/order` (`ids`); dasselbe ohne Reihenfolge für `/api/shopping/stores`
+- `GET /api/shopping/aliases`, `DELETE /api/shopping/aliases/{fromKey}` (Antwort: Aliasse)
+- `GET`/`POST /api/shopping/staples`, `DELETE /api/shopping/staples/{id}` (Antwort: Vorrat), `POST /api/shopping/staples/add` (IDs)
+- Die übrigen schreibenden Antworten liefern die vollständige Liste. Die Übernahme ist auf zwei Monate begrenzt.
 
 **Vorrat** in `shopping_staples (id, text, key, position)`. Übernahme als Anteil `staple`.
 
 **Frontend:**
 - Seite `/einkauf` mit Kategorien als Abschnitten und großen Tippflächen (mindestens 48 px)
 - Oben ein Eingabefeld „Artikel hinzufügen“, darunter Knöpfe für Plan, Vorrat, Teilen und Erledigte entfernen
-- Ein Artikel antippen hakt ab, ein langes Tippen oder das ⋯-Menü öffnet die Details (Herkunft, Kategorie, Geschäft, Zusammenführen, Zum Vorrat, Löschen).
+- Ein Artikel antippen hakt ab, das ⋯ daneben öffnet die Details (Herkunft, Name, Menge, Kategorie, Geschäft, Zusammenführen, Zum Vorrat, Löschen). Auf langes Tippen wurde verzichtet: Es ist am Handy schwer zu entdecken und kollidiert mit dem Markieren von Text.
 - Kategorien und Geschäfte werden in `/einstellungen` unter „Einkauf“ verwaltet.
+- Mit dem vierten Navigationseintrag wird die Kopfzeile unter 30rem enger und blendet den Titel unter 22rem aus, damit bei 375 px nichts seitlich herausragt.
 - Wake Lock über `navigator.wakeLock.request('screen')`, das bei `visibilitychange` erneut angefordert wird.
 
 ## Risks / Trade-offs

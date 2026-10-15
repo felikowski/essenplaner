@@ -7,6 +7,11 @@ import type {
   NewEntry,
   Recipe,
   RecipeInput,
+  ShoppingAlias,
+  ShoppingImportResult,
+  ShoppingItemPatch,
+  ShoppingList,
+  Staple,
   WeekPlan,
 } from '../types'
 
@@ -43,4 +48,33 @@ export interface PlannerApi {
   updateRecipe(id: string, input: RecipeInput): Promise<Recipe>
   /** Markiert ein Rezept als nicht mehr verfügbar. */
   removeRecipe(id: string): Promise<void>
+
+  /**
+   * Lädt die Einkaufsliste. Mit knownVersion liefert sie null, wenn sich seitdem nichts geändert hat.
+   * Alle schreibenden Methoden liefern die vollständige Liste.
+   */
+  getShoppingList(knownVersion?: number): Promise<ShoppingList | null>
+  /** Fügt einen Artikel als Zutatenzeile hinzu, etwa „2 Packungen Kaffee“. */
+  addShoppingItem(text: string): Promise<ShoppingList>
+  updateShoppingItem(id: string, patch: ShoppingItemPatch): Promise<ShoppingList>
+  setShoppingItemChecked(id: string, checked: boolean): Promise<ShoppingList>
+  deleteShoppingItem(id: string): Promise<ShoppingList>
+  /** Führt einen Artikel in einen anderen zusammen und merkt sich das für den Namen. */
+  mergeShoppingItem(id: string, targetId: string): Promise<ShoppingList>
+  /** Übernimmt die Zutaten der Planeinträge zwischen from und to (einschließlich). */
+  importShoppingFromPlan(from: IsoDate, to: IsoDate): Promise<ShoppingImportResult>
+  clearCheckedShoppingItems(): Promise<ShoppingList>
+  createShoppingCategory(name: string): Promise<ShoppingList>
+  renameShoppingCategory(id: string, name: string): Promise<ShoppingList>
+  deleteShoppingCategory(id: string): Promise<ShoppingList>
+  reorderShoppingCategories(ids: string[]): Promise<ShoppingList>
+  createShoppingStore(name: string): Promise<ShoppingList>
+  renameShoppingStore(id: string, name: string): Promise<ShoppingList>
+  deleteShoppingStore(id: string): Promise<ShoppingList>
+  listShoppingAliases(): Promise<ShoppingAlias[]>
+  deleteShoppingAlias(fromKey: string): Promise<ShoppingAlias[]>
+  listStaples(): Promise<Staple[]>
+  createStaple(text: string): Promise<Staple[]>
+  deleteStaple(id: string): Promise<Staple[]>
+  addStaplesToList(ids: string[]): Promise<ShoppingList>
 }

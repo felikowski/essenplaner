@@ -94,6 +94,9 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | GET/PATCH | `/api/settings`     | Haushalts-Einstellungen, z. B. `{"visibleMeals": ["dinner"]}`   |
 | POST    | `/api/recipes/import` | Body `{"url": "…"}`: Rezept von einer Webseite importieren      |
 | DELETE  | `/api/recipes/{id}`   | importiertes oder eigenes Rezept entfernen (bleibt in Plänen)   |
+| GET     | `/api/shopping/list`  | Einkaufsliste mit `ETag`, unverändert 304                        |
+| POST    | `/api/shopping/import` | Body `{"from": "2026-10-15", "to": "2026-10-21"}`: Zutaten aus dem Plan |
+| …       | `/api/shopping/…`     | Artikel, Kategorien, Geschäfte, Zusammenführungen, Vorrat (siehe `internal/httpapi/shopping.go`) |
 
 Fehler haben immer die Form `{"error": "…"}`. Validierungsfehler (422) nennen zusätzlich das
 betroffene Feld: `{"error": "…", "field": "servings"}`.
@@ -131,6 +134,24 @@ in `frontend/src/lib/scale.ts` und `frontend/src/lib/stepAmounts.ts`.
 (zum Beispiel die Umstellung auf zerlegte Zutaten). Die alte Version kann die neue Datenbank danach nicht
 mehr lesen, ein Rollback heißt also: Sicherung zurückspielen. Sicherung bei laufendem Server:
 `sqlite3 data/essenplaner.db ".backup data/essenplaner-$(date +%F).db"`.
+
+## Einkaufsliste
+
+Unter „Einkauf“ führt der Haushalt eine gemeinsame Liste. „Aus dem Plan“ übernimmt für einen Zeitraum
+(voreingestellt heute plus sechs Tage) die Zutaten aller Rezepteinträge, auf die geplanten Portionen
+umgerechnet, und alle Einzelzutaten. Reste, Notizen und schon übernommene Einträge werden übersprungen,
+Rezepte ohne Zutaten werden mit einem Link zum Nachtragen genannt. Gleiche Zutaten werden zusammengefasst
+(„500 g“ + „1 kg“ = „1,5 kg“, „250 g + 2 EL“ bei verschiedenen Einheiten), Stückzahlen aufgerundet.
+
+Jeder Artikel steht in einer Kategorie (Gang im Laden). Vorschläge für rund 400 Zutaten liegen in
+`backend/internal/shopping/suggestions.json`; ändert man die Kategorie oder das Geschäft eines Artikels,
+merkt sich die Liste das für den Namen. Über ⋯ an einem Artikel lassen sich auch Artikel zusammenführen
+(„Zwiebel“ in „Zwiebeln“, ebenfalls gemerkt), in den Vorrat übernehmen oder löschen. Kategorien,
+Geschäfte und gemerkte Zusammenführungen verwaltet man in den Einstellungen.
+
+Die Seite fragt alle 10 Sekunden nach Änderungen, solange sie sichtbar ist, und hält den Bildschirm an.
+„Vorrat prüfen“ (`/einkauf/vorrat`) bringt angekreuzte Dinge, die immer im Haus sein sollen, auf die Liste.
+„Teilen“ nutzt das Teilen-Menü des Handys oder kopiert die Liste, „Drucken“ hat eine eigene Druckansicht.
 
 ## Rezepte per Link importieren
 

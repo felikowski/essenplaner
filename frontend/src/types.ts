@@ -89,3 +89,71 @@ export type CopyMode = 'append' | 'replace'
 export interface HouseholdSettings {
   visibleMeals: Meal[]
 }
+
+/** Ein Gang im Laden. „Sonstiges“ ist nicht löschbar. */
+export interface ShoppingCategory {
+  id: string
+  name: string
+  removable: boolean
+}
+
+export interface ShoppingStore {
+  id: string
+  name: string
+}
+
+/** Herkunft eines Anteils: aus dem Plan, von Hand oder aus dem Vorrat. */
+export interface ShoppingSource {
+  kind: 'plan' | 'manual' | 'staple'
+  recipeId?: string
+  recipeTitle?: string
+  date?: IsoDate
+  /** Menge dieses Anteils, etwa „333 g“ */
+  amount?: string
+  text?: string
+}
+
+export interface ShoppingItem {
+  id: string
+  name: string
+  categoryId: string
+  storeId?: string
+  checked: boolean
+  /** Fertig formatierte Menge, etwa „250 g + 2 EL“; fehlt bei Artikeln ohne Menge. */
+  display?: string
+  amounts: { quantity: number; unit?: string }[]
+  sources: ShoppingSource[]
+}
+
+export interface ShoppingList {
+  /** Steigt mit jeder Änderung; dient dem Abgleich beim Abfragen. */
+  version: number
+  categories: ShoppingCategory[]
+  stores: ShoppingStore[]
+  /** Nach Kategorie, offen vor erledigt und Namen sortiert. */
+  items: ShoppingItem[]
+}
+
+export interface ShoppingItemPatch {
+  name?: string
+  /** Menge als Text, etwa „500 g“; leer = ohne Menge. Ersetzt die Herkunft. */
+  quantity?: string
+  categoryId?: string
+  storeId?: string | null
+}
+
+export interface ShoppingImportResult {
+  list: ShoppingList
+  withoutIngredients: { id: string; title: string }[]
+}
+
+export interface ShoppingAlias {
+  fromKey: string
+  fromName: string
+  toName: string
+}
+
+export interface Staple {
+  id: string
+  text: string
+}

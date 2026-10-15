@@ -47,14 +47,14 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 
 | Plan to Eat | Essenplaner | Anmerkung |
 |---|---|---|
-| Automatisch aus dem Plan erzeugt | ❌ | Kernfunktion, braucht strukturierte Zutaten |
-| Gleiche Zutaten zusammenfassen | ❌ | Mengen und Einheiten normalisieren |
-| Eigene Artikel ergänzen | ❌ | |
-| Nach Geschäft und Gang sortieren, Zuordnung merken | ❌ | |
-| Abhaken beim Einkaufen, Bildschirm bleibt an | ❌ | |
+| Automatisch aus dem Plan erzeugt | ✅ | „Aus dem Plan übernehmen“, auf Portionen umgerechnet |
+| Gleiche Zutaten zusammenfassen | ✅ | g/kg und ml/l umgerechnet, gelerntes Zusammenführen |
+| Eigene Artikel ergänzen | ✅ | |
+| Nach Geschäft und Gang sortieren, Zuordnung merken | ✅ | Kategorien mit Vorschlägen, Geschäftsfilter |
+| Abhaken beim Einkaufen, Bildschirm bleibt an | ✅ | Abgleich alle 10 s, Wake Lock |
 | „Habe ich schon“ ausblenden | ❌ | |
-| Vorratsliste (Staples) gesammelt hinzufügen | ❌ | |
-| Liste per Nachricht teilen | ❌ | Web Share API |
+| Vorratsliste (Staples) gesammelt hinzufügen | ✅ | „Vorrat prüfen“ |
+| Liste per Nachricht teilen | ✅ | Web Share API, sonst Zwischenablage; Druckansicht |
 | Lieferdienst-Anbindung | – | US-spezifisch, weglassen |
 
 ## Nährwerte

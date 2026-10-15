@@ -11,8 +11,14 @@ import {
   type PlanEntry,
   type Recipe,
   type RecipeInput,
+  type ShoppingAlias,
+  type ShoppingImportResult,
+  type ShoppingItemPatch,
+  type ShoppingList,
+  type Staple,
   type WeekPlan,
 } from '../types'
+import { MockShopping } from './mockShopping'
 import type { PlannerApi } from './PlannerApi'
 import { RequestError, request } from './request'
 
@@ -42,6 +48,7 @@ export class MockPlannerApi implements PlannerApi {
   private readonly load: JsonLoader
   private data: Promise<MockData> | null = null
   private nextId = 1
+  private readonly shopping = new MockShopping(() => this.getData())
 
   constructor(load: JsonLoader = loadFromPublic) {
     this.load = load
@@ -270,6 +277,90 @@ export class MockPlannerApi implements PlannerApi {
     if (!recipe.removable) throw new RequestError(`DELETE /api/recipes/${id} fehlgeschlagen: 409`, 409)
     recipe.available = false
     recipe.removable = false
+  }
+
+  async getShoppingList(knownVersion?: number): Promise<ShoppingList | null> {
+    return this.shopping.list(knownVersion)
+  }
+
+  async addShoppingItem(text: string): Promise<ShoppingList> {
+    return this.shopping.addItem(text)
+  }
+
+  async updateShoppingItem(id: string, patch: ShoppingItemPatch): Promise<ShoppingList> {
+    return this.shopping.updateItem(id, patch)
+  }
+
+  async setShoppingItemChecked(id: string, checked: boolean): Promise<ShoppingList> {
+    return this.shopping.setChecked(id, checked)
+  }
+
+  async deleteShoppingItem(id: string): Promise<ShoppingList> {
+    return this.shopping.deleteItem(id)
+  }
+
+  async mergeShoppingItem(id: string, targetId: string): Promise<ShoppingList> {
+    return this.shopping.merge(id, targetId)
+  }
+
+  importShoppingFromPlan(from: IsoDate, to: IsoDate): Promise<ShoppingImportResult> {
+    return this.shopping.importFromPlan(from, to)
+  }
+
+  async clearCheckedShoppingItems(): Promise<ShoppingList> {
+    return this.shopping.clearChecked()
+  }
+
+  async createShoppingCategory(name: string): Promise<ShoppingList> {
+    return this.shopping.createCategory(name)
+  }
+
+  async renameShoppingCategory(id: string, name: string): Promise<ShoppingList> {
+    return this.shopping.renameCategory(id, name)
+  }
+
+  async deleteShoppingCategory(id: string): Promise<ShoppingList> {
+    return this.shopping.deleteCategory(id)
+  }
+
+  async reorderShoppingCategories(ids: string[]): Promise<ShoppingList> {
+    return this.shopping.reorderCategories(ids)
+  }
+
+  async createShoppingStore(name: string): Promise<ShoppingList> {
+    return this.shopping.createStore(name)
+  }
+
+  async renameShoppingStore(id: string, name: string): Promise<ShoppingList> {
+    return this.shopping.renameStore(id, name)
+  }
+
+  async deleteShoppingStore(id: string): Promise<ShoppingList> {
+    return this.shopping.deleteStore(id)
+  }
+
+  async listShoppingAliases(): Promise<ShoppingAlias[]> {
+    return this.shopping.listAliases()
+  }
+
+  async deleteShoppingAlias(fromKey: string): Promise<ShoppingAlias[]> {
+    return this.shopping.deleteAlias(fromKey)
+  }
+
+  async listStaples(): Promise<Staple[]> {
+    return this.shopping.listStaples()
+  }
+
+  async createStaple(text: string): Promise<Staple[]> {
+    return this.shopping.createStaple(text)
+  }
+
+  async deleteStaple(id: string): Promise<Staple[]> {
+    return this.shopping.deleteStaple(id)
+  }
+
+  async addStaplesToList(ids: string[]): Promise<ShoppingList> {
+    return this.shopping.addStaples(ids)
   }
 
   private getData(): Promise<MockData> {

@@ -126,4 +126,42 @@ describe('HttpPlannerApi', () => {
       new HttpPlannerApi().createEntry({ date: '2026-09-30', meal: 'dinner', kind: 'recipe', recipeId: 'x' }),
     ).rejects.toThrow('POST /api/entries fehlgeschlagen: 422')
   })
+
+  it('fragt die Einkaufsliste mit der bekannten Version nach und liefert null bei 304', async () => {
+    const api = new HttpPlannerApi()
+    const list = { version: 3, categories: [], stores: [], items: [] }
+    fetchMock.mockResolvedValueOnce(jsonResponse(list))
+    expect(await api.getShoppingList()).toEqual(list)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/list', { headers: {} })
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 304 }))
+    expect(await api.getShoppingList(3)).toBeNull()
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/list', { headers: { 'If-None-Match': '"v3"' } })
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'internal error' }, 500))
+    await expect(api.getShoppingList()).rejects.toThrow('500')
+  })
+
+  it('schickt Änderungen an der Einkaufsliste an /api/shopping', async () => {
+    const api = new HttpPlannerApi()
+    const list = { version: 4, categories: [], stores: [], items: [] }
+    fetchMock.mockImplementation(async () => jsonResponse(list))
+
+    await api.addShoppingItem('2 Packungen Kaffee')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items', expect.objectContaining({ method: 'POST', body: '{"text":"2 Packungen Kaffee"}' }))
+    await api.setShoppingItemChecked('s 1', true)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items/s%201/checked', expect.objectContaining({ method: 'PUT', body: '{"checked":true}' }))
+    await api.updateShoppingItem('s-1', { storeId: null })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items/s-1', expect.objectContaining({ method: 'PATCH', body: '{"storeId":null}' }))
+    await api.mergeShoppingItem('s-1', 's-2')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items/s-1/merge-into/s-2', expect.objectContaining({ method: 'POST' }))
+    await api.importShoppingFromPlan('2026-10-01', '2026-10-07')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/import', expect.objectContaining({ body: '{"from":"2026-10-01","to":"2026-10-07"}' }))
+    await api.reorderShoppingCategories(['a', 'b'])
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/categories/order', expect.objectContaining({ method: 'PUT', body: '{"ids":["a","b"]}' }))
+    await api.deleteShoppingAlias('zwiebel')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/aliases/zwiebel', expect.objectContaining({ method: 'DELETE' }))
+    await api.addStaplesToList(['st-1'])
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/staples/add', expect.objectContaining({ body: '{"ids":["st-1"]}' }))
+  })
 })

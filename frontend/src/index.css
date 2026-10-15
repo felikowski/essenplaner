@@ -975,3 +975,266 @@ img {
     font-size: 10pt;
   }
 }
+
+/* Einkaufsliste */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.shopping-add {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.shopping-add .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.shopping-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.shopping-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.shopping-filter .select {
+  flex: 1;
+}
+
+.shopping-category {
+  margin-top: var(--space-4);
+}
+
+.shopping-category__title {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  text-transform: none;
+}
+
+.shopping-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.shopping-item {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.shopping-item:first-child {
+  border-top: 0;
+}
+
+.shopping-item__toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.0625rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shopping-item__box {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-accent-contrast);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.shopping-item__name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.shopping-item__amount {
+  flex: none;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shopping-item--checked .shopping-item__box {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.shopping-item--checked .shopping-item__name,
+.shopping-item--checked .shopping-item__amount {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.shopping-sources {
+  margin: var(--space-1) 0 var(--space-3);
+  padding-left: var(--space-6);
+  color: var(--color-text-muted);
+}
+
+.shopping-merge {
+  margin-top: var(--space-4);
+}
+
+.shopping-notice__link {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.staple-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.staple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.staple__label {
+  flex: 1;
+  min-height: 3rem;
+}
+
+.staples-page__submit {
+  width: 100%;
+  margin-bottom: var(--space-4);
+}
+
+.settings-heading {
+  margin-top: var(--space-6);
+}
+
+.settings-group + .settings-group {
+  margin-top: var(--space-4);
+}
+
+.settings-list {
+  list-style: none;
+  margin: var(--space-2) 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.settings-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.settings-list__input,
+.settings-list__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-list__add {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.settings-list__add .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Druckansicht der Einkaufsliste: hoch, ohne Bedienelemente */
+
+@page shopping {
+  size: A4 portrait;
+}
+
+@media print {
+  .shopping-page {
+    page: shopping;
+  }
+
+  .no-print,
+  .shopping-item .icon-button {
+    display: none !important;
+  }
+
+  .shopping-items {
+    box-shadow: none;
+  }
+
+  .shopping-category {
+    break-inside: avoid;
+  }
+
+  .shopping-item__toggle {
+    min-height: 0;
+    padding: 0.1cm 0;
+  }
+}
+
+/* Schmale Handys: Navigation geht vor den Titel, damit nichts seitlich herausragt. */
+
+@media (max-width: 30rem) {
+  .app-header__inner {
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
+
+  .app-title {
+    font-size: 1rem;
+  }
+
+  .app-nav {
+    gap: 0;
+  }
+
+  .app-nav__link {
+    padding: var(--space-2);
+  }
+}
+
+@media (max-width: 22rem) {
+  .app-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

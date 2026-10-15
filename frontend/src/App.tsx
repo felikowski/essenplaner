@@ -6,6 +6,8 @@ import { RecipeDetailPage } from './pages/RecipeDetailPage'
 import { RecipeEditPage } from './pages/RecipeEditPage'
 import { RecipeListPage } from './pages/RecipeListPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { ShoppingPage } from './pages/ShoppingPage'
+import { StaplesPage } from './pages/StaplesPage'
 import { WeekPage } from './pages/WeekPage'
 
 export function AppRoutes() {
@@ -19,6 +21,8 @@ export function AppRoutes() {
         <Route path="rezepte/neu" element={<RecipeEditPage />} />
         <Route path="rezepte/:id" element={<RecipeDetailPage />} />
         <Route path="rezepte/:id/bearbeiten" element={<RecipeEditPage />} />
+        <Route path="einkauf" element={<ShoppingPage />} />
+        <Route path="einkauf/vorrat" element={<StaplesPage />} />
         <Route path="einstellungen" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

@@ -20,7 +20,7 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// DB implementiert RecipeStore, PlanStore und SettingsStore.
+// DB implementiert RecipeStore, PlanStore, SettingsStore und ShoppingStore.
 type DB struct {
 	sql *sql.DB
 }
@@ -29,6 +29,7 @@ var (
 	_ RecipeStore   = (*DB)(nil)
 	_ PlanStore     = (*DB)(nil)
 	_ SettingsStore = (*DB)(nil)
+	_ ShoppingStore = (*DB)(nil)
 )
 
 // Open öffnet (oder erstellt) die Datenbankdatei und bringt das Schema auf den neuesten Stand.
@@ -73,6 +74,7 @@ func (db *DB) Ping(ctx context.Context) error {
 // etwa um Daten umzuwandeln, was in SQL nicht vernünftig geht. Eine Version kann auch nur aus Go bestehen.
 var goMigrations = map[int]func(ctx context.Context, tx *sql.Tx) error{
 	3: migrateRecipeEditor,
+	5: seedShoppingCategories,
 }
 
 func (db *DB) migrate(ctx context.Context) error {
