@@ -1,13 +1,20 @@
 import { parseIngredients } from '../lib/ingredient'
-import { daysOfWeek, parseIsoDate, weekOf } from '../lib/isoWeek'
+import { daysOfWeek, parseIsoDate, toIsoDate, weekOf } from '../lib/isoWeek'
 import {
+  type ApplyMenuResult,
   MEALS,
   type CopyMode,
   type EntryPatch,
   type HouseholdSettings,
   type IsoDate,
   type IsoWeek,
+  type Menu,
+  type MenuEntry,
+  type MenuEntryPatch,
+  type MenuInput,
+  type MenuSummary,
   type NewEntry,
+  type NewMenuEntry,
   type PlanEntry,
   type Recipe,
   type RecipeInput,
@@ -33,6 +40,7 @@ type StoredEntry = PlanEntry & { date: IsoDate }
 interface MockData {
   recipes: Recipe[]
   entries: StoredEntry[]
+  menus: Menu[]
   settings: HouseholdSettings
 }
 
@@ -118,7 +126,7 @@ export class MockPlannerApi implements PlannerApi {
       entry.date = date
       entry.meal = meal
       for (const leftover of data.entries) {
-        if (leftover.leftoverOf?.id === entry.id) leftover.leftoverOf.date = date
+        if (leftover.leftoverOf?.id === entry.id && 'date' in leftover.leftoverOf) leftover.leftoverOf.date = date
       }
     }
     if (patch.servings !== undefined) {
@@ -174,6 +182,239 @@ export class MockPlannerApi implements PlannerApi {
       }
     }
     return { week: weekPlan(data, to), skipped }
+  }
+
+  async listMenus(): Promise<MenuSummary[]> {
+    const { menus } = await this.getData()
+    return menus
+      .map((menu) => ({
+        id: menu.id,
+        name: menu.name,
+        description: menu.description,
+        days: menu.days,
+        recipeCount: Object.values(menu.entries).flat().filter((entry) => entry.kind === 'recipe').length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))
+  }
+
+  async getMenu(id: string): Promise<Menu | null> {
+    const { menus } = await this.getData()
+    const menu = menus.find((candidate) => candidate.id === id)
+    return menu ? structuredClone(menu) : null
+  }
+
+  async createMenu(input: MenuInput): Promise<Menu> {
+    const data = await this.getData()
+    const { name, description } = validateMenuInput(data.menus, input)
+    const dates = input.from && input.to ? inclusiveDates(input.from, input.to) : []
+    const entries: Record<number, MenuEntry[]> = {}
+    let days = dates.length || input.days || 1
+    if (days < 1 || days > 28) throw unprocessable('Ein Menü muss zwischen 1 und 28 Tage haben.')
+    for (let day = 1; day <= days; day++) entries[day] = []
+
+    if (dates.length) {
+      const copies = new Map<string, MenuEntry>()
+      for (const pass of [false, true]) {
+        for (const [index, date] of dates.entries()) {
+          for (const source of data.entries.filter((entry) => entry.date === date && (entry.kind === 'leftover') === pass)) {
+            const copy: MenuEntry = {
+              id: `me-${this.nextId++}`,
+              day: index + 1,
+              meal: source.meal,
+              position: source.position,
+              kind: source.kind,
+            }
+            if (source.recipeId) copy.recipeId = source.recipeId
+            if (source.servings !== undefined) copy.servings = source.servings
+            if (source.text) copy.text = source.text
+            if (source.kind === 'leftover') {
+              const original = copies.get(source.leftoverOf?.id ?? '')
+              if (original) copy.leftoverOf = { id: original.id, day: original.day }
+              else {
+                copy.kind = 'note'
+                copy.text = `Reste: ${data.recipes.find((recipe) => recipe.id === source.recipeId)?.title ?? 'Rezept'}`
+                delete copy.recipeId
+              }
+            }
+            entries[index + 1].push(copy)
+            copies.set(source.id, copy)
+          }
+        }
+      }
+      const last = dates.findLastIndex((_date, index) => entries[index + 1].length > 0) + 1
+      if (last === 0) throw unprocessable('Im gewählten Zeitraum gibt es keine Einträge.')
+      days = last
+      for (const key of Object.keys(entries).map(Number)) if (key > days) delete entries[key]
+    }
+
+    const menu: Menu = {
+      id: `menu-${this.nextId++}`,
+      name,
+      days,
+      createdAt: new Date().toISOString(),
+      entries,
+    }
+    if (description) menu.description = description
+    data.menus.push(menu)
+    return structuredClone(menu)
+  }
+
+  async updateMenu(id: string, input: Pick<MenuInput, 'name' | 'description'>): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, id)
+    const { name, description } = validateMenuInput(data.menus, input, id)
+    menu.name = name
+    if (description) menu.description = description
+    else delete menu.description
+    return structuredClone(menu)
+  }
+
+  async deleteMenu(id: string): Promise<void> {
+    const data = await this.getData()
+    const index = data.menus.findIndex((menu) => menu.id === id)
+    if (index < 0) throw new RequestError(`DELETE /api/menus/${id} fehlgeschlagen: 404`, 404)
+    data.menus.splice(index, 1)
+  }
+
+  async createMenuEntry(menuId: string, input: NewMenuEntry): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, menuId)
+    if (input.day < 1 || input.day > menu.days) throw unprocessable('Ungültiger Tag, ungültige Mahlzeit oder ungültige Art.')
+    const entry: MenuEntry = {
+      id: `me-${this.nextId++}`,
+      day: input.day,
+      meal: input.meal,
+      position: nextMenuPosition(menu, input.day, input.meal),
+      kind: input.kind,
+    }
+    if (input.kind === 'recipe') {
+      const recipe = data.recipes.find((candidate) => candidate.id === input.recipeId && isAvailable(candidate))
+      if (!recipe) throw unprocessable('Dieses Rezept gibt es nicht oder es ist nicht mehr verfügbar.')
+      entry.recipeId = recipe.id
+      const servings = input.servings ?? recipe.servings
+      if (servings !== undefined) entry.servings = servings
+    } else if (input.kind === 'leftover') {
+      const original = Object.values(menu.entries).flat().find((candidate) => candidate.id === input.leftoverOf)
+      if (!original || original.kind !== 'recipe') throw unprocessable('Reste lassen sich nur zu einem Rezept dieses Menüs anlegen.')
+      entry.recipeId = original.recipeId
+      entry.leftoverOf = { id: original.id, day: original.day }
+    } else entry.text = checkText(input.text)
+    menu.entries[input.day].push(entry)
+    return structuredClone(menu)
+  }
+
+  async updateMenuEntry(menuId: string, entryId: string, patch: MenuEntryPatch): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, menuId)
+    const entry = findMenuEntry(menu, entryId)
+    const oldDay = entry.day
+    const nextDay = patch.day ?? entry.day
+    const nextMeal = patch.meal ?? entry.meal
+    if (nextDay < 1 || nextDay > menu.days) throw unprocessable('Ungültiger Tag oder ungültige Mahlzeit.')
+    if (nextDay !== entry.day || nextMeal !== entry.meal) {
+      menu.entries[oldDay] = menu.entries[oldDay].filter((candidate) => candidate.id !== entry.id)
+      entry.day = nextDay
+      entry.meal = nextMeal
+      entry.position = nextMenuPosition(menu, nextDay, nextMeal)
+      menu.entries[nextDay].push(entry)
+    }
+    if ('servings' in patch) {
+      if (entry.kind !== 'recipe') throw unprocessable('Portionen gibt es nur bei Rezepteinträgen.')
+      if (patch.servings === null) delete entry.servings
+      else if (patch.servings !== undefined) entry.servings = patch.servings
+    }
+    if (patch.text !== undefined) {
+      if (entry.kind !== 'note' && entry.kind !== 'item') throw unprocessable('Text gibt es nur bei Notizen und Zutaten.')
+      entry.text = checkText(patch.text)
+    }
+    return structuredClone(menu)
+  }
+
+  async deleteMenuEntry(menuId: string, entryId: string): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, menuId)
+    const entry = findMenuEntry(menu, entryId)
+    for (const leftover of Object.values(menu.entries).flat()) {
+      if (leftover.leftoverOf?.id !== entry.id) continue
+      leftover.kind = 'note'
+      leftover.text = `Reste: ${data.recipes.find((recipe) => recipe.id === leftover.recipeId)?.title ?? 'Rezept'}`
+      delete leftover.recipeId
+      delete leftover.leftoverOf
+    }
+    menu.entries[entry.day] = menu.entries[entry.day].filter((candidate) => candidate.id !== entry.id)
+    return structuredClone(menu)
+  }
+
+  async appendMenuDay(id: string): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, id)
+    if (menu.days >= 28) throw unprocessable('Ein Menü muss zwischen 1 und 28 Tage haben.')
+    menu.days++
+    menu.entries[menu.days] = []
+    return structuredClone(menu)
+  }
+
+  async removeMenuDay(id: string, day: number): Promise<Menu> {
+    const data = await this.getData()
+    const menu = findMenu(data, id)
+    if (menu.days <= 1 || day < 1 || day > menu.days) throw unprocessable('Ein Menü muss zwischen 1 und 28 Tage haben.')
+    const removed = menu.entries[day].map((entry) => entry.id)
+    for (const entry of Object.values(menu.entries).flat()) {
+      if (!entry.leftoverOf || !removed.includes(entry.leftoverOf.id)) continue
+      entry.kind = 'note'
+      entry.text = `Reste: ${data.recipes.find((recipe) => recipe.id === entry.recipeId)?.title ?? 'Rezept'}`
+      delete entry.recipeId
+      delete entry.leftoverOf
+    }
+    for (let current = day; current < menu.days; current++) {
+      menu.entries[current] = menu.entries[current + 1]
+      for (const entry of menu.entries[current]) entry.day = current
+    }
+    delete menu.entries[menu.days]
+    menu.days--
+    return structuredClone(menu)
+  }
+
+  async applyMenu(id: string, start: IsoDate): Promise<ApplyMenuResult> {
+    const data = await this.getData()
+    const menu = findMenu(data, id)
+    const dates = Array.from({ length: menu.days }, (_, index) => toIsoDate(addDays(parseIsoDate(start), index)))
+    const copies = new Map<string, StoredEntry>()
+    const skipped: string[] = []
+    for (const pass of [false, true]) {
+      for (let day = 1; day <= menu.days; day++) {
+        for (const source of menu.entries[day].filter((entry) => (entry.kind === 'leftover') === pass)) {
+          const recipe = source.recipeId ? data.recipes.find((candidate) => candidate.id === source.recipeId) : undefined
+          if (source.kind === 'recipe' && (!recipe || !isAvailable(recipe))) {
+            if (recipe && !skipped.includes(recipe.title)) skipped.push(recipe.title)
+            continue
+          }
+          const copy: StoredEntry = {
+            id: `e-${this.nextId++}`,
+            date: dates[day - 1],
+            meal: source.meal,
+            position: nextPosition(data.entries, dates[day - 1], source.meal),
+            kind: source.kind,
+          }
+          if (source.kind === 'leftover') {
+            const original = copies.get(source.leftoverOf?.id ?? '')
+            if (!original) {
+              if (recipe && !skipped.includes(recipe.title)) skipped.push(recipe.title)
+              continue
+            }
+            copy.recipeId = source.recipeId
+            copy.leftoverOf = { id: original.id, date: original.date }
+          } else {
+            if (source.recipeId) copy.recipeId = source.recipeId
+            if (source.servings !== undefined) copy.servings = source.servings
+            if (source.text) copy.text = source.text
+          }
+          data.entries.push(copy)
+          copies.set(source.id, copy)
+        }
+      }
+    }
+    return { weeks: weeksOf(data, dates), skipped }
   }
 
   async getRecipeHistory(id: string): Promise<IsoDate[]> {
@@ -419,6 +660,7 @@ export class MockPlannerApi implements PlannerApi {
         return {
           recipes: loaded,
           entries: (weeks as MockWeek[]).flatMap((week) => entriesFromMockWeek(week, loaded, () => this.nextId++)),
+          menus: [],
           settings: { visibleMeals: ['dinner'] },
         }
       })
@@ -429,6 +671,47 @@ export class MockPlannerApi implements PlannerApi {
     }
     return this.data
   }
+}
+
+function findMenu(data: MockData, id: string): Menu {
+  const menu = data.menus.find((candidate) => candidate.id === id)
+  if (!menu) throw new RequestError(`Menü ${id} fehlgeschlagen: 404`, 404)
+  return menu
+}
+
+function findMenuEntry(menu: Menu, id: string): MenuEntry {
+  const entry = Object.values(menu.entries).flat().find((candidate) => candidate.id === id)
+  if (!entry) throw new RequestError(`Menüeintrag ${id} fehlgeschlagen: 404`, 404)
+  return entry
+}
+
+function nextMenuPosition(menu: Menu, day: number, meal: string): number {
+  return Math.max(0, ...menu.entries[day].filter((entry) => entry.meal === meal).map((entry) => entry.position)) + 1
+}
+
+function validateMenuInput(menus: Menu[], input: Pick<MenuInput, 'name' | 'description'>, ownId?: string) {
+  const name = input.name.trim()
+  const description = input.description?.trim() ?? ''
+  if (!name || [...name].length > 100) throw unprocessable('Der Name muss 1 bis 100 Zeichen lang sein.')
+  if ([...description].length > 500) throw unprocessable('Die Beschreibung darf höchstens 500 Zeichen lang sein.')
+  const key = name.replace(/\s+/g, ' ').toLocaleLowerCase('de')
+  if (menus.some((menu) => menu.id !== ownId && menu.name.replace(/\s+/g, ' ').toLocaleLowerCase('de') === key)) {
+    throw unprocessable('Ein Menü mit diesem Namen gibt es schon.')
+  }
+  return { name, description }
+}
+
+function inclusiveDates(from: IsoDate, to: IsoDate): IsoDate[] {
+  const start = parseIsoDate(from)
+  const end = parseIsoDate(to)
+  const dates: IsoDate[] = []
+  for (let date = start; date <= end && dates.length <= 28; date = addDays(date, 1)) dates.push(toIsoDate(date))
+  if (!dates.length || dates.length > 28) throw unprocessable('Ein Menü muss zwischen 1 und 28 Tage haben.')
+  return dates
+}
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
 }
 
 function entriesFromMockWeek(week: MockWeek, recipes: Recipe[], nextId: () => number): StoredEntry[] {

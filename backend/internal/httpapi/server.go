@@ -21,6 +21,7 @@ type Server struct {
 	plans    store.PlanStore
 	settings store.SettingsStore
 	shopping store.ShoppingStore
+	menus    store.MenuStore
 	health   HealthChecker
 	importer RecipeImporter
 	logger   *slog.Logger
@@ -32,11 +33,12 @@ type Stores struct {
 	Plans    store.PlanStore
 	Settings store.SettingsStore
 	Shopping store.ShoppingStore
+	Menus    store.MenuStore
 	Health   HealthChecker
 }
 
 func NewServer(stores Stores, logger *slog.Logger) *Server {
-	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, shopping: stores.Shopping, health: stores.Health, logger: logger}
+	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, shopping: stores.Shopping, menus: stores.Menus, health: stores.Health, logger: logger}
 }
 
 // StoresFrom nutzt eine Datenbank für alle Zugriffe.
@@ -45,9 +47,10 @@ func StoresFrom(db interface {
 	store.PlanStore
 	store.SettingsStore
 	store.ShoppingStore
+	store.MenuStore
 	HealthChecker
 }) Stores {
-	return Stores{Recipes: db, Plans: db, Settings: db, Shopping: db, Health: db}
+	return Stores{Recipes: db, Plans: db, Settings: db, Shopping: db, Menus: db, Health: db}
 }
 
 // Handler liefert den vollständigen Router. static beantwortet alle Pfade außerhalb
@@ -72,6 +75,7 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 	mux.HandleFunc("GET /api/tags", s.handleListTags)
 	mux.HandleFunc("PATCH /api/tags/{key}", s.handleRenameTag)
 	mux.HandleFunc("DELETE /api/tags/{key}", s.handleDeleteTag)
+	s.routeMenus(mux)
 	s.routeShopping(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")

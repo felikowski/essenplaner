@@ -99,6 +99,11 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | GET     | `/api/shopping/list`  | Einkaufsliste mit `ETag`, unverändert 304                        |
 | POST    | `/api/shopping/import` | Body `{"from": "2026-10-15", "to": "2026-10-21"}`: Zutaten aus dem Plan |
 | …       | `/api/shopping/…`     | Artikel, Kategorien, Geschäfte, Zusammenführungen, Vorrat (siehe `internal/httpapi/shopping.go`) |
+| GET/POST | `/api/menus`         | Menüs auflisten oder leer beziehungsweise aus einem Zeitraum anlegen |
+| GET/PATCH/DELETE | `/api/menus/{id}` | Menü lesen, Name und Beschreibung ändern oder löschen          |
+| POST/PATCH/DELETE | `/api/menus/{id}/entries[/{entry}]` | Menüeinträge anlegen, ändern oder löschen              |
+| POST/DELETE | `/api/menus/{id}/days[/{day}]` | Tag anfügen oder entfernen                                 |
+| POST    | `/api/menus/{id}/apply` | Menü ab `{"start": "2026-10-12"}` in den Plan übernehmen           |
 
 Fehler haben immer die Form `{"error": "…"}`. Validierungsfehler (422) nennen zusätzlich das
 betroffene Feld: `{"error": "…", "field": "servings"}`.
@@ -121,6 +126,14 @@ die Grundlage für Einkaufsliste und Portionen. Die Regeln stehen in `backend/in
 `frontend/src/lib/ingredient.ts`. Beide prüfen dieselben Fälle aus `testdata/ingredient-cases.json`.
 
 Von Hand geänderte Angaben bleiben erhalten, wenn ein Rezept erneut per Link importiert wird.
+
+## Menüs
+
+„Menüs“ im Wochenplan öffnet wiederverwendbare, benannte Pläne mit bis zu 28 Tagen. Eine angezeigte
+Woche oder ein anderer Zeitraum lässt sich über „Als Menü speichern“ übernehmen; leere Tage am Ende
+entfallen dabei. Im Menü können Name, Beschreibung, Tage und dieselben Eintragsarten wie im Wochenplan
+bearbeitet werden. Beim Einplanen wird ein freies Startdatum gewählt, vorhandene Einträge bleiben davor
+stehen. Nicht mehr verfügbare Rezepte werden übersprungen und anschließend genannt.
 
 ## Rezepte einordnen und finden
 

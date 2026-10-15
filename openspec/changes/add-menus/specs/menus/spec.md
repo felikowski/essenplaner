@@ -5,7 +5,7 @@ Bewährte Pläne unter einem Namen speichern und mit einem Tippen in eine belieb
 ## ADDED Requirements
 
 ### Requirement: Menüs ansehen
-Das System SHALL eine Seite „Menüs“ anbieten, die über die Hauptnavigation erreichbar ist und alle Menüs alphabetisch mit Name, Zahl der Tage und Zahl der Rezepte auflistet. Die Detailansicht eines Menüs MUST seine Tage als „Tag 1“, „Tag 2“ usw. mit den Mahlzeiten und Einträgen zeigen. Rezepteinträge MUST zur Rezeptdetailansicht verlinken. Nicht mehr verfügbare Rezepte MUST mit dem Hinweis „Nicht mehr verfügbar“ erscheinen.
+Das System SHALL eine Seite „Menüs“ anbieten, die über den Wochenplan erreichbar ist und alle Menüs alphabetisch mit Name, Zahl der Tage und Zahl der Rezepteinträge auflistet. Die Detailansicht eines Menüs MUST seine Tage als „Tag 1“, „Tag 2“ usw. mit den Mahlzeiten und Einträgen zeigen. Rezepteinträge MUST zur Rezeptdetailansicht verlinken. Nicht mehr verfügbare Rezepte MUST mit dem Hinweis „Nicht mehr verfügbar“ erscheinen.
 
 #### Scenario: Liste
 - **WHEN** es die Menüs „Herbstwoche“ (7 Tage, 6 Rezepte) und „Gäste-Wochenende“ (2 Tage, 4 Rezepte) gibt

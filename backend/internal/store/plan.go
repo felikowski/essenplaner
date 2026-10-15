@@ -357,42 +357,75 @@ func (db *DB) CopyWeek(ctx context.Context, from, to []string, replace bool) (sk
 		}
 	}
 
-	// Erst Rezepte und Notizen, dann Reste, damit deren Originale schon kopiert sind.
-	copies := map[string]Entry{}
-	for pass := range 2 {
-		for i, date := range from {
-			for _, e := range source[date] {
-				if (e.Kind == KindLeftover) != (pass == 1) {
-					continue
-				}
-				c := e
-				c.ID = "e-" + randomHex(6)
-				c.Date = to[i]
-				switch e.Kind {
-				case KindRecipe:
-					if _, err := availableRecipe(ctx, tx, e.RecipeID); err != nil {
-						skipped++
-						continue
-					}
-				case KindLeftover:
-					original, ok := copies[refID(e.LeftoverOf)]
-					if !ok {
-						skipped++
-						continue
-					}
-					c.LeftoverOf = &EntryRef{ID: original.ID, Date: original.Date}
-				}
-				if c.Position, err = nextPosition(ctx, tx, c.Date, c.Meal); err != nil {
-					return 0, err
-				}
-				if err := insertEntry(ctx, tx, c); err != nil {
-					return 0, err
-				}
-				copies[e.ID] = c
-			}
+	var drafts []entryDraft
+	for i, date := range from {
+		for _, entry := range source[date] {
+			drafts = append(drafts, entryDraft{SourceID: entry.ID, Date: to[i], Meal: entry.Meal, Kind: entry.Kind,
+				RecipeID: entry.RecipeID, Servings: entry.Servings, Text: entry.Text, LeftoverOf: refID(entry.LeftoverOf)})
 		}
 	}
-	return skipped, tx.Commit()
+	skippedDrafts, err := insertPlanDrafts(ctx, tx, drafts)
+	if err != nil {
+		return 0, err
+	}
+	return len(skippedDrafts), tx.Commit()
+}
+
+// entryDraft ist der gemeinsame, ziellose Eintragskern für Woche kopieren und Menü einplanen.
+// LeftoverOf verweist auf SourceID eines anderen Drafts und wird beim Einfügen auf die neue ID umgebogen.
+type entryDraft struct {
+	SourceID   string
+	Date       string
+	Meal       string
+	Kind       string
+	RecipeID   string
+	Servings   *int
+	Text       string
+	LeftoverOf string
+}
+
+// insertPlanDrafts hängt Einträge an ihre Zielmahlzeiten. Nicht verfügbare Rezepte und davon
+// abhängige Reste werden übersprungen; alle anderen Fehler brechen die Transaktion ab.
+func insertPlanDrafts(ctx context.Context, tx *sql.Tx, drafts []entryDraft) ([]entryDraft, error) {
+	copies := map[string]Entry{}
+	var skipped []entryDraft
+	for pass := range 2 {
+		for _, draft := range drafts {
+			if (draft.Kind == KindLeftover) != (pass == 1) {
+				continue
+			}
+			entry := Entry{ID: "e-" + randomHex(6), Date: draft.Date, Meal: draft.Meal, Kind: draft.Kind,
+				RecipeID: draft.RecipeID, Servings: draft.Servings, Text: draft.Text}
+			switch draft.Kind {
+			case KindRecipe:
+				if _, err := availableRecipe(ctx, tx, draft.RecipeID); err != nil {
+					var invalid ErrInvalidEntry
+					if errors.As(err, &invalid) {
+						skipped = append(skipped, draft)
+						continue
+					}
+					return nil, err
+				}
+			case KindLeftover:
+				original, ok := copies[draft.LeftoverOf]
+				if !ok {
+					skipped = append(skipped, draft)
+					continue
+				}
+				entry.LeftoverOf = &EntryRef{ID: original.ID, Date: original.Date}
+			}
+			position, err := nextPosition(ctx, tx, entry.Date, entry.Meal)
+			if err != nil {
+				return nil, err
+			}
+			entry.Position = position
+			if err := insertEntry(ctx, tx, entry); err != nil {
+				return nil, err
+			}
+			copies[draft.SourceID] = entry
+		}
+	}
+	return skipped, nil
 }
 
 func refID(ref *EntryRef) string {

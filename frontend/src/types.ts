@@ -106,7 +106,7 @@ export interface PlanEntry {
   /** Bei Notizen und Einzelzutaten */
   text?: string
   /** Bei Resten: der Rezepteintrag, von dem sie stammen */
-  leftoverOf?: { id: string; date: IsoDate }
+  leftoverOf?: { id: string; date: IsoDate } | { id: string; day: number }
 }
 
 export interface WeekPlan {
@@ -128,6 +128,52 @@ export interface EntryPatch {
 }
 
 export type CopyMode = 'append' | 'replace'
+
+export type EntryTarget = { kind: 'plan'; date: IsoDate } | { kind: 'menu'; menuId: string; day: number }
+
+export interface MenuSummary {
+  id: string
+  name: string
+  description?: string
+  days: number
+  /** Zahl der Einträge der Art recipe; Reste zählen nicht mit. */
+  recipeCount: number
+}
+
+export interface MenuEntry extends Omit<PlanEntry, 'leftoverOf'> {
+  day: number
+  leftoverOf?: { id: string; day: number }
+}
+
+export interface Menu extends Omit<MenuSummary, 'recipeCount'> {
+  createdAt: string
+  entries: Record<number, MenuEntry[]>
+}
+
+export interface MenuInput {
+  name: string
+  description?: string
+  days?: number
+  from?: IsoDate
+  to?: IsoDate
+}
+
+export type NewMenuEntry =
+  | { day: number; meal: Meal; kind: 'recipe'; recipeId: string; servings?: number }
+  | { day: number; meal: Meal; kind: 'note' | 'item'; text: string }
+  | { day: number; meal: Meal; kind: 'leftover'; leftoverOf: string }
+
+export interface MenuEntryPatch {
+  day?: number
+  meal?: Meal
+  servings?: number | null
+  text?: string
+}
+
+export interface ApplyMenuResult {
+  weeks: WeekPlan[]
+  skipped: string[]
+}
 
 export interface HouseholdSettings {
   visibleMeals: Meal[]

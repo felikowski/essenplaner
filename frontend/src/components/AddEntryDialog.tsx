@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { describeIngredient, parseIngredient } from '../lib/ingredient'
-import type { Recipe } from '../types'
+import type { EntryTarget, Recipe } from '../types'
 import { Modal } from './Modal'
 import { RecipeChooser } from './RecipeChooser'
 
@@ -15,20 +15,21 @@ const TABS: { id: Tab; label: string }[] = [
 interface Props {
   /** z. B. „Mittwoch, 30.09. · Abendessen“ */
   label: string
+  target: EntryTarget
   recipes: Recipe[]
-  onAddRecipe: (recipeId: string) => void
-  onAddText: (kind: 'note' | 'item', text: string) => void
+  onAddRecipe: (target: EntryTarget, recipeId: string) => void
+  onAddText: (target: EntryTarget, kind: 'note' | 'item', text: string) => void
   onClose: () => void
 }
 
 /** Fügt einer Mahlzeit ein Rezept, eine Notiz oder eine Einzelzutat hinzu. */
-export function AddEntryDialog({ label, recipes, onAddRecipe, onAddText, onClose }: Props) {
+export function AddEntryDialog({ label, target, recipes, onAddRecipe, onAddText, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('recipe')
   const [text, setText] = useState('')
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (tab !== 'recipe' && text.trim()) onAddText(tab, text.trim())
+    if (tab !== 'recipe' && text.trim()) onAddText(target, tab, text.trim())
   }
 
   const preview = tab === 'item' && text.trim() ? describeIngredient(parseIngredient(text)) : null
@@ -50,7 +51,7 @@ export function AddEntryDialog({ label, recipes, onAddRecipe, onAddText, onClose
         ))}
       </div>
       {tab === 'recipe' ? (
-        <RecipeChooser recipes={recipes} onSelect={onAddRecipe} />
+        <RecipeChooser recipes={recipes} onSelect={(recipeId) => onAddRecipe(target, recipeId)} />
       ) : (
         <form className="form" onSubmit={submit}>
           <label className="form__label" htmlFor="entry-text">

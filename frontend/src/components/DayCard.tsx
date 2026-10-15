@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import type { ReactNode } from 'react'
 import { formatDayMonth, formatShortDate, formatWeekday } from '../lib/isoWeek'
 import { MEAL_LABELS } from '../lib/meals'
 import { formatServings } from '../lib/recipes'
@@ -6,7 +7,8 @@ import { entryTitle, recipeLinkTarget } from '../lib/entries'
 import type { IsoDate, Meal, PlanEntry, Recipe } from '../types'
 
 interface Props {
-  date: IsoDate
+  date?: IsoDate
+  label?: string
   entries: PlanEntry[]
   /** Alle Einträge der angezeigten Woche, damit Reste die Portionen ihres Originals finden */
   weekEntries: PlanEntry[]
@@ -16,10 +18,11 @@ interface Props {
   busy: boolean
   onAdd: (meal: Meal) => void
   onOpenEntry: (entry: PlanEntry) => void
+  headerAction?: ReactNode
 }
 
-export function DayCard({ date, entries, weekEntries, visibleMeals, recipes, isToday, busy, onAdd, onOpenEntry }: Props) {
-  const weekday = formatWeekday(date)
+export function DayCard({ date, label, entries, weekEntries, visibleMeals, recipes, isToday, busy, onAdd, onOpenEntry, headerAction }: Props) {
+  const weekday = label ?? (date ? formatWeekday(date) : '')
   const showMealHeadings = visibleMeals.length > 1
   const visibleEntries = entries.filter((entry) => visibleMeals.includes(entry.meal))
 
@@ -27,8 +30,9 @@ export function DayCard({ date, entries, weekEntries, visibleMeals, recipes, isT
     <li className={isToday ? 'day-card day-card--today' : 'day-card'} aria-current={isToday ? 'date' : undefined}>
       <div className="day-card__head">
         <h2 className="day-card__weekday">{weekday}</h2>
-        <span className="day-card__date">{formatDayMonth(date)}</span>
+        {date && <span className="day-card__date">{formatDayMonth(date)}</span>}
         {isToday && <span className="badge">Heute</span>}
+        {headerAction}
       </div>
       {visibleEntries.length === 0 && !showMealHeadings && <p className="day-card__empty">Noch nichts geplant</p>}
       {visibleMeals.map((meal) => {
@@ -117,7 +121,11 @@ function EntryContent({ entry, recipe, weekEntries }: { entry: PlanEntry; recipe
       return (
         <>
           <span className="entry__prefix">Reste:</span> {recipeLink}
-          {entry.leftoverOf && <span className="entry__meta">(von {formatShortDate(entry.leftoverOf.date)})</span>}
+          {entry.leftoverOf && (
+            <span className="entry__meta">
+              (von {'date' in entry.leftoverOf ? formatShortDate(entry.leftoverOf.date) : `Tag ${entry.leftoverOf.day}`})
+            </span>
+          )}
           {unavailable}
         </>
       )

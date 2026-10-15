@@ -296,6 +296,43 @@ img {
   font-size: 0.875rem;
 }
 
+.day-card__remove {
+  margin-left: auto;
+}
+
+.menu-create,
+.menu-details {
+  max-width: 40rem;
+  margin-bottom: var(--space-5);
+}
+
+.menu-list {
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+}
+
+.menu-list__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.menu-list__link span {
+  color: var(--color-text-muted);
+}
+
+.menu-days {
+  margin-bottom: var(--space-4);
+}
+
 .day-card__body {
   display: flex;
   align-items: center;

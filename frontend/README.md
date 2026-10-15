@@ -36,20 +36,20 @@ Dafür muss das Backend laufen (`make dev` im Projektordner startet beides).
 
 ```
 src/
-  types.ts              Datenmodell (Recipe, WeekPlan), Grundlage für die spätere API
+  types.ts              Datenmodell (Recipe, WeekPlan, Menu)
   api/PlannerApi.ts     Interface für den Datenzugriff
   api/HttpPlannerApi.ts Implementierung gegen die Go-API (Standard)
   api/MockPlannerApi.ts Implementierung mit den Dummy-Daten aus public/mock (nur für Tests)
   api/context.ts        React-Context, über den Komponenten die Implementierung erhalten
   lib/isoWeek.ts        Kalenderwochen nach ISO 8601 (nur lokale Kalenderdaten)
-  pages/                Wochenplan, Rezeptliste, Rezeptdetail
+  pages/                Wochenplan, Menüs, Rezeptliste, Rezeptdetail und Einkauf
   components/           Layout, Tageskarte, Auswahldialog, …
 public/mock/            recipes.json, weeks.json, Beispielbilder und Beispiel-PDF
                         (recipes.json ist zugleich der Seed des Backends)
 ```
 
-Routen: `/` leitet auf `/woche/<aktuelle Woche>` weiter (z. B. `/woche/2026-W40`),
-dazu `/rezepte` und `/rezepte/:id`.
+Routen: `/` leitet auf `/woche/<aktuelle Woche>` weiter (z. B. `/woche/2026-W40`). Dazu kommen
+`/menues` und `/menues/:id`, `/rezepte` und `/rezepte/:id`, `/einkauf` sowie `/einstellungen`.
 
 Die Tests laufen in der Zeitzone `Europe/Berlin` (siehe `vite.config.ts`), damit Fehler bei der
 Zeitumstellung auffallen. Tests, die von „heute“ abhängen, setzen eine feste Uhr.

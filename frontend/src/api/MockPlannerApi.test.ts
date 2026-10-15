@@ -115,4 +115,23 @@ describe('MockPlannerApi', () => {
     expect(await api.renameTag('veggie', 'vegetarisch')).toContainEqual({ name: 'vegetarisch', count: 4 })
     expect((await api.deleteTag('vegetarisch')).some((tag) => tag.name.toLocaleLowerCase('de') === 'vegetarisch')).toBe(false)
   })
+
+  it('speichert, bearbeitet und plant Menüs wie das Backend', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const menu = await api.createMenu({ name: 'Herbstwoche', from: '2026-09-28', to: '2026-10-04' })
+    expect(menu.days).toBe(6)
+    expect((await api.listMenus())[0]).toMatchObject({ name: 'Herbstwoche', days: 6 })
+    await expect(api.createMenu({ name: 'herbstwoche' })).rejects.toMatchObject({ status: 422 })
+
+    const withDay = await api.appendMenuDay(menu.id)
+    const withNote = await api.createMenuEntry(menu.id, { day: withDay.days, meal: 'lunch', kind: 'note', text: 'Anreise' })
+    const note = withNote.entries[withDay.days][0]
+    expect((await api.updateMenuEntry(menu.id, note.id, { day: 1 })).entries[1]).toContainEqual(expect.objectContaining({ text: 'Anreise' }))
+    expect((await api.removeMenuDay(menu.id, 2)).days).toBe(6)
+
+    const result = await api.applyMenu(menu.id, '2026-10-12')
+    expect(result.weeks.map((plan) => plan.week)).toContain('2026-W42')
+    await api.deleteMenu(menu.id)
+    expect(await api.getMenu(menu.id)).toBeNull()
+  })
 })

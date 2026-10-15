@@ -22,6 +22,10 @@ Nach `add-planner-flexibility` gibt es `plan_entries` mit Mahlzeit, Position, Ar
 
 **Frontend nutzt die Plan-Komponenten.** `DayCard` bekommt eine Variante mit Überschrift „Tag n“ statt Datum. Die Dialoge für Hinzufügen und Verschieben bekommen ein Ziel-Interface (`{kind: 'plan', date}` oder `{kind: 'menu', menuId, day}`). Es werden alle Mahlzeiten gezeigt, die im Menü belegt oder in den Einstellungen sichtbar sind, damit nichts unsichtbar im Menü liegt.
 
+**Kontextueller Zugang statt weiterer Hauptnavigation.** Die mobile Hauptnavigation ist mit Woche, Rezepte, Einkauf und Einstellungen bei 375 px ausgelastet. „Menüs“ wird deshalb im Aktionsbereich des Wochenplans verlinkt; die Menüseiten führen ihrerseits zurück zum Wochenplan. So bleibt die Funktion vom zentralen Planungskontext aus erreichbar, ohne die Hauptnavigation umbrechen oder horizontal scrollen zu lassen.
+
+**Rezeptzahl zählt Rezepteinträge.** Die Übersicht zählt Einträge der Art `recipe`, nicht verschiedene Rezept-IDs und nicht Reste. Damit beschreibt die Angabe verlässlich den Umfang des gespeicherten Menüs.
+
 **Einplanen-Dialog:** Startdatum mit Schnellwahl („nächster Montag“, „morgen“) und Datumsfeld, dazu eine Vorschau „12.10. – 18.10.2026“. Nach dem Einplanen springt die App zur Woche des Startdatums und zeigt übersprungene Rezepte als Hinweis.
 
 ## Risks / Trade-offs

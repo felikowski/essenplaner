@@ -2,9 +2,15 @@ import type {
   CopyMode,
   EntryPatch,
   HouseholdSettings,
+  ApplyMenuResult,
   IsoDate,
   IsoWeek,
+  Menu,
+  MenuEntryPatch,
+  MenuInput,
+  MenuSummary,
   NewEntry,
+  NewMenuEntry,
   Recipe,
   RecipeInput,
   RecipeOrganizationPatch,
@@ -101,6 +107,55 @@ export class HttpPlannerApi implements PlannerApi {
       method: 'POST',
       body: JSON.stringify({ to, mode }),
     })
+  }
+
+  listMenus(): Promise<MenuSummary[]> {
+    return request('/api/menus')
+  }
+
+  async getMenu(id: string): Promise<Menu | null> {
+    try {
+      return await request(`/api/menus/${encodeURIComponent(id)}`)
+    } catch (error) {
+      if (error instanceof RequestError && error.status === 404) return null
+      throw error
+    }
+  }
+
+  createMenu(input: MenuInput): Promise<Menu> {
+    return send('POST', '/api/menus', input)
+  }
+
+  updateMenu(id: string, input: Pick<MenuInput, 'name' | 'description'>): Promise<Menu> {
+    return send('PATCH', `/api/menus/${encodeURIComponent(id)}`, input)
+  }
+
+  deleteMenu(id: string): Promise<void> {
+    return send('DELETE', `/api/menus/${encodeURIComponent(id)}`)
+  }
+
+  createMenuEntry(menuId: string, entry: NewMenuEntry): Promise<Menu> {
+    return send('POST', `/api/menus/${encodeURIComponent(menuId)}/entries`, entry)
+  }
+
+  updateMenuEntry(menuId: string, entryId: string, patch: MenuEntryPatch): Promise<Menu> {
+    return send('PATCH', `/api/menus/${encodeURIComponent(menuId)}/entries/${encodeURIComponent(entryId)}`, patch)
+  }
+
+  deleteMenuEntry(menuId: string, entryId: string): Promise<Menu> {
+    return send('DELETE', `/api/menus/${encodeURIComponent(menuId)}/entries/${encodeURIComponent(entryId)}`)
+  }
+
+  appendMenuDay(id: string): Promise<Menu> {
+    return send('POST', `/api/menus/${encodeURIComponent(id)}/days`)
+  }
+
+  removeMenuDay(id: string, day: number): Promise<Menu> {
+    return send('DELETE', `/api/menus/${encodeURIComponent(id)}/days/${day}`)
+  }
+
+  applyMenu(id: string, start: IsoDate): Promise<ApplyMenuResult> {
+    return send('POST', `/api/menus/${encodeURIComponent(id)}/apply`, { start })
   }
 
   async getRecipeHistory(id: string): Promise<IsoDate[]> {

@@ -8,6 +8,7 @@ import { DayCard } from '../components/DayCard'
 import { EntryActionsDialog } from '../components/EntryActionsDialog'
 import { LoadError, Loading } from '../components/Status'
 import { TargetDialog } from '../components/TargetDialog'
+import { MenuSaveDialog } from '../components/MenuSaveDialog'
 import {
   currentWeek,
   daysOfWeek,
@@ -49,6 +50,7 @@ type Dialog =
   | { kind: 'move'; date: IsoDate; entry: PlanEntry }
   | { kind: 'leftover'; date: IsoDate; entry: PlanEntry }
   | { kind: 'copy' }
+  | { kind: 'save-menu' }
 
 interface Notice {
   text: string
@@ -123,6 +125,12 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
         </nav>
       </div>
       <div className="week-actions">
+        <Link to="/menues" className="button button--secondary button--small">
+          Menüs
+        </Link>
+        <button type="button" className="button button--secondary button--small" onClick={() => setDialog({ kind: 'save-menu' })}>
+          Als Menü speichern
+        </button>
         <button type="button" className="button button--secondary button--small" onClick={() => setDialog({ kind: 'copy' })}>
           Woche kopieren
         </button>
@@ -166,9 +174,10 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
           {dialog?.kind === 'add' && (
             <AddEntryDialog
               label={`${formatWeekday(dialog.date)}, ${formatDayMonth(dialog.date)} · ${MEAL_LABELS[dialog.meal]}`}
+              target={{ kind: 'plan', date: dialog.date }}
               recipes={state.data.recipes}
-              onAddRecipe={(recipeId) => addEntry({ date: dialog.date, meal: dialog.meal, kind: 'recipe', recipeId })}
-              onAddText={(kind, text) => addEntry({ date: dialog.date, meal: dialog.meal, kind, text })}
+              onAddRecipe={(target, recipeId) => target.kind === 'plan' && addEntry({ date: target.date, meal: dialog.meal, kind: 'recipe', recipeId })}
+              onAddText={(target, kind, text) => target.kind === 'plan' && addEntry({ date: target.date, meal: dialog.meal, kind, text })}
               onClose={() => setDialog(null)}
             />
           )}
@@ -189,10 +198,10 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
             <TargetDialog
               title={`Verschieben: ${entryTitle(dialog.entry, findRecipe(state.data.planned, dialog.entry))}`}
               confirmLabel="Verschieben"
-              days={days}
-              initialDate={dialog.date}
+              targets={days.map((date) => ({ kind: 'plan', date }))}
+              initialTarget={{ kind: 'plan', date: dialog.date }}
               initialMeal={dialog.entry.meal}
-              onConfirm={(date, meal) => change(dialog.date, () => api.updateEntry(dialog.entry.id, { date, meal }))}
+              onConfirm={(target, meal) => target.kind === 'plan' && change(dialog.date, () => api.updateEntry(dialog.entry.id, { date: target.date, meal }))}
               onClose={() => setDialog(null)}
             />
           )}
@@ -200,10 +209,10 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
             <TargetDialog
               title={`Reste einplanen: ${entryTitle(dialog.entry, findRecipe(state.data.planned, dialog.entry))}`}
               confirmLabel="Reste einplanen"
-              days={days}
-              initialDate={nextDay(dialog.date)}
+              targets={days.map((date) => ({ kind: 'plan', date }))}
+              initialTarget={{ kind: 'plan', date: nextDay(dialog.date) }}
               initialMeal={dialog.entry.meal}
-              onConfirm={(date, meal) => addEntry({ date, meal, kind: 'leftover', leftoverOf: dialog.entry.id })}
+              onConfirm={(target, meal) => target.kind === 'plan' && addEntry({ date: target.date, meal, kind: 'leftover', leftoverOf: dialog.entry.id })}
               onClose={() => setDialog(null)}
             />
           )}
@@ -218,6 +227,14 @@ function WeekPlanView({ week }: { week: IsoWeek }) {
                     : `${formatWeekLabel(week)} wurde kopiert.`
                 navigate(`/woche/${target.week}`, { state: { text } satisfies Notice })
               }}
+              onClose={() => setDialog(null)}
+            />
+          )}
+          {dialog?.kind === 'save-menu' && (
+            <MenuSaveDialog
+              from={days[0]}
+              to={days[6]}
+              onSaved={(menu) => navigate(`/menues/${menu.id}`)}
               onClose={() => setDialog(null)}
             />
           )}

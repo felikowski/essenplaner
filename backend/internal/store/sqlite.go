@@ -20,7 +20,7 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// DB implementiert RecipeStore, PlanStore, SettingsStore und ShoppingStore.
+// DB implementiert die Datenzugriffe der Anwendung.
 type DB struct {
 	sql *sql.DB
 }
@@ -28,6 +28,7 @@ type DB struct {
 var (
 	_ RecipeStore   = (*DB)(nil)
 	_ PlanStore     = (*DB)(nil)
+	_ MenuStore     = (*DB)(nil)
 	_ SettingsStore = (*DB)(nil)
 	_ ShoppingStore = (*DB)(nil)
 )

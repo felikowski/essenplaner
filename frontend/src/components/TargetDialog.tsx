@@ -1,60 +1,63 @@
 import { useState, type FormEvent } from 'react'
 import { formatShortDate, isValidDate } from '../lib/isoWeek'
 import { MEAL_LABELS } from '../lib/meals'
-import { MEALS, type IsoDate, type Meal } from '../types'
+import { MEALS, type EntryTarget, type Meal } from '../types'
 import { Modal } from './Modal'
 
 interface Props {
   title: string
   confirmLabel: string
-  /** Tage für die Schnellauswahl, meist die angezeigte Woche */
-  days: IsoDate[]
-  initialDate: IsoDate
+  targets: EntryTarget[]
+  initialTarget: EntryTarget
   initialMeal: Meal
-  onConfirm: (date: IsoDate, meal: Meal) => void
+  onConfirm: (target: EntryTarget, meal: Meal) => void
   onClose: () => void
 }
 
 /** Wählt Tag und Mahlzeit, etwa zum Verschieben oder für Reste. Jedes Datum ist möglich. */
-export function TargetDialog({ title, confirmLabel, days, initialDate, initialMeal, onConfirm, onClose }: Props) {
-  const [date, setDate] = useState(initialDate)
+export function TargetDialog({ title, confirmLabel, targets, initialTarget, initialMeal, onConfirm, onClose }: Props) {
+  const [target, setTarget] = useState(initialTarget)
   const [meal, setMeal] = useState(initialMeal)
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (isValidDate(date)) onConfirm(date, meal)
+    if (target.kind === 'menu' || isValidDate(target.date)) onConfirm(target, meal)
   }
 
   return (
     <Modal title={title} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <span className="form__label" id="target-days">
-          Tag
+          {target.kind === 'plan' ? 'Tag' : 'Menütag'}
         </span>
         <div className="day-chips" role="group" aria-labelledby="target-days">
-          {days.map((day) => (
+          {targets.map((option) => (
             <button
-              key={day}
+              key={targetKey(option)}
               type="button"
               className="chip"
-              aria-pressed={day === date}
-              onClick={() => setDate(day)}
+              aria-pressed={targetKey(option) === targetKey(target)}
+              onClick={() => setTarget(option)}
             >
-              {formatShortDate(day)}
+              {option.kind === 'plan' ? formatShortDate(option.date) : `Tag ${option.day}`}
             </button>
           ))}
         </div>
-        <label className="form__label" htmlFor="target-date">
-          Anderes Datum
-        </label>
-        <input
-          id="target-date"
-          className="input"
-          type="date"
-          value={date}
-          required
-          onChange={(event) => setDate(event.target.value)}
-        />
+        {target.kind === 'plan' && (
+          <>
+            <label className="form__label" htmlFor="target-date">
+              Anderes Datum
+            </label>
+            <input
+              id="target-date"
+              className="input"
+              type="date"
+              value={target.date}
+              required
+              onChange={(event) => setTarget({ kind: 'plan', date: event.target.value })}
+            />
+          </>
+        )}
         <label className="form__label" htmlFor="target-meal">
           Mahlzeit
         </label>
@@ -74,11 +77,15 @@ export function TargetDialog({ title, confirmLabel, days, initialDate, initialMe
           <button type="button" className="button button--secondary" onClick={onClose}>
             Abbrechen
           </button>
-          <button type="submit" className="button" disabled={!isValidDate(date)}>
+          <button type="submit" className="button" disabled={target.kind === 'plan' && !isValidDate(target.date)}>
             {confirmLabel}
           </button>
         </div>
       </form>
     </Modal>
   )
+}
+
+function targetKey(target: EntryTarget): string {
+  return target.kind === 'plan' ? `plan-${target.date}` : `menu-${target.menuId}-${target.day}`
 }

@@ -193,6 +193,20 @@ type PlanStore interface {
 	RecipeHistory(ctx context.Context, recipeID string) ([]string, error)
 }
 
+type MenuStore interface {
+	ListMenus(ctx context.Context) ([]MenuSummary, error)
+	GetMenu(ctx context.Context, id string) (Menu, error)
+	CreateMenu(ctx context.Context, input MenuInput, dates []string) (Menu, error)
+	UpdateMenu(ctx context.Context, id string, input MenuInput) (Menu, error)
+	DeleteMenu(ctx context.Context, id string) error
+	CreateMenuEntry(ctx context.Context, menuID string, input MenuEntryInput) (Menu, error)
+	UpdateMenuEntry(ctx context.Context, menuID, entryID string, patch MenuEntryPatch) (Menu, error)
+	DeleteMenuEntry(ctx context.Context, menuID, entryID string) (Menu, error)
+	AppendMenuDay(ctx context.Context, id string) (Menu, error)
+	RemoveMenuDay(ctx context.Context, id string, day int) (Menu, error)
+	ApplyMenu(ctx context.Context, id string, dates []string) (skipped []string, err error)
+}
+
 type SettingsStore interface {
 	// Settings liefert alle Haushalts-Einstellungen mit Standardwerten für nicht gespeicherte.
 	Settings(ctx context.Context) (map[string]any, error)

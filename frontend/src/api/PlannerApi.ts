@@ -2,9 +2,15 @@ import type {
   CopyMode,
   EntryPatch,
   HouseholdSettings,
+  ApplyMenuResult,
   IsoDate,
   IsoWeek,
+  Menu,
+  MenuEntryPatch,
+  MenuInput,
+  MenuSummary,
   NewEntry,
+  NewMenuEntry,
   Recipe,
   RecipeInput,
   RecipeOrganizationPatch,
@@ -35,6 +41,17 @@ export interface PlannerApi {
   deleteEntry(id: string): Promise<WeekPlan[]>
   /** Kopiert alle Einträge einer Woche in eine andere. */
   copyWeek(from: IsoWeek, to: IsoWeek, mode: CopyMode): Promise<{ week: WeekPlan; skipped: number }>
+  listMenus(): Promise<MenuSummary[]>
+  getMenu(id: string): Promise<Menu | null>
+  createMenu(input: MenuInput): Promise<Menu>
+  updateMenu(id: string, input: Pick<MenuInput, 'name' | 'description'>): Promise<Menu>
+  deleteMenu(id: string): Promise<void>
+  createMenuEntry(menuId: string, entry: NewMenuEntry): Promise<Menu>
+  updateMenuEntry(menuId: string, entryId: string, patch: MenuEntryPatch): Promise<Menu>
+  deleteMenuEntry(menuId: string, entryId: string): Promise<Menu>
+  appendMenuDay(id: string): Promise<Menu>
+  removeMenuDay(id: string, day: number): Promise<Menu>
+  applyMenu(id: string, start: IsoDate): Promise<ApplyMenuResult>
   /** Daten, an denen ein Rezept geplant war (ohne Reste), neueste zuerst. */
   getRecipeHistory(id: string): Promise<IsoDate[]>
   getSettings(): Promise<HouseholdSettings>

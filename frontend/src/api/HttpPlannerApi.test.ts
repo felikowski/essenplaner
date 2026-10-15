@@ -97,6 +97,46 @@ describe('HttpPlannerApi', () => {
     expect(fetchMock).toHaveBeenLastCalledWith('/api/settings', expect.objectContaining({ method: 'PATCH' }))
   })
 
+  it('spricht alle Menü-Endpunkte an', async () => {
+    const api = new HttpPlannerApi()
+    const menu = { id: 'm 1', name: 'Herbstwoche', days: 1, createdAt: '2026-10-01T00:00:00Z', entries: { 1: [] } }
+    fetchMock.mockResolvedValue(jsonResponse([{ id: 'm 1', name: 'Herbstwoche', days: 1, recipeCount: 0 }]))
+    expect(await api.listMenus()).toHaveLength(1)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus', expect.anything())
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(menu))
+    expect(await api.getMenu('m 1')).toEqual(menu)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201', expect.anything())
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'menu not found' }, 404))
+    expect(await api.getMenu('fehlt')).toBeNull()
+
+    fetchMock.mockResolvedValue(jsonResponse(menu, 201))
+    await api.createMenu({ name: 'Herbstwoche', from: '2026-09-28', to: '2026-10-04' })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus', expect.objectContaining({ method: 'POST', body: '{"name":"Herbstwoche","from":"2026-09-28","to":"2026-10-04"}' }))
+
+    fetchMock.mockImplementation(async () => jsonResponse(menu))
+    await api.updateMenu('m 1', { name: 'Herbst', description: 'Bewährt' })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201', expect.objectContaining({ method: 'PATCH' }))
+    await api.createMenuEntry('m 1', { day: 1, meal: 'dinner', kind: 'note', text: 'Oma' })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/entries', expect.objectContaining({ method: 'POST' }))
+    await api.updateMenuEntry('m 1', 'e 1', { day: 1, meal: 'lunch' })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/entries/e%201', expect.objectContaining({ method: 'PATCH' }))
+    await api.deleteMenuEntry('m 1', 'e 1')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/entries/e%201', expect.objectContaining({ method: 'DELETE' }))
+    await api.appendMenuDay('m 1')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/days', expect.objectContaining({ method: 'POST' }))
+    await api.removeMenuDay('m 1', 2)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/days/2', expect.objectContaining({ method: 'DELETE' }))
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ weeks: [week], skipped: [] }))
+    expect(await api.applyMenu('m 1', '2026-10-12')).toEqual({ weeks: [week], skipped: [] })
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201/apply', expect.objectContaining({ method: 'POST', body: '{"start":"2026-10-12"}' }))
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await api.deleteMenu('m 1')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/menus/m%201', expect.objectContaining({ method: 'DELETE' }))
+  })
+
   it('importiert über POST /api/recipes/import und entfernt über DELETE', async () => {
     const api = new HttpPlannerApi()
     fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'w-1', title: 'Kürbissuppe', source: { kind: 'web', url: 'x' } }, 201))

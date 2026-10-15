@@ -8,7 +8,7 @@ Viele Familien kochen in wiederkehrenden Mustern: eine bewährte „Herbstwoche�
 - „Als Menü speichern“ übernimmt eine Woche (oder einen gewählten Zeitraum) aus dem Plan in ein neues Menü.
 - Menüs lassen sich direkt bearbeiten: Name, Beschreibung, Einträge hinzufügen, entfernen und verschieben, Tage anfügen und entfernen.
 - „Menü einplanen“ legt alle Einträge ab einem gewählten Startdatum in den Plan, ergänzend zu vorhandenen Einträgen. Nicht mehr verfügbare Rezepte werden übersprungen und genannt.
-- Neue Seite „Menüs“ mit Liste, Detailansicht und Bearbeitung
+- Neue Seite „Menüs“ mit Liste, Detailansicht und Bearbeitung, erreichbar über den Wochenplan
 
 Nicht Teil dieser Change: Menüs mit anderen teilen, vorgefertigte Menüs, automatisches Wiederholen.
 
@@ -23,5 +23,5 @@ Nicht Teil dieser Change: Menüs mit anderen teilen, vorgefertigte Menüs, autom
 ## Impact
 
 - Backend: Tabellen `menus` und `menu_entries`, Endpunkte unter `/api/menus`, Einplanen in einer Transaktion
-- Frontend: Seiten `/menues`, `/menues/:id`, Aktion „Als Menü speichern“ im Wochenmenü, Navigationseintrag
+- Frontend: Seiten `/menues`, `/menues/:id`, kontextuelle Links im Wochenplan sowie Aktion „Als Menü speichern“
 - Setzt `add-planner-flexibility` voraus (Eintragsarten, Mahlzeiten, Reste-Logik beim Kopieren)
