@@ -7,8 +7,10 @@ import (
 	"errors"
 	"html"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	xhtml "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -24,6 +26,10 @@ type Recipe struct {
 	Yield        string
 	Ingredients  []string
 	Instructions []string
+	Course       string
+	Cuisine      string
+	Tags         []string
+	TotalMinutes *int
 	// URL ist die Adresse aus den Rezeptdaten, falls angegeben.
 	URL string
 }
@@ -211,6 +217,10 @@ func normalize(node map[string]any, ids map[string]map[string]any, base *url.URL
 		}
 	}
 	r.Instructions = instructions(node["recipeInstructions"])
+	r.Course = course(asString(node["recipeCategory"]))
+	r.Cuisine = cleanText(asString(node["recipeCuisine"]))
+	r.Tags = keywords(node["keywords"])
+	r.TotalMinutes = durationMinutes(asString(node["totalTime"]))
 	// Ohne Zutaten und Schritte ist es kein Rezept, sondern etwa eine Übersichtsseite mit Rezept-Auszeichnung.
 	if len(r.Ingredients) == 0 && len(r.Instructions) == 0 {
 		return Recipe{}, false
@@ -219,6 +229,81 @@ func normalize(node map[string]any, ids map[string]map[string]any, base *url.URL
 		r.URL = u
 	}
 	return r, true
+}
+
+var courseAliases = map[string]string{
+	"hauptspeise": "Hauptgericht", "hauptgericht": "Hauptgericht", "main course": "Hauptgericht", "abendessen": "Hauptgericht", "dinner": "Hauptgericht",
+	"beilage": "Beilage", "side dish": "Beilage",
+	"suppe": "Suppe", "soup": "Suppe",
+	"salat": "Salat", "salad": "Salat",
+	"vorspeise": "Vorspeise", "appetizer": "Vorspeise", "starter": "Vorspeise",
+	"nachtisch": "Dessert", "dessert": "Dessert",
+	"frühstück": "Frühstück", "fruehstueck": "Frühstück", "breakfast": "Frühstück",
+	"snack":  "Snack",
+	"gebäck": "Gebäck", "gebaeck": "Gebäck", "baking": "Gebäck", "baked goods": "Gebäck",
+	"getränk": "Getränk", "getraenk": "Getränk", "drink": "Getränk", "beverage": "Getränk",
+	"sauce": "Sauce & Dip", "dip": "Sauce & Dip", "sauce & dip": "Sauce & Dip",
+}
+
+func course(value string) string {
+	return courseAliases[strings.ToLower(cleanText(value))]
+}
+
+func keywords(value any) []string {
+	var candidates []string
+	for _, item := range asList(value) {
+		text := cleanText(asString(item))
+		if text == "" {
+			continue
+		}
+		candidates = append(candidates, strings.Split(text, ",")...)
+	}
+	result := []string{}
+	seen := map[string]bool{}
+	for _, candidate := range candidates {
+		candidate = cleanText(candidate)
+		key := strings.ToLower(candidate)
+		length := utf8.RuneCountInString(candidate)
+		if length < 2 || length > 30 || seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, candidate)
+		if len(result) == 10 {
+			break
+		}
+	}
+	return result
+}
+
+var isoDuration = regexp.MustCompile(`(?i)^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$`)
+
+func durationMinutes(value string) *int {
+	match := isoDuration.FindStringSubmatch(strings.TrimSpace(value))
+	if match == nil {
+		return nil
+	}
+	minutes := 0
+	for i, factor := range []int{0, 24 * 60, 60, 1} {
+		if i == 0 || match[i] == "" {
+			continue
+		}
+		n, err := strconv.Atoi(match[i])
+		if err != nil {
+			return nil
+		}
+		minutes += n * factor
+	}
+	if match[4] != "" {
+		seconds, _ := strconv.Atoi(match[4])
+		if seconds > 0 {
+			minutes++
+		}
+	}
+	if minutes < 1 || minutes > 1440 {
+		return nil
+	}
+	return &minutes
 }
 
 func asString(value any) string {

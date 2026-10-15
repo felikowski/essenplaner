@@ -34,6 +34,14 @@ type seedRecipe struct {
 	Servings     *int         `json:"servings"`
 	Ingredients  []string     `json:"ingredients"`
 	Instructions []string     `json:"instructions"`
+	Course       string       `json:"course"`
+	Cuisine      string       `json:"cuisine"`
+	Tags         []string     `json:"tags"`
+	Rating       *int         `json:"rating"`
+	ToTry        bool         `json:"toTry"`
+	Notes        string       `json:"notes"`
+	TotalMinutes *int         `json:"totalMinutes"`
+	CreatedAt    string       `json:"createdAt"`
 }
 
 // Recipes liefert die eingebetteten Beispielrezepte mit zerlegten Zutaten.
@@ -47,6 +55,8 @@ func Recipes() ([]store.Recipe, error) {
 		recipes[i] = store.Recipe{
 			ID: r.ID, Title: r.Title, Source: r.Source, ImageURL: r.ImageURL, Servings: r.Servings,
 			Ingredients: ingredient.ParseAll(r.Ingredients), Instructions: r.Instructions,
+			Course: r.Course, Cuisine: r.Cuisine, Tags: r.Tags, Rating: r.Rating, ToTry: r.ToTry,
+			Notes: r.Notes, TotalMinutes: r.TotalMinutes, CreatedAt: r.CreatedAt,
 		}
 	}
 	return recipes, nil

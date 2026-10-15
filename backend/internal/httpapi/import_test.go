@@ -39,6 +39,7 @@ func newImportAPI(t *testing.T) (http.Handler, *fakeImporter) {
 				Recipe: webimport.Recipe{
 					Title: "Kürbissuppe", ImageURL: "https://img.example.com/k.jpg", Yield: "4 Portionen",
 					Ingredients: []string{"1 kg Kürbis", "1 Zwiebel"}, Instructions: []string{"Schneiden.", "Kochen."},
+					Course: "Suppe", Cuisine: "Deutsch", Tags: []string{"Winter"}, TotalMinutes: func() *int { value := 45; return &value }(),
 				},
 			},
 		},
@@ -60,7 +61,8 @@ func TestImportRecipe(t *testing.T) {
 	}
 	recipe := decode[map[string]any](t, rec)
 	if recipe["title"] != "Kürbissuppe" || recipe["servings"] != float64(4) || recipe["imageUrl"] != "https://img.example.com/k.jpg" ||
-		len(recipe["ingredients"].([]any)) != 2 || len(recipe["instructions"].([]any)) != 2 || recipe["removable"] != true {
+		len(recipe["ingredients"].([]any)) != 2 || len(recipe["instructions"].([]any)) != 2 || recipe["removable"] != true ||
+		recipe["course"] != "Suppe" || recipe["cuisine"] != "Deutsch" || recipe["totalMinutes"] != float64(45) || len(recipe["tags"].([]any)) != 1 {
 		t.Errorf("rezept = %v", recipe)
 	}
 	if src := recipe["source"].(map[string]any); src["kind"] != "web" || src["url"] != "https://www.chefkoch.de/rezepte/1/kuerbis.html" {

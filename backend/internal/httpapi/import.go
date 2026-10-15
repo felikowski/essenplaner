@@ -83,6 +83,10 @@ func (s *Server) handleImportRecipe(w http.ResponseWriter, r *http.Request) {
 		Servings:     store.ParseServings(result.Recipe.Yield),
 		Ingredients:  ingredient.ParseAll(result.Recipe.Ingredients),
 		Instructions: result.Recipe.Instructions,
+		Course:       result.Recipe.Course,
+		Cuisine:      result.Recipe.Cuisine,
+		Tags:         result.Recipe.Tags,
+		TotalMinutes: result.Recipe.TotalMinutes,
 	})
 	if err != nil {
 		s.internalError(w, r, err)

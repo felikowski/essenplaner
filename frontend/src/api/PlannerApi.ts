@@ -7,11 +7,13 @@ import type {
   NewEntry,
   Recipe,
   RecipeInput,
+  RecipeOrganizationPatch,
   ShoppingAlias,
   ShoppingImportResult,
   ShoppingItemPatch,
   ShoppingList,
   Staple,
+  TagSummary,
   WeekPlan,
 } from '../types'
 
@@ -46,8 +48,13 @@ export interface PlannerApi {
   createRecipe(input: RecipeInput): Promise<Recipe>
   /** Ersetzt die bearbeitbaren Angaben eines Rezepts. Wirft RequestError mit field bei ungültigen Eingaben. */
   updateRecipe(id: string, input: RecipeInput): Promise<Recipe>
+  /** Ändert nur übergebene Angaben der Einordnung. */
+  updateRecipeOrganization(id: string, patch: RecipeOrganizationPatch): Promise<Recipe>
   /** Markiert ein Rezept als nicht mehr verfügbar. */
   removeRecipe(id: string): Promise<void>
+  listTags(): Promise<TagSummary[]>
+  renameTag(name: string, newName: string): Promise<TagSummary[]>
+  deleteTag(name: string): Promise<TagSummary[]>
 
   /**
    * Lädt die Einkaufsliste. Mit knownVersion liefert sie null, wenn sich seitdem nichts geändert hat.

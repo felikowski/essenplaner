@@ -58,6 +58,7 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 	mux.HandleFunc("POST /api/recipes", s.handleCreateRecipe)
 	mux.HandleFunc("GET /api/recipes/{id}", s.handleGetRecipe)
 	mux.HandleFunc("PUT /api/recipes/{id}", s.handleUpdateRecipe)
+	mux.HandleFunc("PATCH /api/recipes/{id}/organization", s.handleUpdateRecipeOrganization)
 	mux.HandleFunc("DELETE /api/recipes/{id}", s.handleRemoveRecipe)
 	mux.HandleFunc("POST /api/recipes/import", s.handleImportRecipe)
 	mux.HandleFunc("GET /api/recipes/{id}/history", s.handleRecipeHistory)
@@ -68,6 +69,9 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 	mux.HandleFunc("DELETE /api/entries/{id}", s.handleDeleteEntry)
 	mux.HandleFunc("GET /api/settings", s.handleGetSettings)
 	mux.HandleFunc("PATCH /api/settings", s.handleUpdateSettings)
+	mux.HandleFunc("GET /api/tags", s.handleListTags)
+	mux.HandleFunc("PATCH /api/tags/{key}", s.handleRenameTag)
+	mux.HandleFunc("DELETE /api/tags/{key}", s.handleDeleteTag)
 	s.routeShopping(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")

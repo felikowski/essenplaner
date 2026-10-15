@@ -11,11 +11,13 @@ import {
   type PlanEntry,
   type Recipe,
   type RecipeInput,
+  type RecipeOrganizationPatch,
   type ShoppingAlias,
   type ShoppingImportResult,
   type ShoppingItemPatch,
   type ShoppingList,
   type Staple,
+  type TagSummary,
   type WeekPlan,
 } from '../types'
 import { MockShopping } from './mockShopping'
@@ -55,14 +57,14 @@ export class MockPlannerApi implements PlannerApi {
   }
 
   async listRecipes(): Promise<Recipe[]> {
-    const { recipes } = await this.getData()
-    return structuredClone(recipes.filter(isAvailable))
+    const { recipes, entries } = await this.getData()
+    return recipes.filter(isAvailable).map((recipe) => withHistory(recipe, entries))
   }
 
   async getRecipe(id: string): Promise<Recipe | null> {
-    const { recipes } = await this.getData()
+    const { recipes, entries } = await this.getData()
     const recipe = recipes.find((candidate) => candidate.id === id)
-    return recipe ? structuredClone(recipe) : null
+    return recipe ? withHistory(recipe, entries) : null
   }
 
   async getWeek(week: IsoWeek): Promise<WeekPlan> {
@@ -234,6 +236,7 @@ export class MockPlannerApi implements PlannerApi {
       source: { kind: 'web', url: address },
       available: true,
       removable: true,
+      createdAt: new Date().toISOString(),
     }
     recipes.push(recipe)
     return structuredClone(recipe)
@@ -249,6 +252,7 @@ export class MockPlannerApi implements PlannerApi {
       available: true,
       removable: true,
       titleEditable: true,
+      createdAt: new Date().toISOString(),
     }
     applyInput(recipe, input)
     recipes.push(recipe)
@@ -270,6 +274,14 @@ export class MockPlannerApi implements PlannerApi {
     return structuredClone(recipe)
   }
 
+  async updateRecipeOrganization(id: string, patch: RecipeOrganizationPatch): Promise<Recipe> {
+    const data = await this.getData()
+    const recipe = data.recipes.find((candidate) => candidate.id === id)
+    if (!recipe) throw new RequestError(`PATCH /api/recipes/${id}/organization fehlgeschlagen: 404`, 404)
+    applyOrganization(recipe, patch)
+    return withHistory(recipe, data.entries)
+  }
+
   async removeRecipe(id: string): Promise<void> {
     const { recipes } = await this.getData()
     const recipe = recipes.find((candidate) => candidate.id === id)
@@ -277,6 +289,43 @@ export class MockPlannerApi implements PlannerApi {
     if (!recipe.removable) throw new RequestError(`DELETE /api/recipes/${id} fehlgeschlagen: 409`, 409)
     recipe.available = false
     recipe.removable = false
+  }
+
+  async listTags(): Promise<TagSummary[]> {
+    const { recipes } = await this.getData()
+    return summarizeTags(recipes)
+  }
+
+  async renameTag(name: string, newName: string): Promise<TagSummary[]> {
+    const { recipes } = await this.getData()
+    const fromKey = organizationKey(name)
+    const target = newName.trim().replace(/\s+/g, ' ')
+    if (!target || [...target].length > 30) throw organizationError('Der Tag darf höchstens 30 Zeichen lang sein.', 'name')
+    if (!recipes.some((recipe) => recipe.tags?.some((tag) => organizationKey(tag) === fromKey))) {
+      throw new RequestError('Tag nicht gefunden: 404', 404)
+    }
+    const targetKey = organizationKey(target)
+    const existing = recipes.flatMap((recipe) => recipe.tags ?? []).find((tag) => organizationKey(tag) === targetKey)
+    const spelling = targetKey === fromKey ? target : (existing ?? target)
+    for (const recipe of recipes) {
+      if (!recipe.tags?.some((tag) => organizationKey(tag) === fromKey)) continue
+      recipe.tags = uniqueTags(recipe.tags.map((tag) => (organizationKey(tag) === fromKey ? spelling : tag)))
+    }
+    return summarizeTags(recipes)
+  }
+
+  async deleteTag(name: string): Promise<TagSummary[]> {
+    const { recipes } = await this.getData()
+    const key = organizationKey(name)
+    let found = false
+    for (const recipe of recipes) {
+      const next = recipe.tags?.filter((tag) => organizationKey(tag) !== key)
+      if (next && next.length !== recipe.tags?.length) found = true
+      if (next?.length) recipe.tags = next
+      else delete recipe.tags
+    }
+    if (!found) throw new RequestError('Tag nicht gefunden: 404', 404)
+    return summarizeTags(recipes)
   }
 
   async getShoppingList(knownVersion?: number): Promise<ShoppingList | null> {
@@ -475,6 +524,103 @@ function applyInput(recipe: Recipe, input: RecipeInput) {
   else delete recipe.ingredients
   if (instructions.length > 0) recipe.instructions = instructions
   else delete recipe.instructions
+}
+
+function applyOrganization(recipe: Recipe, patch: RecipeOrganizationPatch) {
+  const next = structuredClone(recipe)
+  if (patch.course !== undefined) {
+    if (patch.course === null) delete next.course
+    else next.course = patch.course
+  }
+  if (patch.cuisine !== undefined) {
+    const cuisine = patch.cuisine?.trim().replace(/^./u, (letter) => letter.toLocaleUpperCase('de'))
+    if (cuisine) next.cuisine = cuisine
+    else delete next.cuisine
+  }
+  if (patch.tags !== undefined) {
+    const tags = uniqueTags(patch.tags)
+    if (tags.length) next.tags = tags
+    else delete next.tags
+  }
+  if (patch.rating !== undefined) {
+    if (patch.rating === null) delete next.rating
+    else next.rating = patch.rating
+  }
+  if (patch.toTry !== undefined) next.toTry = patch.toTry
+  if (patch.notes !== undefined) {
+    const notes = patch.notes?.trim()
+    if (notes) next.notes = notes
+    else delete next.notes
+  }
+  if (patch.totalMinutes !== undefined) {
+    if (patch.totalMinutes === null) delete next.totalMinutes
+    else next.totalMinutes = patch.totalMinutes
+  }
+  validateOrganization(next)
+  Object.assign(recipe, next)
+  for (const key of ['course', 'cuisine', 'tags', 'rating', 'notes', 'totalMinutes'] as const) {
+    if (!(key in next)) delete recipe[key]
+  }
+}
+
+function validateOrganization(recipe: Recipe) {
+  if (recipe.cuisine && [...recipe.cuisine].length > 50) {
+    throw organizationError('Die Küche darf höchstens 50 Zeichen lang sein.', 'cuisine')
+  }
+  if (recipe.tags && (recipe.tags.length > 20 || recipe.tags.some((tag) => [...tag].length > 30))) {
+    throw organizationError('Es sind höchstens 20 Tags mit je 30 Zeichen möglich.', 'tags')
+  }
+  if (recipe.rating !== undefined && (!Number.isInteger(recipe.rating) || recipe.rating < 1 || recipe.rating > 5)) {
+    throw organizationError('Die Bewertung muss zwischen 1 und 5 liegen.', 'rating')
+  }
+  if (recipe.notes && [...recipe.notes].length > 2000) {
+    throw organizationError('Notizen dürfen höchstens 2000 Zeichen lang sein.', 'notes')
+  }
+  if (recipe.totalMinutes !== undefined && (!Number.isInteger(recipe.totalMinutes) || recipe.totalMinutes < 1 || recipe.totalMinutes > 1440)) {
+    throw organizationError('Die Zeit muss zwischen 1 und 1440 Minuten liegen.', 'totalMinutes')
+  }
+}
+
+function organizationError(message: string, field: string): RequestError {
+  return new RequestError('fehlgeschlagen: 422', 422, message, field)
+}
+
+function organizationKey(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('de')
+}
+
+function uniqueTags(tags: string[]): string[] {
+  const result: string[] = []
+  const seen = new Set<string>()
+  for (const value of tags) {
+    const tag = value.trim().replace(/\s+/g, ' ')
+    const key = organizationKey(tag)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    result.push(tag)
+  }
+  return result
+}
+
+function summarizeTags(recipes: Recipe[]): TagSummary[] {
+  const tags = new Map<string, TagSummary>()
+  for (const recipe of recipes) {
+    for (const tag of recipe.tags ?? []) {
+      const key = organizationKey(tag)
+      const summary = tags.get(key)
+      if (summary) summary.count++
+      else tags.set(key, { name: tag, count: 1 })
+    }
+  }
+  return [...tags.values()].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))
+}
+
+function withHistory(recipe: Recipe, entries: StoredEntry[]): Recipe {
+  const copy = structuredClone(recipe)
+  const dates = entries.filter((entry) => entry.kind === 'recipe' && entry.recipeId === recipe.id).map((entry) => entry.date)
+  if (dates.length) copy.lastPlannedOn = dates.sort().at(-1)
+  else delete copy.lastPlannedOn
+  return copy
 }
 
 function isAvailable(recipe: Recipe): boolean {

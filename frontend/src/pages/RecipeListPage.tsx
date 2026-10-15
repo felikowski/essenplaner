@@ -5,21 +5,24 @@ import { ImportRecipeDialog } from '../components/ImportRecipeDialog'
 import { SearchField } from '../components/SearchField'
 import { LoadError, Loading } from '../components/Status'
 import { RecipeImage } from '../components/RecipeImage'
-import { filterByTitle, sortByTitle, sourceLabel } from '../lib/recipes'
+import { RecipeFilters } from '../components/RecipeFilters'
+import { activeFilterCount, queryRecipes, recipeQueryFromParams, recipeQueryToParams, type RecipeQueryState } from '../lib/recipeQuery'
+import { sourceLabel } from '../lib/recipes'
 import { useAsyncData } from '../lib/useAsyncData'
+import type { Recipe } from '../types'
 
 export function RecipeListPage() {
   const api = usePlannerApi()
-  const load = useCallback(() => api.listRecipes().then(sortByTitle), [api])
+  const load = useCallback(() => api.listRecipes(), [api])
   const { state, retry } = useAsyncData(load)
   // Der Suchbegriff steht in der URL, damit er beim Zurückkehren aus dem Detail erhalten bleibt.
   const [searchParams, setSearchParams] = useSearchParams()
-  const query = searchParams.get('q') ?? ''
+  const queryState = recipeQueryFromParams(searchParams)
   const [importing, setImporting] = useState(false)
   const navigate = useNavigate()
 
-  function setQuery(value: string) {
-    setSearchParams(value ? { q: value } : {}, { replace: true })
+  function setQueryState(value: RecipeQueryState) {
+    setSearchParams(recipeQueryToParams(value), { replace: true })
   }
 
   return (
@@ -34,6 +37,10 @@ export function RecipeListPage() {
             Rezept hinzufügen
           </button>
         </div>
+      </div>
+      <div className="recipe-list__links">
+        <Link to="/rezepte/zutaten">Was habe ich da?</Link>
+        <button type="button" className="link-button" onClick={() => setQueryState({ ...queryState, filters: { ...queryState.filters, toTry: true } })}>Ausprobieren</button>
       </div>
       {importing && (
         <ImportRecipeDialog
@@ -51,16 +58,23 @@ export function RecipeListPage() {
           </p>
         ) : (
           <>
-            <SearchField value={query} onChange={setQuery} />
-            <RecipeList recipes={filterByTitle(state.data, query)} />
+            <SearchField value={queryState.query} onChange={(query) => setQueryState({ ...queryState, query })} />
+            <RecipeFilters state={queryState} tags={allTags(state.data)} onChange={setQueryState} />
+            <RecipeList
+              recipes={queryRecipes(state.data, queryState)}
+              filtered={activeFilterCount(queryState.filters) > 0}
+              onReset={() => setQueryState({ ...queryState, filters: { tags: [], toTry: false } })}
+            />
           </>
         ))}
     </div>
   )
 }
 
-function RecipeList({ recipes }: { recipes: ReturnType<typeof sortByTitle> }) {
-  if (recipes.length === 0) return <p className="status">Keine Rezepte gefunden</p>
+function RecipeList({ recipes, filtered, onReset }: { recipes: Recipe[]; filtered: boolean; onReset: () => void }) {
+  if (recipes.length === 0) return filtered ? (
+    <div className="status"><p>Keine Rezepte passen zu den Filtern</p><button type="button" className="button button--secondary" onClick={onReset}>Filter zurücksetzen</button></div>
+  ) : <p className="status">Keine Rezepte gefunden</p>
 
   return (
     <ul className="recipe-list">
@@ -76,11 +90,20 @@ function RecipeList({ recipes }: { recipes: ReturnType<typeof sortByTitle> }) {
             />
             <span className="recipe-card__text">
               <span className="recipe-card__title">{recipe.title}</span>
-              <span className="source-label">{sourceLabel(recipe)}</span>
+              <span className="recipe-card__meta">
+                <span className="source-label">{sourceLabel(recipe)}</span>
+                {recipe.rating !== undefined && <span aria-label={`${recipe.rating} von 5 Sternen`}>{'★'.repeat(recipe.rating)}{'☆'.repeat(5 - recipe.rating)}</span>}
+                {recipe.totalMinutes !== undefined && <span>{recipe.totalMinutes} Min.</span>}
+              </span>
+              {recipe.tags && <span className="recipe-card__tags">{recipe.tags.slice(0, 3).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</span>}
             </span>
           </Link>
         </li>
       ))}
     </ul>
   )
+}
+
+function allTags(recipes: Recipe[]) {
+  return [...new Set(recipes.flatMap((recipe) => recipe.tags ?? []))].sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }))
 }

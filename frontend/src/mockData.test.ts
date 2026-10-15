@@ -22,9 +22,9 @@ function hasOnlyKeys(value: Record<string, unknown>, allowed: string[]): boolean
 
 function isRecipe(value: unknown): value is Recipe {
   if (!isObject(value)) return false
-  if (!hasOnlyKeys(value, ['id', 'title', 'source', 'imageUrl', 'servings', 'ingredients', 'instructions']))
+  if (!hasOnlyKeys(value, ['id', 'title', 'source', 'imageUrl', 'servings', 'ingredients', 'instructions', 'course', 'cuisine', 'tags', 'rating', 'toTry', 'notes', 'totalMinutes', 'createdAt']))
     return false
-  const { id, title, source, imageUrl, servings, ingredients, instructions } = value
+  const { id, title, source, imageUrl, servings, ingredients, instructions, course, cuisine, tags, rating, toTry, notes, totalMinutes, createdAt } = value
   if (!isString(id) || !isString(title) || !isObject(source)) return false
   const validSource =
     (source.kind === 'pdf' && isString(source.pdfUrl) && hasOnlyKeys(source, ['kind', 'pdfUrl'])) ||
@@ -34,7 +34,15 @@ function isRecipe(value: unknown): value is Recipe {
     (imageUrl === undefined || isString(imageUrl)) &&
     (servings === undefined || (Number.isInteger(servings) && Number(servings) >= 1 && Number(servings) <= 99)) &&
     (ingredients === undefined || isStringArray(ingredients)) &&
-    (instructions === undefined || isStringArray(instructions))
+    (instructions === undefined || isStringArray(instructions)) &&
+    (course === undefined || isString(course)) &&
+    (cuisine === undefined || isString(cuisine)) &&
+    (tags === undefined || isStringArray(tags)) &&
+    (rating === undefined || (Number.isInteger(rating) && Number(rating) >= 1 && Number(rating) <= 5)) &&
+    (toTry === undefined || typeof toTry === 'boolean') &&
+    (notes === undefined || isString(notes)) &&
+    (totalMinutes === undefined || (Number.isInteger(totalMinutes) && Number(totalMinutes) >= 1 && Number(totalMinutes) <= 1440)) &&
+    (createdAt === undefined || isString(createdAt))
   )
 }
 

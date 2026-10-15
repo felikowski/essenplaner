@@ -111,6 +111,28 @@ describe('HttpPlannerApi', () => {
     expect(fetchMock).toHaveBeenLastCalledWith('/api/recipes/w%201', expect.objectContaining({ method: 'DELETE' }))
   })
 
+  it('ändert die Einordnung teilweise und verwaltet Tags', async () => {
+    const api = new HttpPlannerApi()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'a', title: 'A', source: { kind: 'manual' }, rating: 5 }))
+    expect(await api.updateRecipeOrganization('a b', { rating: 5 })).toMatchObject({ rating: 5 })
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/recipes/a%20b/organization',
+      expect.objectContaining({ method: 'PATCH', body: '{"rating":5}' }),
+    )
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ name: 'Schnell', count: 2 }]))
+    expect(await api.listTags()).toEqual([{ name: 'Schnell', count: 2 }])
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/tags', expect.anything())
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ name: 'Vegetarisch', count: 3 }]))
+    await api.renameTag('veggie', 'Vegetarisch')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/tags/veggie', expect.objectContaining({ method: 'PATCH', body: '{"name":"Vegetarisch"}' }))
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([]))
+    await api.deleteTag('Sauce & Dip')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/tags/Sauce%20%26%20Dip', expect.objectContaining({ method: 'DELETE' }))
+  })
+
   it('reicht die Fehlermeldung des Servers weiter', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: 'Auf dieser Seite wurden keine Rezeptdaten gefunden.' }, 422))
     await expect(new HttpPlannerApi().importRecipe('https://example.com')).rejects.toMatchObject({

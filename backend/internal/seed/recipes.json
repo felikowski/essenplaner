@@ -8,6 +8,14 @@
     },
     "imageUrl": "/mock/images/haehnchen-curry.svg",
     "servings": 4,
+    "course": "Hauptgericht",
+    "cuisine": "Indisch",
+    "tags": ["schnell", "familientauglich"],
+    "rating": 4,
+    "toTry": true,
+    "notes": "Mit weniger Chili für die Kinder.",
+    "totalMinutes": 30,
+    "createdAt": "2026-09-20T12:00:00Z",
     "ingredients": [
       "600 g Hähnchenbrust",
       "1 Zwiebel",
@@ -41,7 +49,8 @@
     "source": {
       "kind": "pdf",
       "pdfUrl": "/mock/pdf/beispielrezept.pdf"
-    }
+    },
+    "createdAt": "2026-09-22T12:00:00Z"
   },
   {
     "id": "linsensuppe",
@@ -51,6 +60,11 @@
       "url": "https://example.com/rezepte/linsensuppe"
     },
     "servings": 6,
+    "course": "Suppe",
+    "tags": ["vegetarisch"],
+    "rating": 5,
+    "totalMinutes": 60,
+    "createdAt": "2026-09-24T12:00:00Z",
     "ingredients": [
       "250 g Tellerlinsen",
       "2 Karotten",
@@ -69,6 +83,12 @@
     },
     "imageUrl": "/mock/images/kichererbsen-curry.svg",
     "servings": 4,
+    "course": "Hauptgericht",
+    "cuisine": "Indisch",
+    "tags": ["vegetarisch", "schnell"],
+    "rating": 5,
+    "totalMinutes": 25,
+    "createdAt": "2026-10-05T12:00:00Z",
     "ingredients": [
       "2 Dosen Kichererbsen",
       "200 g Blattspinat",
@@ -97,7 +117,16 @@
     "source": {
       "kind": "web",
       "url": "https://example.com/rezepte/ofengemuese-feta"
-    }
+    },
+    "course": "Hauptgericht",
+    "tags": ["vegetarisch"],
+    "totalMinutes": 35,
+    "createdAt": "2026-10-07T12:00:00Z",
+    "ingredients": [
+      "2 Zucchini",
+      "200 g Feta",
+      "1 rote Paprika"
+    ]
   },
   {
     "id": "kartoffelsuppe",

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ShoppingSettings } from '../components/ShoppingSettings'
+import { TagSettings } from '../components/TagSettings'
 import { MEAL_LABELS } from '../lib/meals'
 import { useSettings } from '../lib/settingsContext'
 import { MEALS, type Meal } from '../types'
@@ -59,6 +60,8 @@ export function SettingsPage() {
           </p>
         )}
       </fieldset>
+      <h2 className="settings-heading">Rezepte</h2>
+      <TagSettings />
       <h2 className="settings-heading">Einkauf</h2>
       <ShoppingSettings />
     </div>

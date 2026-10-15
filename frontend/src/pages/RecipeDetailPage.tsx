@@ -8,7 +8,7 @@ import { formatServings, sourceLabel } from '../lib/recipes'
 import { scaleIngredient } from '../lib/scale'
 import { resolveStepAmounts } from '../lib/stepAmounts'
 import { useAsyncData } from '../lib/useAsyncData'
-import type { Recipe } from '../types'
+import type { Recipe, RecipeOrganizationPatch } from '../types'
 
 export function RecipeDetailPage() {
   const { id = '' } = useParams()
@@ -38,12 +38,25 @@ export function RecipeDetailPage() {
   )
 }
 
-function RecipeDetail({ recipe }: { recipe: Recipe }) {
+function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
+  const api = usePlannerApi()
+  const [recipe, setRecipe] = useState(initialRecipe)
+  const [organizationError, setOrganizationError] = useState<string | null>(null)
   const { source } = recipe
   const unavailable = recipe.available === false
   const hasIngredients = (recipe.ingredients?.length ?? 0) > 0
   const [servings, setServings] = useServingsParam(recipe.servings)
   const factor = servings !== undefined && recipe.servings !== undefined ? servings / recipe.servings : 1
+  const askHowItWas = recipe.toTry && recipe.lastPlannedOn !== undefined && recipe.lastPlannedOn < localToday()
+
+  async function updateOrganization(patch: RecipeOrganizationPatch) {
+    setOrganizationError(null)
+    try {
+      setRecipe(await api.updateRecipeOrganization(recipe.id, patch))
+    } catch {
+      setOrganizationError('Die Einordnung konnte nicht gespeichert werden.')
+    }
+  }
 
   return (
     <article className="recipe-detail">
@@ -58,6 +71,31 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
         <span className="source-label">{sourceLabel(recipe)}</span>
         {recipe.servings !== undefined && <span>{formatServings(recipe.servings)}</span>}
       </p>
+      <section className="recipe-organization" aria-label="Einordnung">
+        <div className="recipe-organization__heading">
+          <h2>Einordnung</h2>
+          <label className="checkbox">
+            <input type="checkbox" checked={recipe.toTry === true} onChange={(event) => void updateOrganization({ toTry: event.target.checked })} />
+            Ausprobieren
+          </label>
+        </div>
+        <StarRating value={recipe.rating} onRate={(rating) => void updateOrganization({ rating })} />
+        {(recipe.course || recipe.cuisine || recipe.totalMinutes !== undefined) && (
+          <p className="recipe-organization__facts">
+            {[recipe.course, recipe.cuisine, recipe.totalMinutes !== undefined ? `${recipe.totalMinutes} Min.` : ''].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {recipe.tags && <div className="recipe-card__tags">{recipe.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>}
+        {recipe.notes && <p className="recipe-notes"><strong>Notiz:</strong> {recipe.notes}</p>}
+        {organizationError && <p className="form__error" role="alert">{organizationError}</p>}
+      </section>
+      {askHowItWas && (
+        <section className="how-was-it" aria-labelledby="how-was-it-title">
+          <h2 id="how-was-it-title">Wie war’s?</h2>
+          <p>Bewerte das Rezept. Danach verschwindet es aus „Ausprobieren“.</p>
+          <StarRating value={recipe.rating} onRate={(rating) => void updateOrganization({ rating, toTry: false })} label="Nach dem Kochen bewerten" />
+        </section>
+      )}
       <RecipeHistory recipeId={recipe.id} />
       <div className="recipe-detail__actions">
         {source.kind !== 'manual' && (
@@ -111,6 +149,25 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
       {recipe.removable && <RemoveRecipe recipe={recipe} />}
     </article>
   )
+}
+
+function StarRating({ value, onRate, label = 'Bewertung' }: { value?: number; onRate: (rating: number) => void; label?: string }) {
+  return (
+    <div className="star-rating" role="group" aria-label={label}>
+      {[1, 2, 3, 4, 5].map((rating) => (
+        <button key={rating} type="button" className="star-rating__star" aria-label={`${rating} Sterne`} aria-pressed={value === rating} onClick={() => onRate(rating)}>
+          {rating <= (value ?? 0) ? '★' : '☆'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function localToday() {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
 }
 
 const MIN_SERVINGS = 1

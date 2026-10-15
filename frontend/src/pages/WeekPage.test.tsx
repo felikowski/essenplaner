@@ -120,6 +120,19 @@ describe('Wochenplan', () => {
       expect(await within(dayCard('Dienstag')).findByRole('link', { name: 'Pfannkuchen' })).toBeInTheDocument()
     })
 
+    it('filtert den Rezept-Auswahldialog lokal nach Gang', async () => {
+      const { user } = renderApp('/woche/2026-W40')
+      await user.click(await screen.findByRole('button', { name: 'Dienstag Abendessen: hinzufügen' }))
+      await user.click(screen.getByRole('button', { name: 'Filter' }))
+      const filterDialog = screen.getByRole('dialog', { name: 'Rezepte filtern' })
+      await user.selectOptions(within(filterDialog).getByLabelText('Gang'), 'Suppe')
+      await user.click(within(filterDialog).getByRole('button', { name: 'Fertig' }))
+
+      const addDialog = screen.getByRole('dialog', { name: /Hinzufügen: Dienstag/ })
+      expect(within(addDialog).getByRole('button', { name: /Linsensuppe/ })).toBeInTheDocument()
+      expect(within(addDialog).queryByRole('button', { name: /Hähnchen-Curry/ })).not.toBeInTheDocument()
+    })
+
     it('ergänzt eine Beilage, eine Notiz und eine Zutat in derselben Mahlzeit', async () => {
       const { user } = renderApp('/woche/2026-W40')
 

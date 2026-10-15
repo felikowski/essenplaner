@@ -159,6 +159,47 @@ func TestParseSingleCases(t *testing.T) {
 	}
 }
 
+func TestParseOrganization(t *testing.T) {
+	base, _ := url.Parse("https://example.com/rezept")
+	tests := []struct {
+		name, fields string
+		course       string
+		cuisine      string
+		tags         []string
+		minutes      int
+	}{
+		{"angaben", `"recipeCategory":"Hauptspeise","recipeCuisine":"Italienisch","keywords":"schnell, vegetarisch","totalTime":"PT45M"`, "Hauptgericht", "Italienisch", []string{"schnell", "vegetarisch"}, 45},
+		{"unbekannte kategorie", `"recipeCategory":"Ostern","keywords":["Frühling","Brunch"],"totalTime":"PT1H15M"`, "", "", []string{"Frühling", "Brunch"}, 75},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := []byte(`<script type="application/ld+json">{"@type":"Recipe","name":"Test","recipeIngredient":["x"],` + tt.fields + `}</script>`)
+			page, err := Parse(body, base)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := page.Recipe
+			if got.Course != tt.course || got.Cuisine != tt.cuisine || !slices.Equal(got.Tags, tt.tags) || got.TotalMinutes == nil || *got.TotalMinutes != tt.minutes {
+				t.Errorf("einordnung = %+v", got)
+			}
+		})
+	}
+}
+
+func TestKeywordsLimitsAndDurationErrors(t *testing.T) {
+	base, _ := url.Parse("https://example.com/rezept")
+	body := []byte(`<script type="application/ld+json">{"@type":"Recipe","name":"Test","recipeIngredient":["x"],
+		"keywords":["a","gültig","GÜLTIG","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf"],
+		"totalTime":"morgen"}</script>`)
+	page, err := Parse(body, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Recipe.Tags) != 10 || page.Recipe.Tags[0] != "gültig" || page.Recipe.TotalMinutes != nil {
+		t.Errorf("rezept = %+v", page.Recipe)
+	}
+}
+
 func TestCanonicalURL(t *testing.T) {
 	final, _ := url.Parse("https://WWW.Chefkoch.de/rezepte/1/x.html?utm_source=insta&b=2&a=1#kommentare")
 	tests := []struct {

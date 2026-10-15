@@ -27,6 +27,49 @@ export interface Recipe {
   removable?: boolean
   /** true, wenn sich der Titel ändern lässt (nur bei eigenen Rezepten). */
   titleEditable?: boolean
+  course?: RecipeCourse
+  cuisine?: string
+  tags?: string[]
+  rating?: number
+  toTry?: boolean
+  notes?: string
+  totalMinutes?: number
+  /** Zeitpunkt der Anlage als ISO-Zeitstempel. */
+  createdAt?: string
+  /** Letzter echter Rezepteintrag im Plan; Reste zählen nicht. */
+  lastPlannedOn?: IsoDate
+}
+
+export const RECIPE_COURSES = [
+  'Hauptgericht',
+  'Beilage',
+  'Suppe',
+  'Salat',
+  'Vorspeise',
+  'Dessert',
+  'Frühstück',
+  'Snack',
+  'Gebäck',
+  'Getränk',
+  'Sauce & Dip',
+] as const
+
+export type RecipeCourse = (typeof RECIPE_COURSES)[number]
+
+/** Teiländerung der Einordnung; null beziehungsweise eine leere Liste entfernt die Angabe. */
+export interface RecipeOrganizationPatch {
+  course?: RecipeCourse | null
+  cuisine?: string | null
+  tags?: string[]
+  rating?: number | null
+  toTry?: boolean
+  notes?: string | null
+  totalMinutes?: number | null
+}
+
+export interface TagSummary {
+  name: string
+  count: number
 }
 
 /** Von Hand bearbeitbare Angaben eines Rezepts. Zutaten sind Zeilen als Text; das Backend zerlegt sie. */

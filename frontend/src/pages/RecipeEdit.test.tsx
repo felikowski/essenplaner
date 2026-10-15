@@ -80,6 +80,20 @@ describe('Eigenes Rezept anlegen', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('konnte nicht gespeichert werden')
   })
+
+  it('legt bei einem Fehler der Einordnung beim erneuten Speichern kein zweites Rezept an', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const original = api.updateRecipeOrganization.bind(api)
+    vi.spyOn(api, 'updateRecipeOrganization').mockRejectedValueOnce(new RequestError('x', 500)).mockImplementation(original)
+    const { user } = renderApp('/rezepte/neu', api)
+    await user.type(screen.getByLabelText('Titel'), 'Einmalig')
+    await user.type(screen.getByLabelText('Tags'), 'Test')
+    await user.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Einordnung nicht')
+    await user.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByRole('heading', { name: 'Einmalig' })).toBeInTheDocument()
+    expect((await api.listRecipes()).filter((recipe) => recipe.title === 'Einmalig')).toHaveLength(1)
+  })
 })
 
 describe('Zutatenliste im Formular', () => {
@@ -158,6 +172,37 @@ describe('Rezept bearbeiten', () => {
     expect((screen.getByLabelText('Zubereitung') as HTMLTextAreaElement).value).toContain(
       'Reis nach Packungsanweisung kochen.\nHähnchen in Würfel schneiden',
     )
+    expect(screen.getByLabelText('Gang')).toHaveValue('Hauptgericht')
+    expect(screen.getByLabelText('Küche')).toHaveValue('Indisch')
+    await vi.waitFor(() => expect(document.querySelector('#recipe-tags-list option[value="vegetarisch"]')).not.toBeNull())
+  })
+
+  it('speichert Gang, Küche, Tags, Zeit und Familiennotiz im zweiten Aufruf', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const organization = vi.spyOn(api, 'updateRecipeOrganization')
+    const { user } = renderApp('/rezepte/gemueselasagne/bearbeiten', api)
+    await screen.findByRole('heading', { name: 'Rezept bearbeiten' })
+    await user.selectOptions(screen.getByLabelText('Gang'), 'Hauptgericht')
+    await user.type(screen.getByLabelText('Küche'), 'italienisch')
+    await user.type(screen.getByLabelText('Tags'), 'schnell, Vegetarisch')
+    await user.type(screen.getByLabelText('Zubereitungszeit in Minuten'), '45')
+    await user.type(screen.getByLabelText('Notizen der Familie'), 'Mit weniger Käse')
+    await user.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(await screen.findByText('Hauptgericht · Italienisch · 45 Min.')).toBeInTheDocument()
+    expect(screen.getByText(/Mit weniger Käse/)).toBeInTheDocument()
+    expect(organization).toHaveBeenCalledWith('gemueselasagne', expect.objectContaining({ tags: ['schnell', 'Vegetarisch'], totalMinutes: 45 }))
+  })
+
+  it('meldet einen Fehler gezielt, wenn nur die Einordnung nicht gespeichert werden kann', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    vi.spyOn(api, 'updateRecipeOrganization').mockRejectedValueOnce(new RequestError('x', 500))
+    const { user } = renderApp('/rezepte/haehnchen-curry/bearbeiten', api)
+    await screen.findByRole('heading', { name: 'Rezept bearbeiten' })
+    await user.type(screen.getByLabelText('Notizen der Familie'), ' Neu')
+    await user.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Rezept wurde gespeichert, aber die Einordnung nicht')
+    expect(screen.getByLabelText('Notizen der Familie')).toHaveValue('Mit weniger Chili für die Kinder. Neu')
   })
 
   it('fragt beim Abbrechen nach, wenn es ungespeicherte Änderungen gibt', async () => {

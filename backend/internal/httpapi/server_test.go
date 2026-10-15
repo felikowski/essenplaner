@@ -99,6 +99,7 @@ func TestRecipeJSONOmitsMissingFields(t *testing.T) {
 		"id": "gemueselasagne", "title": "Gemüselasagne",
 		"source":    map[string]any{"kind": "pdf", "pdfUrl": "/mock/pdf/beispielrezept.pdf"},
 		"available": true,
+		"createdAt": pdf["createdAt"],
 	}
 	gotJSON, _ := json.Marshal(pdf)
 	wantJSON, _ := json.Marshal(want)

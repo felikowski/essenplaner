@@ -6,7 +6,7 @@ import { IngredientListEditor } from '../components/IngredientListEditor'
 import { Modal } from '../components/Modal'
 import { LoadError, Loading } from '../components/Status'
 import { useAsyncData } from '../lib/useAsyncData'
-import type { Recipe, RecipeInput } from '../types'
+import { RECIPE_COURSES, type Recipe, type RecipeCourse, type RecipeInput, type RecipeOrganizationPatch } from '../types'
 
 /** /rezepte/neu legt ein eigenes Rezept an, /rezepte/:id/bearbeiten bearbeitet ein vorhandenes. */
 export function RecipeEditPage() {
@@ -41,6 +41,11 @@ interface FormState {
   servings: string
   ingredients: string[]
   instructions: string
+  course: string
+  cuisine: string
+  tags: string
+  totalMinutes: string
+  notes: string
 }
 
 function initialState(recipe: Recipe | null): FormState {
@@ -49,10 +54,15 @@ function initialState(recipe: Recipe | null): FormState {
     servings: recipe?.servings !== undefined ? String(recipe.servings) : '',
     ingredients: recipe?.ingredients?.map((ingredient) => ingredient.text) ?? [''],
     instructions: recipe?.instructions?.join('\n') ?? '',
+    course: recipe?.course ?? '',
+    cuisine: recipe?.cuisine ?? '',
+    tags: recipe?.tags?.join(', ') ?? '',
+    totalMinutes: recipe?.totalMinutes !== undefined ? String(recipe.totalMinutes) : '',
+    notes: recipe?.notes ?? '',
   }
 }
 
-type Field = 'title' | 'servings' | 'ingredients' | 'instructions'
+type Field = 'title' | 'servings' | 'ingredients' | 'instructions' | 'course' | 'cuisine' | 'tags' | 'totalMinutes' | 'notes'
 
 function RecipeForm({ recipe }: { recipe: Recipe | null }) {
   const api = usePlannerApi()
@@ -63,6 +73,19 @@ function RecipeForm({ recipe }: { recipe: Recipe | null }) {
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null)
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
+  const [cuisineSuggestions, setCuisineSuggestions] = useState<string[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([api.listTags(), api.listRecipes()]).then(([tags, recipes]) => {
+      if (cancelled) return
+      setTagSuggestions(tags.map((tag) => tag.name))
+      setCuisineSuggestions([...new Set(recipes.map((item) => item.cuisine).filter((value): value is string => Boolean(value)))])
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [api])
 
   const isNew = recipe === null
   const titleEditable = isNew || recipe.titleEditable === true
@@ -93,9 +116,30 @@ function RecipeForm({ recipe }: { recipe: Recipe | null }) {
       setFieldError({ field: 'servings', message: 'Portionen müssen eine ganze Zahl von 1 bis 99 sein.' })
       return
     }
+    const organization = toOrganization(form)
+    if (form.totalMinutes.trim() !== '' && organization.totalMinutes === null) {
+      setFieldError({ field: 'totalMinutes', message: 'Die Zeit muss eine ganze Zahl von 1 bis 1440 sein.' })
+      return
+    }
     setSaving(true)
     try {
-      const saved = isNew ? await api.createRecipe(input) : await api.updateRecipe(recipe.id, input)
+      const saved = isNew
+        ? pendingRecipeId
+          ? await api.updateRecipe(pendingRecipeId, input)
+          : await api.createRecipe(input)
+        : await api.updateRecipe(recipe.id, input)
+      if (isNew) setPendingRecipeId(saved.id)
+      try {
+        await api.updateRecipeOrganization(saved.id, organization)
+      } catch (error) {
+        setSaving(false)
+        if (error instanceof RequestError && error.status === 422 && error.serverMessage && isField(error.field)) {
+          setFieldError({ field: error.field, message: error.serverMessage })
+        } else {
+          setGeneralError('Das Rezept wurde gespeichert, aber die Einordnung nicht. Bitte prüfe den Abschnitt „Einordnung“ und versuche es erneut.')
+        }
+        return
+      }
       navigate(`/rezepte/${saved.id}`, { replace: true })
     } catch (error) {
       setSaving(false)
@@ -147,6 +191,41 @@ function RecipeForm({ recipe }: { recipe: Recipe | null }) {
           )}
           {errorFor('title')}
         </div>
+
+        <fieldset className="form__field form__fieldset organization-form">
+          <legend className="form__label">Einordnung</legend>
+          <div className="form__field">
+            <label className="form__label" htmlFor="recipe-course">Gang</label>
+            <select id="recipe-course" className="select" value={form.course} onChange={(event) => set('course', event.target.value)}>
+              <option value="">Kein Gang</option>
+              {RECIPE_COURSES.map((course) => <option key={course}>{course}</option>)}
+            </select>
+            {errorFor('course')}
+          </div>
+          <div className="form__field">
+            <label className="form__label" htmlFor="recipe-cuisine">Küche</label>
+            <input id="recipe-cuisine" className="input" list="recipe-cuisines" maxLength={50} value={form.cuisine} onChange={(event) => set('cuisine', event.target.value)} />
+            <datalist id="recipe-cuisines">{cuisineSuggestions.map((cuisine) => <option key={cuisine} value={cuisine} />)}</datalist>
+            {errorFor('cuisine')}
+          </div>
+          <div className="form__field">
+            <label className="form__label" htmlFor="recipe-tags">Tags</label>
+            <input id="recipe-tags" className="input" list="recipe-tags-list" value={form.tags} placeholder="schnell, vegetarisch" onChange={(event) => set('tags', event.target.value)} />
+            <datalist id="recipe-tags-list">{tagSuggestions.map((tag) => <option key={tag} value={tag} />)}</datalist>
+            <p className="form__hint">Mehrere Tags mit Komma trennen.</p>
+            {errorFor('tags')}
+          </div>
+          <div className="form__field">
+            <label className="form__label" htmlFor="recipe-time">Zubereitungszeit in Minuten</label>
+            <input id="recipe-time" className="input input--short" type="number" min={1} max={1440} value={form.totalMinutes} onChange={(event) => set('totalMinutes', event.target.value)} />
+            {errorFor('totalMinutes')}
+          </div>
+          <div className="form__field">
+            <label className="form__label" htmlFor="recipe-notes">Notizen der Familie</label>
+            <textarea id="recipe-notes" className="textarea" rows={4} maxLength={2000} value={form.notes} onChange={(event) => set('notes', event.target.value)} />
+            {errorFor('notes')}
+          </div>
+        </fieldset>
 
         <div className="form__field">
           <label className="form__label" htmlFor="recipe-servings">
@@ -233,7 +312,8 @@ function RecipeForm({ recipe }: { recipe: Recipe | null }) {
 }
 
 function isField(field: string | null): field is Field {
-  return field === 'title' || field === 'servings' || field === 'ingredients' || field === 'instructions'
+  return field === 'title' || field === 'servings' || field === 'ingredients' || field === 'instructions' ||
+    field === 'course' || field === 'cuisine' || field === 'tags' || field === 'totalMinutes' || field === 'notes'
 }
 
 function toInput(form: FormState): RecipeInput {
@@ -252,5 +332,16 @@ function toInput(form: FormState): RecipeInput {
 
 /** Vergleichsform: Leerzeilen und Leerraum am Rand zählen nicht als Änderung. */
 function normalize(form: FormState) {
-  return { ...toInput(form), servingsText: form.servings.trim() }
+  return { ...toInput(form), ...toOrganization(form), servingsText: form.servings.trim(), totalMinutesText: form.totalMinutes.trim() }
+}
+
+function toOrganization(form: FormState): RecipeOrganizationPatch {
+  const time = /^\d+$/.test(form.totalMinutes.trim()) ? Number(form.totalMinutes) : null
+  return {
+    course: (form.course || null) as RecipeCourse | null,
+    cuisine: form.cuisine.trim() || null,
+    tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+    totalMinutes: time !== null && time >= 1 && time <= 1440 ? time : null,
+    notes: form.notes.trim() || null,
+  }
 }

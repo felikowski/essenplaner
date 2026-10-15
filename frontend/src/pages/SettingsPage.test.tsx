@@ -101,3 +101,20 @@ describe('Einstellungen der Einkaufsliste', () => {
     expect(await api.listShoppingAliases()).toEqual([])
   })
 })
+
+describe('Tag-Verwaltung', () => {
+  it('führt einen Tag beim Umbenennen in einen vorhandenen zusammen und löscht ihn', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    await api.updateRecipeOrganization('haehnchen-curry', { tags: ['veggie'] })
+    const { user } = renderApp('/einstellungen', api)
+
+    const veggie = await screen.findByRole('textbox', { name: 'Tag veggie' })
+    await user.clear(veggie)
+    await user.type(veggie, 'vegetarisch{Enter}')
+    await vi.waitFor(() => expect(screen.queryByRole('textbox', { name: 'Tag veggie' })).not.toBeInTheDocument())
+    expect((await api.listTags()).filter((tag) => tag.name.toLocaleLowerCase('de') === 'vegetarisch')).toEqual([{ name: 'vegetarisch', count: 4 }])
+
+    await user.click(screen.getByRole('button', { name: 'Tag vegetarisch löschen' }))
+    await vi.waitFor(() => expect(screen.queryByRole('textbox', { name: 'Tag vegetarisch' })).not.toBeInTheDocument())
+  })
+})

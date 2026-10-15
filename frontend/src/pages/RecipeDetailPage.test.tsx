@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MockPlannerApi } from '../api/MockPlannerApi'
 import { loadMockFiles, mockRecipes } from '../test/mockData'
 import { currentUrl, renderApp } from '../test/renderApp'
@@ -35,6 +35,7 @@ function stepTexts() {
 }
 
 describe('Rezeptdetail', () => {
+  afterEach(() => vi.useRealTimers())
   it('zeigt alle Angaben eines Webrezepts und verlinkt das Original in einem neuen Tab', async () => {
     renderApp('/rezepte/haehnchen-curry')
 
@@ -47,11 +48,34 @@ describe('Rezeptdetail', () => {
     expect(screen.getByRole('heading', { name: 'Zutaten für 4 Portionen' })).toBeInTheDocument()
     expect(screen.getByText('400 ml Kokosmilch')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Zubereitung' })).toBeInTheDocument()
+    expect(screen.getByText('Hauptgericht · Indisch · 30 Min.')).toBeInTheDocument()
+    expect(screen.getByText(/Mit weniger Chili/)).toBeInTheDocument()
 
     const original = screen.getByRole('link', { name: 'Original ansehen' })
     expect(original).toHaveAttribute('href', 'https://example.com/rezepte/haehnchen-curry')
     expect(original).toHaveAttribute('target', '_blank')
     expect(original).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('bewertet direkt mit fünf Sternen, ohne das Formular zu öffnen', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const { user } = renderApp('/rezepte/haehnchen-curry', api)
+    const rating = await screen.findByRole('group', { name: 'Bewertung' })
+    await user.click(within(rating).getByRole('button', { name: '5 Sterne' }))
+    await vi.waitFor(async () => expect(await api.getRecipe('haehnchen-curry')).toMatchObject({ rating: 5 }))
+    expect(screen.queryByRole('heading', { name: 'Rezept bearbeiten' })).not.toBeInTheDocument()
+  })
+
+  it('fragt nach dem Kochen „Wie war’s?“ und entfernt die Ausprobieren-Markierung nach der Bewertung', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 15, 12, 0))
+    const api = new MockPlannerApi(loadMockFiles)
+    const { user } = renderApp('/rezepte/haehnchen-curry', api)
+    const prompt = await screen.findByRole('heading', { name: 'Wie war’s?' })
+    const section = prompt.closest('section') as HTMLElement
+    await user.click(within(section).getByRole('button', { name: '5 Sterne' }))
+    await vi.waitFor(() => expect(screen.queryByRole('heading', { name: 'Wie war’s?' })).not.toBeInTheDocument())
+    expect(await api.getRecipe('haehnchen-curry')).toMatchObject({ rating: 5, toTry: false })
   })
 
   it('blendet fehlende Angaben aus', async () => {

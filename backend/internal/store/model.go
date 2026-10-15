@@ -18,6 +18,13 @@ var (
 	ErrTitleNotEditable = errors.New("title cannot be changed")
 )
 
+// ErrInvalidOrganization bezeichnet eine ungültige Angabe zur Einordnung eines Rezepts.
+type ErrInvalidOrganization struct {
+	Field string
+}
+
+func (e ErrInvalidOrganization) Error() string { return "invalid recipe organization: " + e.Field }
+
 // Herkunft eines Rezepts (Spalte origin).
 const (
 	OriginSeed      = "seed"
@@ -81,7 +88,39 @@ type Recipe struct {
 	// Removable zeigt an, ob sich das Rezept über die API entfernen lässt.
 	Removable bool `json:"removable,omitempty"`
 	// TitleEditable zeigt an, ob sich der Titel ändern lässt (nur bei eigenen Rezepten).
-	TitleEditable bool `json:"titleEditable,omitempty"`
+	TitleEditable bool     `json:"titleEditable,omitempty"`
+	Course        string   `json:"course,omitempty"`
+	Cuisine       string   `json:"cuisine,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	Rating        *int     `json:"rating,omitempty"`
+	ToTry         bool     `json:"toTry,omitempty"`
+	Notes         string   `json:"notes,omitempty"`
+	TotalMinutes  *int     `json:"totalMinutes,omitempty"`
+	CreatedAt     string   `json:"createdAt"`
+	LastPlannedOn string   `json:"lastPlannedOn,omitempty"`
+}
+
+// Optional unterscheidet bei Teiländerungen zwischen „nicht übergeben“ und einem leeren Wert.
+type Optional[T any] struct {
+	Set   bool
+	Value T
+}
+
+// RecipeOrganizationPatch enthält die optionalen Felder der Einordnung.
+type RecipeOrganizationPatch struct {
+	Course       Optional[string]
+	Cuisine      Optional[string]
+	Tags         Optional[[]string]
+	Rating       Optional[*int]
+	ToTry        Optional[bool]
+	Notes        Optional[string]
+	TotalMinutes Optional[*int]
+}
+
+// TagSummary ist ein vorhandener Tag mit der Zahl seiner Rezepte.
+type TagSummary struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }
 
 // RecipeInput sind die von Hand bearbeitbaren Angaben eines Rezepts. Zutaten sind Zeilen als Text;
@@ -119,6 +158,14 @@ type RecipeStore interface {
 	// UpdateRecipe ersetzt Portionen, Zutaten und Zubereitung und bei eigenen Rezepten den Titel
 	// (ErrNotFound, ErrTitleNotEditable).
 	UpdateRecipe(ctx context.Context, id string, input RecipeInput) (Recipe, error)
+	// UpdateRecipeOrganization ändert nur übergebene Einordnungsfelder.
+	UpdateRecipeOrganization(ctx context.Context, id string, patch RecipeOrganizationPatch) (Recipe, error)
+	// ListTags liefert alle Tags alphabetisch mit ihrer Verwendung.
+	ListTags(ctx context.Context) ([]TagSummary, error)
+	// RenameTag benennt einen Tag um und führt ihn bei Bedarf mit einem vorhandenen zusammen.
+	RenameTag(ctx context.Context, key, name string) error
+	// DeleteTag entfernt einen Tag aus allen Rezepten.
+	DeleteTag(ctx context.Context, key string) error
 	// FindImported sucht ein importiertes Rezept über seine kanonische Adresse (ErrNotFound, wenn keins existiert).
 	FindImported(ctx context.Context, canonicalURL string) (Recipe, error)
 	// SaveImported legt ein importiertes Rezept an oder aktualisiert ein vorhandenes mit derselben Adresse,

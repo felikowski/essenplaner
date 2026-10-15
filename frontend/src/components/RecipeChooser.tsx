@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { filterByTitle, sortByTitle, sourceLabel } from '../lib/recipes'
+import { emptyRecipeFilters, queryRecipes, type RecipeQueryState } from '../lib/recipeQuery'
+import { sourceLabel } from '../lib/recipes'
 import type { Recipe } from '../types'
 import { SearchField } from './SearchField'
+import { RecipeFilters } from './RecipeFilters'
 
 interface Props {
   recipes: Recipe[]
@@ -10,12 +12,14 @@ interface Props {
 
 /** Suchbare Liste von Rezepten zum Auswählen. */
 export function RecipeChooser({ recipes, onSelect }: Props) {
-  const [query, setQuery] = useState('')
-  const visible = filterByTitle(sortByTitle(recipes), query)
+  const [state, setState] = useState<RecipeQueryState>({ query: '', sort: 'title', filters: emptyRecipeFilters() })
+  const visible = queryRecipes(recipes, state)
+  const tags = [...new Set(recipes.flatMap((recipe) => recipe.tags ?? []))]
 
   return (
     <>
-      <SearchField value={query} onChange={setQuery} />
+      <SearchField value={state.query} onChange={(query) => setState((current) => ({ ...current, query }))} />
+      <RecipeFilters state={state} tags={tags} onChange={setState} />
       {visible.length === 0 ? (
         <p className="status">Keine Rezepte gefunden</p>
       ) : (

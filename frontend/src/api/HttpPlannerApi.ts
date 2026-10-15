@@ -7,11 +7,13 @@ import type {
   NewEntry,
   Recipe,
   RecipeInput,
+  RecipeOrganizationPatch,
   ShoppingAlias,
   ShoppingImportResult,
   ShoppingItemPatch,
   ShoppingList,
   Staple,
+  TagSummary,
   WeekPlan,
 } from '../types'
 import type { PlannerApi } from './PlannerApi'
@@ -48,8 +50,27 @@ export class HttpPlannerApi implements PlannerApi {
     return request(`/api/recipes/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
   }
 
+  updateRecipeOrganization(id: string, patch: RecipeOrganizationPatch): Promise<Recipe> {
+    return request(`/api/recipes/${encodeURIComponent(id)}/organization`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+  }
+
   removeRecipe(id: string): Promise<void> {
     return request(`/api/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  listTags(): Promise<TagSummary[]> {
+    return request('/api/tags')
+  }
+
+  renameTag(name: string, newName: string): Promise<TagSummary[]> {
+    return send('PATCH', `/api/tags/${encodeURIComponent(name)}`, { name: newName })
+  }
+
+  deleteTag(name: string): Promise<TagSummary[]> {
+    return send('DELETE', `/api/tags/${encodeURIComponent(name)}`)
   }
 
   async createEntry(entry: NewEntry): Promise<WeekPlan[]> {

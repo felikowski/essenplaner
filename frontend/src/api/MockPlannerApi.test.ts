@@ -101,4 +101,18 @@ describe('MockPlannerApi', () => {
     await expect(api.removeRecipe('gemueselasagne')).rejects.toMatchObject({ status: 409 })
     await expect(api.importRecipe('https://example.com/keine-rezeptdaten')).rejects.toMatchObject({ status: 422 })
   })
+
+  it('ändert nur übergebene Einordnungsfelder und entfernt doppelte Tags', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const recipe = await api.updateRecipeOrganization('haehnchen-curry', { rating: 5, tags: ['Schnell', 'schnell'] })
+    expect(recipe).toMatchObject({ rating: 5, course: 'Hauptgericht', tags: ['Schnell'] })
+    await expect(api.updateRecipeOrganization('haehnchen-curry', { totalMinutes: 1441 })).rejects.toMatchObject({ status: 422, field: 'totalMinutes' })
+  })
+
+  it('listet Tags, führt sie zusammen und löscht sie', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    await api.updateRecipeOrganization('haehnchen-curry', { tags: ['veggie'] })
+    expect(await api.renameTag('veggie', 'vegetarisch')).toContainEqual({ name: 'vegetarisch', count: 4 })
+    expect((await api.deleteTag('vegetarisch')).some((tag) => tag.name.toLocaleLowerCase('de') === 'vegetarisch')).toBe(false)
+  })
 })

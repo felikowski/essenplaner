@@ -85,6 +85,8 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | GET     | `/api/recipes/{id}`   | ein Rezept, 404 wenn unbekannt                                 |
 | POST    | `/api/recipes`        | eigenes Rezept anlegen (siehe unten)                           |
 | PUT     | `/api/recipes/{id}`   | Portionen, Zutaten, Zubereitung (und Titel eigener Rezepte)    |
+| PATCH   | `/api/recipes/{id}/organization` | Gang, Küche, Tags, Bewertung, Ausprobieren, Notizen und Zeit teilweise ändern |
+| GET/PATCH/DELETE | `/api/tags[/{name}]` | Rezept-Tags auflisten, umbenennen, zusammenführen oder löschen |
 | GET     | `/api/weeks/{week}`   | Plan einer Woche (`2026-W40`), je Tag eine Liste von Einträgen |
 | POST    | `/api/entries`        | Eintrag anlegen: Rezept, Notiz, Einzelzutat oder Reste          |
 | PATCH   | `/api/entries/{id}`   | Datum, Mahlzeit, Portionen oder Text ändern                     |
@@ -119,6 +121,20 @@ die Grundlage für Einkaufsliste und Portionen. Die Regeln stehen in `backend/in
 `frontend/src/lib/ingredient.ts`. Beide prüfen dieselben Fälle aus `testdata/ingredient-cases.json`.
 
 Von Hand geänderte Angaben bleiben erhalten, wenn ein Rezept erneut per Link importiert wird.
+
+## Rezepte einordnen und finden
+
+Rezepte lassen sich unabhängig von ihrer Quelle nach Gang, Küche, Tags, Bewertung, „Ausprobieren“,
+Zubereitungszeit und einer Familiennotiz einordnen. Sterne und die Ausprobieren-Markierung sind direkt
+in der Detailansicht änderbar; nach dem ersten geplanten Kochen fragt die Ansicht „Wie war’s?“. Beim
+Import per Link werden Gang, Küche, Tags und Gesamtzeit aus den strukturierten Rezeptdaten vorbelegt,
+ohne bestehende Angaben zu überschreiben.
+
+Die Rezeptliste durchsucht außer dem Titel auch Tags, Küche und Zutaten. Filter und Sortierung stehen in
+der Adresse und bleiben dadurch beim Neuladen oder Teilen erhalten. „Was habe ich da?“ findet Rezepte zu
+mehreren vorhandenen Zutaten, berücksichtigt gemerkte Zusammenführungen der Einkaufsliste und zeigt
+gefundene sowie fehlende Eingaben. Rezept-Tags werden in den Einstellungen umbenannt, zusammengeführt
+und gelöscht.
 
 ## Portionen umrechnen
 

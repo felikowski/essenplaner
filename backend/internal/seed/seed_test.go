@@ -43,7 +43,7 @@ func TestRunSeedsOnceAndDoesNotDuplicate(t *testing.T) {
 	}
 
 	curry, err := second.GetRecipe(ctx, "haehnchen-curry")
-	if err != nil || curry.Title != "Hähnchen-Curry" || len(curry.Ingredients) == 0 {
+	if err != nil || curry.Title != "Hähnchen-Curry" || len(curry.Ingredients) == 0 || curry.Course != "Hauptgericht" || curry.Rating == nil || *curry.Rating != 4 {
 		t.Errorf("haehnchen-curry = %+v, %v", curry, err)
 	}
 }
