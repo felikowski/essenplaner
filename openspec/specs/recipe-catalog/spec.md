@@ -33,7 +33,7 @@ Das System SHALL die Rezeptliste nach einem Suchbegriff filtern. Dabei MUST der 
 - **THEN** zeigt das System „Keine Rezepte gefunden“
 
 ### Requirement: Rezeptdetails
-Das System SHALL für ein Rezept eine Detailansicht anbieten. Sie enthält Titel, Bild, Portionen, Zutaten und Zubereitung, soweit diese Angaben vorhanden sind, sowie einen Link zur Quelle, wenn es eine gibt. Zutaten MUST mit ihrem eingegebenen Text angezeigt werden. Fehlende Angaben MUST ausgeblendet werden statt leer zu erscheinen. Für verfügbare Rezepte MUST die Detailansicht „Bearbeiten“ anbieten. Hat ein Rezept keine Zutaten, MUST sie stattdessen auf „Zutaten nachtragen“ hinweisen.
+Das System SHALL für ein Rezept eine Detailansicht anbieten. Sie enthält Titel, Bild, Portionen, Zutaten und Zubereitung, soweit diese Angaben vorhanden sind, sowie einen Link zur Quelle, wenn es eine gibt. Zutaten MUST mit ihrem eingegebenen Text angezeigt werden, außer der Nutzer hat abweichende Portionen gewählt (siehe `servings-scaling`). Fehlende Angaben MUST ausgeblendet werden statt leer zu erscheinen. Für verfügbare Rezepte MUST die Detailansicht „Bearbeiten“ anbieten. Hat ein Rezept keine Zutaten, MUST sie stattdessen auf „Zutaten nachtragen“ hinweisen.
 
 #### Scenario: Webrezept
 - **WHEN** der Nutzer ein Rezept mit Quelle Webseite öffnet
