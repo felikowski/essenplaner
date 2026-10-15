@@ -13,7 +13,7 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 | Rezepte an einem Ort speichern | ✅ `recipe-catalog` | |
 | Suche nach Titel/Stichwort | ✅ `recipe-catalog` | |
 | Rezepte per Link/Clipper importieren | 🗓️ `add-recipe-url-import` | JSON-LD, liefert strukturierte Zutaten |
-| Rezepte aus Dateien anderer Apps importieren | 🗓️ teilweise `add-google-drive-recipes` | Drive-PDFs haben **keine** strukturierten Zutaten |
+| Rezepte aus Dateien anderer Apps importieren | – | Bewusst weggelassen: HelloFresh-Rezepte lassen sich direkt per URL importieren |
 | Rezepte von Hand anlegen und bearbeiten | ❌ | Grundlage für alles Weitere |
 | Kategorien: Gang, Küche, Hauptzutat, Tags | ❌ | |
 | Bewertung | ❌ | |
@@ -68,15 +68,14 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 
 Fast alles, was Plan to Eat ausmacht (Einkaufsliste, Skalieren, Suche nach
 Zutat, Nährwerte), hängt an **strukturierten Zutaten** (Menge, Einheit, Name).
-Der Essenplaner kennt Rezepte bisher nur als Titel, Drive-PDFs liefern gar
-keine Zutaten. Der URL-Import liefert sie, für PDFs bräuchte es manuelles
-Erfassen oder eine Extraktion.
+Der URL-Import liefert strukturierte Zutaten direkt von der Rezeptseite.
+Ein zusätzlicher Umweg über exportierte PDF-Dateien ist deshalb nicht vorgesehen.
 
 ## Geplante Changes
 
 Alle Lücken sind als OpenSpec-Changes geplant. Zuerst kommen die
 Plan-to-Eat-Funktionen, beginnend mit dem URL-Import (Gegenstück zum Recipe
-Clipper). Danach folgen Google Drive, Auth0-Login und VPS-Deployment. Bis
+Clipper). Danach folgen Auth0-Login und VPS-Deployment. Bis
 dahin läuft die App nur lokal:
 
 0. `add-recipe-url-import`: Rezepte per Link importieren
@@ -98,7 +97,7 @@ dahin läuft die App nur lokal:
 8. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
 9. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
 
-Danach: `add-google-drive-recipes` → `add-auth0-login` → `add-vps-deployment`.
+Danach: `add-auth0-login` → `add-vps-deployment`.
 
 Die Planerflexibilität steht vor der Einkaufsliste, weil die Liste Portionen
 pro Eintrag, Einzelzutaten und Reste braucht.

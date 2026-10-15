@@ -1,6 +1,6 @@
 # Übergabe: nächste Change im Essenplaner
 
-Stand 2026-10-15, `main` bei `41e188e`. Diese Notiz richtet sich an einen Coding-Agenten (z. B. Codex),
+Stand 2026-10-15, `main` nach `add-cooking-view`. Diese Notiz richtet sich an einen Coding-Agenten (z. B. Codex),
 der die nächste geplante Change umsetzt. Sie fasst zusammen, was nicht direkt aus dem Code hervorgeht.
 
 ## Projekt in Kürze
@@ -17,16 +17,16 @@ der die nächste geplante Change umsetzt. Sie fasst zusammen, was nicht direkt a
 
 Reihenfolge laut `openspec/config.yaml` (jeweils erst umsetzen und archivieren, dann die nächste):
 
-1. `add-recipe-organization` ← **nächste**
-2. `add-menus`
-3. `add-cooking-view` (Portionen umrechnen ist schon erledigt, die Change ist entsprechend gekürzt)
-4. `add-freezer`
-5. `add-nutrition` (optional; zuerst Task 1.1, Lizenz des BLS 4.0 prüfen, sonst Fallback aus design.md)
+1. `add-freezer` ← **nächste**
+2. `add-nutrition` (optional; zuerst Task 1.1, Lizenz des BLS 4.0 prüfen, sonst Fallback aus design.md)
+3. `add-auth0-login`
+4. `add-vps-deployment`
 
-Nicht anfassen: `add-google-drive-recipes`, `add-auth0-login`, `add-vps-deployment` (brauchen Zugangsdaten).
+Auth0 und Deployment brauchen Zugangsdaten und teilweise gemeinsame manuelle Schritte mit dem Nutzer.
 
 Fertig umgesetzt: Rezeptimport per URL, Rezepteditor mit zerlegten Zutaten, flexibler Planer (Mahlzeiten,
-Notizen, Einzelzutaten, Reste, Woche kopieren), Portionen umrechnen, Einkaufsliste.
+Notizen, Einzelzutaten, Reste, Woche kopieren), Portionen umrechnen, Einkaufsliste, Rezeptorganisation,
+Menüs und Kochansicht.
 
 ## Ablauf pro Change
 

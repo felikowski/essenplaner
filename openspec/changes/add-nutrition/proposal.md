@@ -1,6 +1,6 @@
 ## Why
 
-Manche Familien achten auf Kalorien, Eiweiß oder Salz, etwa beim Abnehmen, beim Sport oder aus gesundheitlichen Gründen. Plan to Eat berechnet Nährwerte pro Rezept und zeigt Tagessummen im Planer. Für deutsche Zutaten gibt es seit Dezember 2025 eine kostenfreie, umfassende Quelle: den Bundeslebensmittelschlüssel (BLS) 4.0 des Max Rubner-Instituts. Diese Change ist optional. Sie steht als letzte Plan-to-Eat-Funktion nach `add-freezer` und vor Drive, Login und Deployment.
+Manche Familien achten auf Kalorien, Eiweiß oder Salz, etwa beim Abnehmen, beim Sport oder aus gesundheitlichen Gründen. Plan to Eat berechnet Nährwerte pro Rezept und zeigt Tagessummen im Planer. Für deutsche Zutaten gibt es seit Dezember 2025 eine kostenfreie, umfassende Quelle: den Bundeslebensmittelschlüssel (BLS) 4.0 des Max Rubner-Instituts. Diese Change ist optional. Sie steht als letzte Plan-to-Eat-Funktion nach `add-freezer` und vor Login und Deployment.
 
 ## What Changes
 
@@ -12,7 +12,7 @@ Manche Familien achten auf Kalorien, Eiweiß oder Salz, etwa beim Abnehmen, beim
 - Optional zeigt der Wochenplan Tagessummen pro Person (Einstellung, standardmäßig aus).
 - Hinweis, dass es sich um Schätzwerte handelt
 
-Nicht Teil dieser Change: Ziele und Tracking pro Person, Mikronährstoffe, Allergene, Nährwerte für Gerichte aus Drive-PDFs ohne nachgetragene Zutaten.
+Nicht Teil dieser Change: Ziele und Tracking pro Person, Mikronährstoffe, Allergene und Nährwerte für Rezepte ohne strukturierte Zutaten.
 
 ## Capabilities
 

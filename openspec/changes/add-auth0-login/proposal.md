@@ -1,6 +1,6 @@
 ## Why
 
-Der Essenplaner soll im Internet erreichbar sein. Ohne Zugriffsschutz könnte jeder den Familienplan lesen und ändern und später auch auf die Rezepte aus Google Drive zugreifen. Die Anmeldung läuft über Auth0. So müssen wir keine Passwörter selbst verwalten, und welche Anmeldemethoden es gibt (zum Beispiel Google, E-Mail und Passwort oder Passkey), wird in Auth0 eingestellt, ohne den Code zu ändern.
+Der Essenplaner soll im Internet erreichbar sein. Ohne Zugriffsschutz könnte jeder den Familienplan und die Rezepte lesen und ändern. Die Anmeldung läuft über Auth0. So müssen wir keine Passwörter selbst verwalten, und welche Anmeldemethoden es gibt (zum Beispiel Google, E-Mail und Passwort oder Passkey), wird in Auth0 eingestellt, ohne den Code zu ändern.
 
 ## What Changes
 

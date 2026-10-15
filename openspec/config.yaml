@@ -6,8 +6,8 @@ context: |
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
 
   Projekt: "Essenplaner" - Web-App, mit der eine Familie pro Kalenderwoche
-  festlegt, was es an jedem Tag zum Abendessen gibt. Rezepte kommen aus
-  PDFs in einem Google-Drive-Ordner und aus importierten Rezeptseiten (URL).
+  festlegt, was es an jedem Tag zum Abendessen gibt. Rezepte werden von Hand
+  angelegt oder direkt aus Rezeptseiten per URL importiert.
   Nachfolger des Prototyps "family-dinner-planner" (Go + React), aus dem
   Muster und Code uebernommen werden duerfen.
 
@@ -25,8 +25,8 @@ context: |
   add-recipe-url-import -> add-recipe-editor -> add-planner-flexibility ->
   add-servings-scaling -> add-shopping-list -> add-recipe-organization -> add-menus ->
   add-cooking-view -> add-freezer -> add-nutrition (optional) ->
-  add-google-drive-recipes -> add-auth0-login -> add-vps-deployment.
-  Zuerst die Plan-to-Eat-Funktionen, danach Drive, Login und Deployment.
+  add-auth0-login -> add-vps-deployment.
+  Zuerst die Plan-to-Eat-Funktionen, danach Login und Deployment.
   Bis add-auth0-login umgesetzt ist, laeuft die App nur lokal; oeffentlich
   deployt wird erst mit add-vps-deployment.
   Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.

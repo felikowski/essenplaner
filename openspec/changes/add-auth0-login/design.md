@@ -1,6 +1,6 @@
 ## Context
 
-Diese Change wird nach allen Funktions-Changes umgesetzt, inklusive `add-nutrition` und `add-google-drive-recipes`. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
+Diese Change wird nach allen Funktions-Changes umgesetzt, inklusive `add-nutrition`. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
 
 ## Goals / Non-Goals
 
@@ -17,7 +17,7 @@ Diese Change wird nach allen Funktions-Changes umgesetzt, inklusive `add-nutriti
 ## Decisions
 
 **Serverseitiger OIDC Authorization Code Flow mit PKCE** über `golang.org/x/oauth2` und `coreos/go-oidc`. Die Endpunkte kommen per Discovery von `https://<AUTH0_DOMAIN>/` (der Issuer endet bei Auth0 mit `/`). Die Anwendung ist in Auth0 als „Regular Web Application“ mit Client-Secret angelegt, Scopes `openid profile email`. Das Backend tauscht den Code und prüft das ID-Token (Signatur per JWKS, `aud`, `iss`, `exp`, `nonce`). Das Frontend sieht nie ein Token.
-- Alternative: das Auth0 React SDK (SPA mit Access Token im Browser) plus JWT-Prüfung im Go-Backend. Verworfen: Tokens lägen im Browser, jede API-Anfrage bräuchte einen Bearer-Header, und für die PDF- und Bild-Links aus `add-google-drive-recipes` bräuchten wir trotzdem Cookies. Der Server-Flow mit Cookie-Sitzung passt besser zu einer Anwendung mit gleicher Origin.
+- Alternative: das Auth0 React SDK (SPA mit Access Token im Browser) plus JWT-Prüfung im Go-Backend. Verworfen: Tokens lägen im Browser und jede API-Anfrage bräuchte einen Bearer-Header. Der Server-Flow mit Cookie-Sitzung passt besser zu einer Anwendung mit gleicher Origin.
 
 Routen: `GET /api/auth/login?returnTo=…` setzt ein kurzlebiges, signiertes Cookie mit `state`, `nonce`, PKCE-Verifier und `returnTo` und leitet dann zu Auth0 weiter. Danach folgen `GET /api/auth/callback`, `POST /api/auth/logout` und `GET /api/me`. Als `returnTo` sind nur relative Pfade erlaubt, die mit `/` beginnen und nicht mit `//`. Liefert Auth0 `error`/`error_description` am Callback, leitet das Backend auf `/login?fehler=…` mit einem festen, übersetzten Fehlercode weiter und nie mit dem rohen Text.
 
