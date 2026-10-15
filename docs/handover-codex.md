@@ -9,7 +9,8 @@ der die nächste geplante Change umsetzt. Sie fasst zusammen, was nicht direkt a
   Funktionen von Plan to Eat (kein Reverse Engineering; Abgleich in `docs/plantoeat-abgleich.md`).
 - `backend/`: Go, `net/http` aus der Standardbibliothek, SQLite über `modernc.org/sqlite`.
 - `frontend/`: React 19, TypeScript, Vite, React Router; Tests mit Vitest und Testing Library.
-- Läuft vorerst nur lokal. Login (Auth0) und Deployment kommen ganz am Ende.
+- Läuft derzeit nur lokal. Als Nächstes kommen das vorübergehend per HTTP Basic Auth geschützte
+  VPS-Deployment und danach der Login über Auth0.
 - Sprache: Oberfläche, Commit-Nachrichten und OpenSpec-Artefakte auf Deutsch; Code-Bezeichner englisch.
   Kommentare im Code sind deutsch.
 
@@ -17,12 +18,15 @@ der die nächste geplante Change umsetzt. Sie fasst zusammen, was nicht direkt a
 
 Reihenfolge laut `openspec/config.yaml` (jeweils erst umsetzen und archivieren, dann die nächste):
 
-1. `add-freezer` ← **nächste**
-2. `add-nutrition` (optional; zuerst Task 1.1, Lizenz des BLS 4.0 prüfen, sonst Fallback aus design.md)
-3. `add-auth0-login`
-4. `add-vps-deployment`
+1. `add-vps-deployment` ← **nächste**; bis Auth0 schützt HTTP Basic Auth die App
+2. `add-auth0-login`; auf dem echten Server testen und anschließend HTTP Basic Auth entfernen
 
-Auth0 und Deployment brauchen Zugangsdaten und teilweise gemeinsame manuelle Schritte mit dem Nutzer.
+Optionale, den Kernpfad nicht blockierende Folge-Changes:
+
+- `add-freezer`
+- `add-nutrition` (zuerst Task 1.1, Lizenz des BLS 4.0 prüfen, sonst Fallback aus design.md)
+
+Deployment und Auth0 brauchen Zugangsdaten und teilweise gemeinsame manuelle Schritte mit dem Nutzer.
 
 Fertig umgesetzt: Rezeptimport per URL, Rezepteditor mit zerlegten Zutaten, flexibler Planer (Mahlzeiten,
 Notizen, Einzelzutaten, Reste, Woche kopieren), Portionen umrechnen, Einkaufsliste, Rezeptorganisation,

@@ -1,6 +1,6 @@
 ## Context
 
-Zutaten haben nach `add-recipe-editor` Menge, Einheit und Namen in einer festen Einheitentabelle. Der Plan hat Einträge mit Arten und Portionen (`add-planner-flexibility`, `add-freezer`). Die Einkaufsliste merkt sich Namens-Zusammenführungen (`shopping_aliases`). Als Datenquelle bietet sich der Bundeslebensmittelschlüssel 4.0 an: rund 7140 Lebensmittel mit 138 Nährstoffen, seit dem 16.12.2025 kostenfrei vom Max Rubner-Institut. Die genaue Lizenz (Weitergabe, Quellenangabe) ist noch zu prüfen. Motivation und Umfang: siehe proposal.md.
+Zutaten haben nach `add-recipe-editor` Menge, Einheit und Namen in einer festen Einheitentabelle. Der Plan hat Einträge mit Arten und Portionen (`add-planner-flexibility`). Die Einkaufsliste merkt sich Namens-Zusammenführungen (`shopping_aliases`). Als Datenquelle bietet sich der Bundeslebensmittelschlüssel 4.0 an: rund 7140 Lebensmittel mit 138 Nährstoffen, seit dem 16.12.2025 kostenfrei vom Max Rubner-Institut. Die genaue Lizenz (Weitergabe, Quellenangabe) ist noch zu prüfen. Motivation und Umfang: siehe proposal.md.
 
 ## Goals / Non-Goals
 

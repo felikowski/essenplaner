@@ -1,11 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: Öffentlich über HTTPS erreichbar
-Das System SHALL unter `https://essenplaner.srv1115517.hstgr.cloud` mit einem gültigen, öffentlich vertrauenswürdigen TLS-Zertifikat erreichbar sein. Anfragen über HTTP MUST auf dieselbe Adresse mit HTTPS weitergeleitet werden. Der Container MUST nur über den Reverse Proxy erreichbar sein und keinen eigenen Port auf dem Host öffnen.
+Das System SHALL unter `https://essenplaner.srv1115517.hstgr.cloud` mit einem gültigen, öffentlich vertrauenswürdigen TLS-Zertifikat erreichbar sein. Anfragen über HTTP MUST auf dieselbe Adresse mit HTTPS weitergeleitet werden. Der Container MUST nur über den Reverse Proxy erreichbar sein und keinen eigenen Port auf dem Host öffnen. Bis der Auth0-Login umgesetzt und geprüft ist, MUST der Reverse Proxy alle Pfade außer `/healthz` zusätzlich mit HTTP Basic Auth schützen.
 
 #### Scenario: Aufruf im Browser
-- **WHEN** ein Familienmitglied `https://essenplaner.srv1115517.hstgr.cloud` am Handy öffnet
+- **WHEN** ein Familienmitglied `https://essenplaner.srv1115517.hstgr.cloud` am Handy öffnet und die vorübergehenden Zugangsdaten eingibt
 - **THEN** lädt die App ohne Zertifikatswarnung
+
+#### Scenario: Ohne vorübergehende Zugangsdaten
+- **WHEN** ein Client vor der Einführung des Auth0-Logins die App ohne gültige HTTP-Basic-Auth-Zugangsdaten aufruft
+- **THEN** antwortet der Reverse Proxy mit 401, während `/healthz` weiterhin ohne Zugangsdaten erreichbar ist
 
 #### Scenario: Aufruf über HTTP
 - **WHEN** ein Client `http://essenplaner.srv1115517.hstgr.cloud/woche/2026-W40` aufruft
@@ -41,7 +45,7 @@ Das System SHALL in der Antwort von `GET /healthz` im Feld `version` den Commit 
 - **THEN** enthält die Antwort `"status": "ok"` und im Feld `version` den vollständigen Commit-Hash des ausgelieferten Stands
 
 ### Requirement: Daten bleiben bei Deployments und Neustarts erhalten
-Rezepte, Wochenpläne und Sitzungen SHALL außerhalb des Containers gespeichert werden. Ein Deployment, ein Neustart des Containers oder ein Neustart des Servers MUST sie unverändert lassen. Nach einem Neustart des Servers MUST die App ohne manuellen Eingriff wieder laufen.
+Rezepte, Wochenpläne und weitere Anwendungsdaten SHALL außerhalb des Containers gespeichert werden. Ein Deployment, ein Neustart des Containers oder ein Neustart des Servers MUST sie unverändert lassen. Nach einem Neustart des Servers MUST die App ohne manuellen Eingriff wieder laufen.
 
 #### Scenario: Deployment einer neuen Version
 - **WHEN** für Freitag ein Rezept geplant ist und danach eine neue Version ausgeliefert wird
@@ -52,11 +56,11 @@ Rezepte, Wochenpläne und Sitzungen SHALL außerhalb des Containers gespeichert 
 - **THEN** ist die App danach ohne manuellen Eingriff wieder erreichbar und zeigt den bisherigen Stand
 
 ### Requirement: Geheimnisse nicht im Repository
-Zugangsdaten wie das Auth0-Client-Secret und die Freigabeliste SHALL weder im Repository noch im Container-Image enthalten sein. Sie MUST ausschließlich auf dem Server hinterlegt sein, in einer Datei, die nur der Administrator lesen kann. Der Zugang der Deployment-Pipeline zum Server MUST einen eigenen Schlüssel verwenden, der nur dafür bestimmt ist und sich einzeln widerrufen lässt.
+Zugangsdaten wie der temporäre HTTP-Basic-Auth-Zugang und spätere Anwendungsgeheimnisse SHALL weder im Repository noch im Container-Image enthalten sein. Sie MUST ausschließlich auf dem Server hinterlegt sein, in einer Datei, die nur der Administrator lesen kann. Der Zugang der Deployment-Pipeline zum Server MUST einen eigenen Schlüssel verwenden, der nur dafür bestimmt ist und sich einzeln widerrufen lässt.
 
 #### Scenario: Image untersuchen
 - **WHEN** jemand das öffentliche Container-Image herunterlädt und untersucht
-- **THEN** findet er darin keine Auth0-Zugangsdaten und keine E-Mail-Adressen der Freigabeliste
+- **THEN** findet er darin weder den temporären Zugang noch andere Anwendungsgeheimnisse
 
 ### Requirement: Frühere Version erneut ausliefern
 Das System SHALL es ermöglichen, eine frühere, bereits gebaute Version manuell erneut auszuliefern, ohne sie neu zu bauen. Die Auswahl MUST über den Commit-Hash erfolgen.

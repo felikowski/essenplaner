@@ -9,7 +9,7 @@
 - [ ] 2.1 Normalisierung, Synonymtabelle und Token-Bewertung für die automatische Zuordnung; Tabellentest mit mindestens 60 typischen Zutaten (darunter Zwiebel, Ei, Sahne, Hähnchenbrust, Zucchini, Salz und Pfeffer) mit erwarteten Lebensmitteln bzw. „kein Treffer“
 - [ ] 2.2 Umrechnung in Gramm (Gewicht, Volumen mit Dichte, Löffel, Prise, typische Stückgewichte, eigene Gewichte); Tabellentests für alle Szenarien aus „Mengen in Gramm umrechnen“
 - [ ] 2.3 Rezeptberechnung mit Abdeckung, Gründen und bewusst ausgelassenen Zutaten; Tests für alle Szenarien aus „Nährwerte pro Portion“ und „Abdeckung anzeigen“
-- [ ] 2.4 Tagessummen einer Woche (Rezept-, Reste- und Gefrierfach-Einträge mit Rezept, je eine Portion, Kennzeichnung „unvollständig“); Tests
+- [ ] 2.4 Tagessummen einer Woche (Rezept- und Reste-Einträge, je eine Portion, Kennzeichnung „unvollständig“); Tests
 
 ## 3. Backend
 

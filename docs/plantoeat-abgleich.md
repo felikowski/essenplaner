@@ -38,7 +38,7 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 | Reste einplanen | ❌ | |
 | Ganze Wochen tauschen/kopieren | ❌ | |
 | Menüs: Pläne speichern und wiederverwenden | ❌ | |
-| Gefrierfach (vorgekochte Gerichte, Menge, Datum) | ❌ | |
+| Gefrierfach (vorgekochte Gerichte, Menge, Datum) | 🗓️ optional `add-freezer` | |
 | Plan drucken | ❌ | Print-CSS genügt |
 | Suche in der Plan-Historie | ❌ | |
 | Gemeinsamer Plan auf allen Geräten | ✅ | |
@@ -61,8 +61,8 @@ Legende: ✅ vorhanden · 🗓️ als Change geplant · ❌ fehlt
 
 | Plan to Eat | Essenplaner | Anmerkung |
 |---|---|---|
-| Nährwerte pro Rezept automatisch | ❌ | braucht Lebensmitteldatenbank, aufwendig |
-| Tagessummen im Planer | ❌ | |
+| Nährwerte pro Rezept automatisch | 🗓️ optional `add-nutrition` | braucht Lebensmitteldatenbank, aufwendig |
+| Tagessummen im Planer | 🗓️ optional `add-nutrition` | |
 
 ## Kernbefund
 
@@ -75,8 +75,7 @@ Ein zusätzlicher Umweg über exportierte PDF-Dateien ist deshalb nicht vorgeseh
 
 Alle Lücken sind als OpenSpec-Changes geplant. Zuerst kommen die
 Plan-to-Eat-Funktionen, beginnend mit dem URL-Import (Gegenstück zum Recipe
-Clipper). Danach folgen Auth0-Login und VPS-Deployment. Bis
-dahin läuft die App nur lokal:
+Clipper). Der nächste Kernpfad führt über VPS-Deployment und danach Auth0-Login:
 
 0. `add-recipe-url-import`: Rezepte per Link importieren
 
@@ -94,10 +93,10 @@ dahin läuft die App nur lokal:
 6. `add-menus`: Pläne als Menü speichern und einplanen
 7. `add-cooking-view`: Kochansicht, Timer,
    Ersatz-Vorschläge, Rezept teilen und drucken
-8. `add-freezer`: Gefrierfach mit Einplanen und automatischem Verbrauch
-9. `add-nutrition` (optional): Nährwerte aus dem BLS 4.0, Tagessummen
+8. `add-vps-deployment`: automatisches Deployment auf den vorhandenen VPS, zunächst mit temporärem HTTP Basic Auth
+9. `add-auth0-login`: Anmeldung auf dem echten Server prüfen und den temporären Schutz ablösen
 
-Danach: `add-auth0-login` → `add-vps-deployment`.
+Optionale, voneinander unabhängige Erweiterungen danach: `add-freezer` und `add-nutrition`.
 
 Die Planerflexibilität steht vor der Einkaufsliste, weil die Liste Portionen
 pro Eintrag, Einzelzutaten und Reste braucht.

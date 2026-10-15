@@ -1,6 +1,6 @@
 ## 1. Vorbereitung
 
-- [ ] 1.1 Anleitung in `docs/auth0-setup.md`: Tenant, Regular Web Application, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Anmeldemethoden, Selbstregistrierung abschalten, optionale Post-Login-Action; anhand der Anleitung eine lokale Dev-Anwendung anlegen, die funktioniert
+- [ ] 1.1 Anleitung in `docs/auth0-setup.md`: Tenant, Regular Web Application, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Anmeldemethoden, Selbstregistrierung abschalten, optionale Post-Login-Action; anhand der Anleitung die Anwendung anlegen und die Produktionswerte vor dem ersten manuellen Deploy in `/etc/essenplaner/production.env` hinterlegen
 - [ ] 1.2 Neue Konfiguration (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`, `ALLOWED_EMAILS`) mit Prüfung beim Start; Test: fehlender Wert → Start bricht mit Nennung der Variable ab
 
 ## 2. Sitzungen
@@ -26,8 +26,9 @@
 - [ ] 5.1 Login-Seite mit „Anmelden“ und Fehlermeldungen („Dieses Konto hat keinen Zugriff“, „Bitte E-Mail-Adresse bestätigen“, „Anmeldung abgebrochen“); Test
 - [ ] 5.2 401-Behandlung in `HttpPlannerApi` → Weiterleitung zum Login mit `returnTo`; Test
 - [ ] 5.3 Kopfzeile mit Profil und „Abmelden“; Test
-- [ ] 5.4 Ende-zu-Ende manuell mit der Dev-Anwendung in Auth0 prüfen: mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit fremdem Konto abgewiesen werden, Deep-Link nach Login erreichen
+- [ ] 5.4 Feature-Branch manuell über `deploy.yml` auf den VPS ausliefern, während HTTP Basic Auth noch aktiv ist; unter `https://essenplaner.srv1115517.hstgr.cloud` mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit fremdem Konto abgewiesen werden, Deep-Link nach Login erreichen und sichere Cookies prüfen
 
 ## 6. Abschluss
 
-- [ ] 6.1 README und `.env.example` aktualisieren, Warnhinweis aus `add-go-backend` durch eine Deploy-Anleitung ersetzen
+- [ ] 6.1 Nach erfolgreicher Live-Prüfung die Basic-Auth-Middleware aus `deploy/docker-compose.yml` und `ESSENPLANER_BASIC_AUTH_USERS` aus der Serverkonfiguration entfernen; erneut ausliefern und prüfen, dass ein nicht angemeldeter Aufruf die Login-Seite statt einer HTTP-Basic-Auth-Abfrage zeigt
+- [ ] 6.2 README, `.env.example`, `docs/deployment.md` und Rollback-Anleitung aktualisieren; vor einem Rollback auf einen Stand ohne Auth0 muss HTTP Basic Auth wieder aktiviert werden

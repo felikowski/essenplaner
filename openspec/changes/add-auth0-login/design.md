@@ -1,6 +1,6 @@
 ## Context
 
-Diese Change wird nach allen Funktions-Changes umgesetzt, inklusive `add-nutrition`. Es gibt dann ein Go-Binary mit SQLite, das API und Frontend unter derselben Origin ausliefert, mit vielen Endpunkten (Rezepte, Planeinträge, Einkaufsliste, Menüs, Gefrierfach, Einstellungen) und einem Service Worker für Timer-Benachrichtigungen. Einen Zugriffsschutz gibt es noch nicht. Als Identitätsanbieter dient Auth0.
+Diese Change wird direkt nach `add-vps-deployment` umgesetzt. Das Go-Binary mit SQLite liefert API und Frontend unter derselben Origin aus und läuft bereits unter `https://essenplaner.srv1115517.hstgr.cloud`. Bis die Anmeldung dort erfolgreich geprüft ist, schützt Traefik alle Pfade außer `/healthz` mit HTTP Basic Auth. Als dauerhafter Identitätsanbieter dient Auth0.
 
 ## Goals / Non-Goals
 
@@ -35,13 +35,16 @@ Routen: `GET /api/auth/login?returnTo=…` setzt ein kurzlebiges, signiertes Coo
 
 **Neue Konfiguration:** `AUTH0_DOMAIN` (auch eine Custom Domain ist möglich), `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`, `ALLOWED_EMAILS`. Fehlt einer dieser Werte, startet der Dienst nicht und nennt die fehlende Variable.
 
+**Ablösung des temporären Schutzes in zwei Schritten.** Die Auth0-Werte werden zuerst in `/etc/essenplaner/production.env` hinterlegt. Dann wird der Feature-Branch manuell über den vorhandenen Deployment-Workflow ausgeliefert, während HTTP Basic Auth noch aktiv ist, und der komplette Anmeldeablauf wird auf der Produktionsadresse geprüft. Erst danach werden die Basic-Auth-Middleware und `ESSENPLANER_BASIC_AUTH_USERS` aus Compose und Serverkonfiguration entfernt und derselbe Stand erneut ausgeliefert. Ein Rollback auf einen Stand vor Auth0 darf nur erfolgen, wenn vorher der temporäre Proxy-Schutz wieder aktiviert wurde.
+
 ## Risks / Trade-offs
 
 - [Die App läuft hinter einem Reverse Proxy mit TLS-Terminierung] → Wir verlassen uns für Callback-URL und Origin-Prüfung ausschließlich auf `PUBLIC_URL` und nicht auf Host- oder X-Forwarded-Header.
 - [Auth0 ist eine externe Abhängigkeit, bei einem Ausfall ist keine Anmeldung möglich] → Bestehende Sitzungen laufen weiter, weil sie lokal geprüft werden. Nur neue Anmeldungen sind betroffen.
 - [Grenzen des Auth0-Free-Plans] → Für eine Familie weit ausreichend. Kostenpflichtige Features wie Custom Domain oder Actions-Integrationen werden nicht vorausgesetzt.
 - [Tests brauchen Auth0] → Der Token-Austausch und die Prüfung liegen hinter einem Interface. Tests nutzen einen Fake-OIDC-Provider mit `httptest` (Discovery, JWKS, Token-Endpunkt).
+- [Die erste Auth0-Version ist fehlerhaft] → Der temporäre HTTP-Basic-Auth-Schutz bleibt während des ersten Produktions-Tests aktiv und wird erst nach erfolgreicher Anmeldung entfernt.
 
 ## Migration Plan
 
-Neue Migration für `sessions`. Vor dem Deploy müssen die neuen Umgebungsvariablen gesetzt und die URLs in Auth0 eingetragen sein, sonst startet der Dienst bewusst nicht. Rollback: das vorherige Binary deployen; die zusätzliche Tabelle stört nicht.
+Neue Migration für `sessions`. Vor dem ersten manuellen Deploy müssen die neuen Umgebungsvariablen auf dem VPS gesetzt und die Produktions-URLs in Auth0 eingetragen sein, sonst startet der Dienst bewusst nicht. Nach erfolgreicher Prüfung wird der temporäre Proxy-Schutz entfernt. Rollback auf eine bereits durch Auth0 geschützte Version ist ohne weitere Schritte möglich; vor einem Rollback auf eine ältere, ungeschützte Version muss HTTP Basic Auth wieder aktiviert werden. Die zusätzliche Tabelle stört ältere Binaries nicht.

@@ -49,7 +49,7 @@ Das System SHALL zu jedem berechneten Rezept angeben, aus wie vielen seiner Zuta
 - **THEN** zeigt das System „berechnet aus 7 von 8 Zutaten · unvollständig“ und nennt die fehlende Zutat
 
 ### Requirement: Tagessummen im Plan
-Das System SHALL die Haushalts-Einstellung `showNutrition` (Standard aus) anbieten. Ist sie eingeschaltet, MUST der Wochenplan je Tag die Summe aus Energie, Eiweiß, Fett und Kohlenhydraten pro Person zeigen, gebildet aus je einer Portion jedes Rezept-, Reste- und Gefrierfach-Eintrags mit Rezept. Notizen und Einzelzutaten MUST nicht zählen. Enthält ein Tag Einträge ohne berechenbare Nährwerte, MUST die Summe als unvollständig gekennzeichnet sein.
+Das System SHALL die Haushalts-Einstellung `showNutrition` (Standard aus) anbieten. Ist sie eingeschaltet, MUST der Wochenplan je Tag die Summe aus Energie, Eiweiß, Fett und Kohlenhydraten pro Person zeigen, gebildet aus je einer Portion jedes Rezept- und Reste-Eintrags. Notizen und Einzelzutaten MUST nicht zählen. Enthält ein Tag Einträge ohne berechenbare Nährwerte, MUST die Summe als unvollständig gekennzeichnet sein.
 
 #### Scenario: Tagessumme
 - **WHEN** am Montag Mittag ein Rezept mit 550 kcal und Abend eines mit 700 kcal pro Portion geplant sind

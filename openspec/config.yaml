@@ -12,8 +12,9 @@ context: |
   Muster und Code uebernommen werden duerfen.
 
   Nutzer: eine Familie (wenige Personen), ueberwiegend am Smartphone.
-  Betrieb: oeffentlich im Internet erreichbar, Zugriff nur nach Login ueber Auth0
-  und nur fuer freigegebene E-Mail-Adressen.
+  Betrieb: oeffentlich im Internet erreichbar. Bis zum Auth0-Login schuetzt
+  voruebergehend HTTP Basic Auth den Zugang; danach haben nur freigegebene
+  E-Mail-Adressen Zugriff.
 
   Stack:
   - frontend/: React + TypeScript (Vite), Tests mit Vitest + Testing Library
@@ -24,11 +25,9 @@ context: |
   Reihenfolge der Changes: add-frontend-mock-data -> add-go-backend ->
   add-recipe-url-import -> add-recipe-editor -> add-planner-flexibility ->
   add-servings-scaling -> add-shopping-list -> add-recipe-organization -> add-menus ->
-  add-cooking-view -> add-freezer -> add-nutrition (optional) ->
-  add-auth0-login -> add-vps-deployment.
-  Zuerst die Plan-to-Eat-Funktionen, danach Login und Deployment.
-  Bis add-auth0-login umgesetzt ist, laeuft die App nur lokal; oeffentlich
-  deployt wird erst mit add-vps-deployment.
+  add-cooking-view -> add-vps-deployment -> add-auth0-login.
+  Optionale, den Kernpfad nicht blockierende Folge-Changes sind add-freezer
+  und add-nutrition. Beide koennen unabhaengig voneinander umgesetzt werden.
   Ein Change wird erst umgesetzt und archiviert, bevor der naechste startet.
 
 # Per-artifact rules (optional)

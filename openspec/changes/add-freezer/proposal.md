@@ -1,6 +1,6 @@
 ## Why
 
-Wer doppelt kocht und die Hälfte einfriert, spart an stressigen Tagen viel Zeit. Ohne Übersicht vergisst man aber, was im Gefrierschrank liegt und wie alt es ist. Gerichte aus dem Gefrierfach gehören außerdem nicht auf die Einkaufsliste. Siehe `docs/plantoeat-abgleich.md`, Abschnitt Planer.
+Wer doppelt kocht und die Hälfte einfriert, spart an stressigen Tagen viel Zeit. Ohne Übersicht vergisst man aber, was im Gefrierschrank liegt und wie alt es ist. Gerichte aus dem Gefrierfach gehören außerdem nicht auf die Einkaufsliste. Die Change ist eine optionale Erweiterung und blockiert weder Deployment noch Anmeldung oder Nährwerte. Siehe `docs/plantoeat-abgleich.md`, Abschnitt Planer.
 
 ## What Changes
 

@@ -1,6 +1,6 @@
 ## Why
 
-Manche Familien achten auf Kalorien, Eiweiß oder Salz, etwa beim Abnehmen, beim Sport oder aus gesundheitlichen Gründen. Plan to Eat berechnet Nährwerte pro Rezept und zeigt Tagessummen im Planer. Für deutsche Zutaten gibt es seit Dezember 2025 eine kostenfreie, umfassende Quelle: den Bundeslebensmittelschlüssel (BLS) 4.0 des Max Rubner-Instituts. Diese Change ist optional. Sie steht als letzte Plan-to-Eat-Funktion nach `add-freezer` und vor Login und Deployment.
+Manche Familien achten auf Kalorien, Eiweiß oder Salz, etwa beim Abnehmen, beim Sport oder aus gesundheitlichen Gründen. Plan to Eat berechnet Nährwerte pro Rezept und zeigt Tagessummen im Planer. Für deutsche Zutaten gibt es seit Dezember 2025 eine kostenfreie, umfassende Quelle: den Bundeslebensmittelschlüssel (BLS) 4.0 des Max Rubner-Instituts. Diese Change ist eine optionale Erweiterung nach dem Kernpfad und kann unabhängig vom Gefrierfach umgesetzt werden.
 
 ## What Changes
 
@@ -28,4 +28,4 @@ Nicht Teil dieser Change: Ziele und Tracking pro Person, Mikronährstoffe, Aller
 - Frontend: Nährwertbereich in der Rezeptdetailansicht, Dialog für Zuordnungen, Tagessummen im Plan, Einstellung
 - Binärgröße wächst um ungefähr 0,5 bis 1 MB.
 - Lizenz: Die Nutzungsbedingungen des BLS 4.0 müssen vor der Umsetzung geprüft werden (Task 1.1), insbesondere ob die Daten im Repository und im Binary weitergegeben werden dürfen und welche Quellenangabe nötig ist.
-- Setzt `add-recipe-editor`, `add-planner-flexibility`, `add-shopping-list` (Zusammenführungen als Namens-Aliasse) und `add-freezer` (Gefrierfach-Einträge in Tagessummen) voraus
+- Setzt `add-recipe-editor`, `add-planner-flexibility` und `add-shopping-list` (Zusammenführungen als Namens-Aliasse) voraus

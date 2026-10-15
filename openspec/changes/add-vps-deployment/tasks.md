@@ -6,7 +6,7 @@
 
 ## 2. Compose-Datei
 
-- [ ] 2.1 `deploy/docker-compose.yml` nach design.md anlegen (Image mit `${ESSENPLANER_TAG:?}`, `env_file`, Volume `essenplaner_data`, `restart: unless-stopped`, Health-Check, nur Netz `root_default`, Traefik-Labels inklusive HTTP→HTTPS-Router); `docker compose config` mit einer Dummy-`production.env` läuft ohne Fehler
+- [ ] 2.1 `deploy/docker-compose.yml` nach design.md anlegen (Image mit `${ESSENPLANER_TAG:?}`, `env_file`, Volume `essenplaner_data`, `restart: unless-stopped`, Health-Check, nur Netz `root_default`, Traefik-Labels inklusive temporärem HTTP Basic Auth, öffentlichem `/healthz` und HTTP→HTTPS-Router); `docker compose config` mit einer Dummy-`production.env` läuft ohne Fehler
 - [ ] 2.2 Lokal nachstellen: mit einem lokal gebauten Image, einem Dummy-Netz `root_default` und einer Test-`production.env` startet `docker compose up -d --wait`, der Container wird `healthy`, und die Daten überstehen `docker compose down` und `up` (ohne `-v`); danach aufräumen
 
 ## 3. Workflows
@@ -17,12 +17,12 @@
 
 ## 4. Anleitung und einmalige Einrichtung
 
-- [ ] 4.1 `docs/deployment.md`: Voraussetzungen (Auth0-Produktionsanwendung mit URLs), Einrichtung auf dem VPS (`/docker/essenplaner/`, `/etc/essenplaner/production.env` mit `0600`, Public Key), GitHub-Environment und Secrets inklusive `known_hosts`, Sichtbarkeit des GHCR-Pakets, Reihenfolge „erst einrichten, dann mergen“, Rollback, Logs ansehen, manuelles Backup mit `sqlite3 .backup`; README verweist darauf und ersetzt den Warnhinweis
+- [ ] 4.1 `docs/deployment.md`: temporären HTTP-Basic-Auth-Zugang mit langem Zufallspasswort erzeugen, Einrichtung auf dem VPS (`/docker/essenplaner/`, `/etc/essenplaner/production.env` mit `0600`, Public Key), GitHub-Environment und Secrets inklusive `known_hosts`, Sichtbarkeit des GHCR-Pakets, Reihenfolge „erst einrichten, dann mergen“, Rollback, Logs ansehen, manuelles Backup mit `sqlite3 .backup`; README verweist darauf und ersetzt den Warnhinweis
 - [ ] 4.2 CI-Schlüsselpaar erzeugen, Private Key und `known_hosts` als Secrets im Environment `production` hinterlegen und dir den Public Key zum Eintragen geben (nicht selbst auf dem VPS eintragen)
 - [ ] 4.3 Mit dir gemeinsam (nur lesend, nach deiner Freigabe) auf dem VPS nachsehen: Architektur (`uname -m`), Name des HTTP-Entrypoints und ob Traefik bereits global auf HTTPS umleitet; `deploy/docker-compose.yml` und design.md bei Bedarf anpassen
 
 ## 5. Erster Livegang
 
-- [ ] 5.1 Nach deiner Einrichtung (Env-Datei, Public Key, Auth0-URLs) den Pull Request mergen und den ersten Lauf von `deploy.yml` verfolgen; GHCR-Paket auf öffentlich stellen, falls nötig, und den Lauf wiederholen
-- [ ] 5.2 Live prüfen: `https://essenplaner.srv1115517.hstgr.cloud` lädt ohne Zertifikatswarnung, HTTP leitet auf HTTPS um, `/healthz` meldet den Commit, Login mit freigegebenem Konto funktioniert, eine Zuordnung übersteht ein weiteres Deployment
+- [ ] 5.1 Nach deiner Einrichtung (Env-Datei mit Basic-Auth-Hash, Public Key) den Pull Request mergen und den ersten Lauf von `deploy.yml` verfolgen; GHCR-Paket auf öffentlich stellen, falls nötig, und den Lauf wiederholen
+- [ ] 5.2 Live prüfen: `https://essenplaner.srv1115517.hstgr.cloud` verlangt ohne Zugangsdaten HTTP Basic Auth und lädt mit ihnen ohne Zertifikatswarnung, HTTP leitet auf HTTPS um, `/healthz` ist ohne Zugangsdaten erreichbar und meldet den Commit, eine Zuordnung übersteht ein weiteres Deployment
 - [ ] 5.3 Rollback einmal ausprobieren: `deploy.yml` mit dem vorherigen Commit-Hash starten, `/healthz` meldet ihn, die Daten sind unverändert; danach wieder auf den aktuellen Stand deployen
