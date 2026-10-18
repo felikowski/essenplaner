@@ -24,6 +24,7 @@ type Server struct {
 	menus    store.MenuStore
 	health   HealthChecker
 	importer RecipeImporter
+	version  string
 	logger   *slog.Logger
 }
 
@@ -38,7 +39,16 @@ type Stores struct {
 }
 
 func NewServer(stores Stores, logger *slog.Logger) *Server {
-	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, shopping: stores.Shopping, menus: stores.Menus, health: stores.Health, logger: logger}
+	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, shopping: stores.Shopping, menus: stores.Menus, health: stores.Health, version: "dev", logger: logger}
+}
+
+// WithVersion legt fest, welche Version /healthz meldet (beim Build eingebetteter Commit).
+// Ein leerer Wert lässt den Standard "dev" stehen.
+func (s *Server) WithVersion(version string) *Server {
+	if version != "" {
+		s.version = version
+	}
+	return s
 }
 
 // StoresFrom nutzt eine Datenbank für alle Zugriffe.
@@ -121,5 +131,5 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": s.version})
 }

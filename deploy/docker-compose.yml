@@ -1,0 +1,51 @@
+# Produktion auf dem Hostinger-VPS hinter dem gemeinsamen Traefik (/docker/traefik).
+# Der Deploy-Workflow kopiert diese Datei nach /docker/essenplaner/ und startet mit
+#   docker compose --env-file /etc/essenplaner/production.env --env-file .env up -d --wait
+# ESSENPLANER_TAG steht in /docker/essenplaner/.env (vom Workflow geschrieben),
+# ESSENPLANER_BASIC_AUTH_USERS in /etc/essenplaner/production.env (von Hand, 0600).
+# Siehe docs/deployment.md.
+name: essenplaner
+
+services:
+  app:
+    image: ghcr.io/felikowski/essenplaner:${ESSENPLANER_TAG:?ESSENPLANER_TAG fehlt in .env}
+    restart: unless-stopped
+    env_file:
+      # Lokal und in CI per ESSENPLANER_ENV_FILE auf eine Testdatei umlenkbar
+      - ${ESSENPLANER_ENV_FILE:-/etc/essenplaner/production.env}
+    volumes:
+      - essenplaner_data:/data
+    networks:
+      - root_default
+    healthcheck:
+      test: ["CMD", "/essenplaner", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      start_interval: 2s
+      retries: 3
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=root_default
+      - traefik.http.services.essenplaner.loadbalancer.server.port=8080
+      # HTTP leitet der Traefik bereits global auf HTTPS um (Entrypoint web).
+      - traefik.http.routers.essenplaner.rule=Host(`essenplaner.srv1115517.hstgr.cloud`)
+      - traefik.http.routers.essenplaner.entrypoints=websecure
+      - traefik.http.routers.essenplaner.tls.certresolver=mytlschallenge
+      - traefik.http.routers.essenplaner.service=essenplaner
+      # Vorübergehender Schutz bis add-auth0-login (bcrypt-Hash aus production.env)
+      - traefik.http.routers.essenplaner.middlewares=essenplaner-bootstrap
+      - traefik.http.middlewares.essenplaner-bootstrap.basicauth.users=${ESSENPLANER_BASIC_AUTH_USERS:?ESSENPLANER_BASIC_AUTH_USERS fehlt in production.env}
+      # /healthz ohne Zugangsdaten, damit der Deploy-Job die Version prüfen kann
+      - traefik.http.routers.essenplaner-health.rule=Host(`essenplaner.srv1115517.hstgr.cloud`) && Path(`/healthz`)
+      - traefik.http.routers.essenplaner-health.priority=100
+      - traefik.http.routers.essenplaner-health.entrypoints=websecure
+      - traefik.http.routers.essenplaner-health.tls.certresolver=mytlschallenge
+      - traefik.http.routers.essenplaner-health.service=essenplaner
+
+volumes:
+  essenplaner_data:
+
+networks:
+  root_default:
+    external: true

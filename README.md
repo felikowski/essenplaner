@@ -2,9 +2,10 @@
 
 Web-App, mit der die Familie pro Kalenderwoche plant, was es an jedem Tag zu essen gibt: Rezepte, Notizen, Einzelzutaten und Reste, wahlweise auch für Frühstück, Mittagessen und Snack (Einstellungen ⚙).
 
-> **⚠️ Nicht öffentlich betreiben.** Es gibt noch keinen Login: Wer den Server erreicht, kann den
-> Plan lesen und ändern. Bis `add-auth0-login` umgesetzt ist, den Server nur lokal oder in einem
-> privaten Netz laufen lassen.
+Live unter https://essenplaner.srv1115517.hstgr.cloud: Jeder Push auf `main` wird getestet und automatisch
+ausgeliefert, siehe [`docs/deployment.md`](docs/deployment.md). Bis `add-auth0-login` umgesetzt ist,
+schützt dort vorübergehend HTTP Basic Auth den Zugang. Selbst betriebene Instanzen nicht ohne einen
+solchen Schutz öffentlich erreichbar machen: Ohne Login kann jeder den Plan lesen und ändern.
 
 - [`frontend/`](frontend/README.md) – React-Frontend (Vite)
 - [`backend/`](backend/) – Go-Server mit SQLite, liefert API und gebautes Frontend aus

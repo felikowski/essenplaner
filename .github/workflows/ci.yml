@@ -1,0 +1,64 @@
+name: CI
+
+# Testet jeden Stand außer main direkt; main testet deploy.yml über workflow_call.
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (go vet, go test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: go vet
+        working-directory: backend
+        run: go vet ./...
+      - name: go test
+        working-directory: backend
+        run: go test ./...
+
+  frontend:
+    name: Frontend (test, lint, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - working-directory: frontend
+        run: npm test
+      - working-directory: frontend
+        run: npm run lint
+      - working-directory: frontend
+        run: npm run build
+
+  compose:
+    name: Compose-Datei prüfen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config
+        run: |
+          dir="$RUNNER_TEMP/compose"
+          mkdir -p "$dir"
+          # Dummy-Werte: Die echte production.env liegt nur auf dem VPS.
+          echo "ESSENPLANER_BASIC_AUTH_USERS='ci:\$2y\$05\$dummy'" > "$dir/production.env"
+          echo "ESSENPLANER_TAG=sha-ci" > "$dir/.env"
+          ESSENPLANER_ENV_FILE="$dir/production.env" docker compose \
+            -f deploy/docker-compose.yml \
+            --env-file "$dir/production.env" --env-file "$dir/.env" \
+            config --quiet

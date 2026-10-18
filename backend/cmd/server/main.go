@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/felikowski/essenplaner/backend/internal/config"
+	"github.com/felikowski/essenplaner/backend/internal/healthcheck"
 	"github.com/felikowski/essenplaner/backend/internal/httpapi"
 	"github.com/felikowski/essenplaner/backend/internal/safefetch"
 	"github.com/felikowski/essenplaner/backend/internal/seed"
@@ -20,12 +22,31 @@ import (
 	"github.com/felikowski/essenplaner/backend/internal/webimport"
 )
 
+// version wird beim Build per -ldflags "-X main.version=<commit>" gesetzt.
+var version = "dev"
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(runHealthcheck())
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	if err := run(logger); err != nil {
 		logger.Error("server beendet", "err", err)
 		os.Exit(1)
 	}
+}
+
+// runHealthcheck prüft den laufenden Server im selben Container (Exit-Code 0 oder 1).
+func runHealthcheck() int {
+	cfg, err := config.FromEnv(os.Getenv)
+	if err == nil {
+		err = healthcheck.Check(context.Background(), healthcheck.URL(cfg.Port))
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "healthcheck:", err)
+		return 1
+	}
+	return 0
 }
 
 func run(logger *slog.Logger) error {
@@ -52,7 +73,7 @@ func run(logger *slog.Logger) error {
 	}
 
 	importer := webimport.Importer{Client: safefetch.New(safefetch.Options{UserAgent: "Essenplaner/1.0"})}
-	api := httpapi.NewServer(httpapi.StoresFrom(db), logger).WithImporter(importer)
+	api := httpapi.NewServer(httpapi.StoresFrom(db), logger).WithImporter(importer).WithVersion(version)
 	server := &http.Server{
 		Addr:              cfg.Addr(),
 		Handler:           api.Handler(web.Handler(web.Dist())),
@@ -64,7 +85,7 @@ func run(logger *slog.Logger) error {
 
 	errc := make(chan error, 1)
 	go func() {
-		logger.Info("essenplaner lauscht", "port", cfg.Port, "database", cfg.DatabasePath)
+		logger.Info("essenplaner lauscht", "version", version, "port", cfg.Port, "database", cfg.DatabasePath)
 		errc <- server.ListenAndServe()
 	}()
 

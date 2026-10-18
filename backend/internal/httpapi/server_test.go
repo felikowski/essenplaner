@@ -149,10 +149,23 @@ func TestHealthz(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d", rec.Code)
 	}
+	if got := strings.TrimSpace(rec.Body.String()); got != `{"status":"ok","version":"dev"}` {
+		t.Errorf("body = %s", got)
+	}
 
 	db.Close()
 	if rec := do(t, h, "GET", "/healthz", ""); rec.Code != http.StatusServiceUnavailable {
 		t.Errorf("status bei geschlossener Datenbank = %d, erwartet 503", rec.Code)
+	}
+}
+
+func TestHealthzReportsVersion(t *testing.T) {
+	_, db := newTestAPI(t)
+	h := NewServer(StoresFrom(db), quietLogger()).WithVersion("abc123").Handler(nil)
+
+	rec := do(t, h, "GET", "/healthz", "")
+	if got := strings.TrimSpace(rec.Body.String()); got != `{"status":"ok","version":"abc123"}` {
+		t.Errorf("body = %s", got)
 	}
 }
 

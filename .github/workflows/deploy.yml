@@ -1,0 +1,145 @@
+name: Deploy
+
+# Push auf main: testen → Image bauen → auf den VPS ausliefern.
+# Manueller Start ohne sha: aktuellen Stand von main bauen und ausliefern.
+# Manueller Start mit sha: Rollback auf ein bereits gebautes Image (ohne Tests und Build).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Rollback: vollständiger Commit-Hash eines bereits ausgelieferten Stands (leer = main bauen und ausliefern)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/felikowski/essenplaner
+  PUBLIC_URL: https://essenplaner.srv1115517.hstgr.cloud
+
+jobs:
+  test:
+    if: ${{ inputs.sha == '' }}
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    name: Image bauen und veröffentlichen
+    needs: test
+    if: ${{ inputs.sha == '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          build-args: VERSION=${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Auf den VPS ausliefern
+    needs: [test, image]
+    # Läuft nach erfolgreichem Build oder beim Rollback (dann sind test und image übersprungen).
+    if: ${{ !cancelled() && (needs.image.result == 'success' || (inputs.sha != '' && needs.image.result == 'skipped')) }}
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+      SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+      DEPLOY_SHA: ${{ inputs.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Eingaben und Secrets prüfen
+        run: |
+          missing=""
+          for name in SSH_HOST SSH_USER SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            [ -n "${!name}" ] || missing="$missing DEPLOY_$name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Im Environment 'production' fehlen die Secrets:$missing (siehe docs/deployment.md)"
+            exit 1
+          fi
+          if ! [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::'$DEPLOY_SHA' ist kein vollständiger Commit-Hash (40 Hex-Zeichen)"
+            exit 1
+          fi
+          echo "TAG=sha-$DEPLOY_SHA" >> "$GITHUB_ENV"
+
+      - name: Rollback-Image in GHCR prüfen
+        if: ${{ inputs.sha != '' }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ! docker manifest inspect "$IMAGE:$TAG" >/dev/null; then
+            echo "::error::$IMAGE:$TAG gibt es nicht in GHCR. Nur bereits gebaute Stände lassen sich zurückspielen."
+            exit 1
+          fi
+
+      - name: SSH einrichten
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Festgelegter Host-Schlüssel statt ssh-keyscan: ein untergeschobener Server fällt auf.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Compose-Datei kopieren
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "mkdir -p /docker/essenplaner"
+          scp -o StrictHostKeyChecking=yes deploy/docker-compose.yml "$SSH_USER@$SSH_HOST:/docker/essenplaner/docker-compose.yml"
+
+      - name: Image ziehen und starten
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "TAG='$TAG' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /docker/essenplaner
+          printf 'ESSENPLANER_TAG=%s\n' "$TAG" > .env
+          dc() { docker compose --env-file /etc/essenplaner/production.env --env-file .env "$@"; }
+          dc pull
+          dc up -d --wait --wait-timeout 90
+          REMOTE
+
+      - name: Öffentliche Adresse prüfen
+        run: |
+          # Kurz nach dem Start antwortet Traefik noch mit 404/502, bis er den Container kennt.
+          deadline=$((SECONDS + 120))
+          while [ $SECONDS -lt $deadline ]; do
+            body=$(curl -fsS --max-time 5 "$PUBLIC_URL/healthz" || true)
+            version=$(jq -r '.version // empty' <<<"$body" 2>/dev/null || true)
+            if [ "$version" = "$DEPLOY_SHA" ]; then
+              echo "Live: $body"
+              exit 0
+            fi
+            echo "Noch nicht bereit (Antwort: ${body:-keine})"
+            sleep 5
+          done
+          echo "::error::$PUBLIC_URL/healthz meldet nach 2 Minuten nicht die Version $DEPLOY_SHA"
+          exit 1
