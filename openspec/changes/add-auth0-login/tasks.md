@@ -1,6 +1,6 @@
 ## 1. Vorbereitung
 
-- [ ] 1.1 Anleitung in `docs/auth0-setup.md`: vorhandener Tenant, Regular Web Application, eigene Datenbank-Connection `essenplaner-users` nur für diese Application mit „Disable Sign Ups“, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Konten anlegen, Nutzer-IDs ablesen; danach im Chrome des Nutzers (jeweils nach Zustimmung) Application und Connection einrichten und klären, ob die Anmeldung mit Benutzername geht und ob Auth0 trotzdem eine E-Mail verlangt
+- [x] 1.1 Anleitung in `docs/auth0-setup.md`: vorhandener Tenant, Regular Web Application, eigene Datenbank-Connection `essenplaner-users` nur für diese Application mit „Disable Sign Ups“, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Konten anlegen, Nutzer-IDs ablesen; danach im Chrome des Nutzers (jeweils nach Zustimmung) Application und Connection einrichten und klären, ob die Anmeldung mit Benutzername geht und ob Auth0 trotzdem eine E-Mail verlangt
 - [ ] 1.2 Der Nutzer legt die Familienkonten in `essenplaner-users` an; Claude liest Nutzer-IDs und Client-Secret ab und hinterlegt die Produktionswerte vor dem ersten manuellen Deploy per SSH in `/etc/essenplaner/production.env` (nicht im Chat nennen)
 - [x] 1.3 Neue Konfiguration (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`, `ALLOWED_SUBJECTS`) mit Prüfung beim Start; Test: fehlender Wert → Start bricht mit Nennung der Variable ab
 
