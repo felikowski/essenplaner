@@ -55,8 +55,8 @@ jobs:
         run: |
           dir="$RUNNER_TEMP/compose"
           mkdir -p "$dir"
-          # Dummy-Werte: Die echte production.env liegt nur auf dem VPS.
-          echo "ESSENPLANER_BASIC_AUTH_USERS='ci:\$2y\$05\$dummy'" > "$dir/production.env"
+          # Leere Datei: Die echte production.env liegt nur auf dem VPS.
+          : > "$dir/production.env"
           echo "ESSENPLANER_TAG=sha-ci" > "$dir/.env"
           ESSENPLANER_ENV_FILE="$dir/production.env" docker compose \
             -f deploy/docker-compose.yml \

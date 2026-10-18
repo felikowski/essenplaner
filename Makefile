@@ -8,7 +8,7 @@ dev:
 	$(MAKE) -j2 dev-backend dev-frontend
 
 dev-backend:
-	cd backend && go run ./cmd/server
+	cd backend && set -a && { [ ! -f .env.local ] || . ./.env.local; } && set +a && go run ./cmd/server
 
 dev-frontend: frontend/node_modules
 	cd frontend && npm run dev

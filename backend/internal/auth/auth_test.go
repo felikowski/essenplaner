@@ -260,7 +260,7 @@ func TestLogout(t *testing.T) {
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status %d", rec.Code)
 	}
-	want := env.provider.server.URL + "/oidc/logout?client_id=client-id&post_logout_redirect_uri=" + url.QueryEscape(testPublicURL+"/login")
+	want := env.provider.server.URL + "/v2/logout?client_id=client-id&returnTo=" + url.QueryEscape(testPublicURL+"/login")
 	if rec.Header().Get("Location") != want {
 		t.Errorf("location %q, erwartet %q", rec.Header().Get("Location"), want)
 	}

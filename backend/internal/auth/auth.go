@@ -259,12 +259,14 @@ func (s *Service) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, s.LogoutURL(), http.StatusSeeOther)
 }
 
-// LogoutURL ist der RP-Initiated-Logout von Auth0 mit Rückkehr auf die Login-Seite der App.
+// LogoutURL beendet die Sitzung bei Auth0 und kehrt auf die Login-Seite der App zurück. /v2/logout statt
+// /oidc/logout: Ohne id_token_hint zeigt /oidc/logout eine zusätzliche Bestätigungsseite, und das
+// ID-Token wollen wir nicht aufbewahren. returnTo muss in Auth0 unter „Allowed Logout URLs“ stehen.
 func (s *Service) LogoutURL() string {
 	q := url.Values{}
 	q.Set("client_id", s.cfg.ClientID)
-	q.Set("post_logout_redirect_uri", s.cfg.PublicURL+"/login")
-	return strings.TrimSuffix(s.issuer, "/") + "/oidc/logout?" + q.Encode()
+	q.Set("returnTo", s.cfg.PublicURL+"/login")
+	return strings.TrimSuffix(s.issuer, "/") + "/v2/logout?" + q.Encode()
 }
 
 type me struct {

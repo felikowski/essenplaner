@@ -3,9 +3,8 @@
 Web-App, mit der die Familie pro Kalenderwoche plant, was es an jedem Tag zu essen gibt: Rezepte, Notizen, Einzelzutaten und Reste, wahlweise auch für Frühstück, Mittagessen und Snack (Einstellungen ⚙).
 
 Live unter https://essenplaner.srv1115517.hstgr.cloud: Jeder Push auf `main` wird getestet und automatisch
-ausgeliefert, siehe [`docs/deployment.md`](docs/deployment.md). Bis `add-auth0-login` umgesetzt ist,
-schützt dort vorübergehend HTTP Basic Auth den Zugang. Selbst betriebene Instanzen nicht ohne einen
-solchen Schutz öffentlich erreichbar machen: Ohne Login kann jeder den Plan lesen und ändern.
+ausgeliefert, siehe [`docs/deployment.md`](docs/deployment.md). Anmelden können sich nur die
+freigegebenen Familienkonten aus Auth0, siehe [`docs/auth0-setup.md`](docs/auth0-setup.md).
 
 - [`frontend/`](frontend/README.md) – React-Frontend (Vite)
 - [`backend/`](backend/) – Go-Server mit SQLite, liefert API und gebautes Frontend aus
@@ -18,6 +17,15 @@ solchen Schutz öffentlich erreichbar machen: Ohne Login kann jeder den Plan les
 - optional Docker
 
 ## Entwicklung
+
+Ohne Auth0-Konfiguration startet das Backend nicht. Einmalig die Vorlage kopieren und die Werte der
+Application „Essenplaner“ eintragen (siehe [`docs/auth0-setup.md`](docs/auth0-setup.md)):
+
+```bash
+cp backend/.env.example backend/.env.local
+```
+
+`make dev` und die Launch-Konfiguration lesen `backend/.env.local` (nicht im Repository).
 
 ```bash
 make dev
@@ -72,6 +80,9 @@ docker run --rm -p 8080:8080 -v essenplaner-data:/data essenplaner
 | --------------- | ----------------------- | ------------------------------------------- |
 | `PORT`          | `8080`                  | Port des HTTP-Servers                       |
 | `DATABASE_PATH` | `./data/essenplaner.db` | SQLite-Datei; das Verzeichnis wird angelegt |
+| `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` | – (Pflicht) | Application in Auth0 |
+| `PUBLIC_URL`    | – (Pflicht)             | Adresse der App, etwa `http://localhost:5173` |
+| `ALLOWED_SUBJECTS` | – (Pflicht)          | Auth0-Nutzer-IDs mit Zugriff, kommagetrennt  |
 
 Im Container ist `DATABASE_PATH=/data/essenplaner.db` gesetzt. Ein Backup ist eine Kopie dieser
 Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 … ".backup …"`).

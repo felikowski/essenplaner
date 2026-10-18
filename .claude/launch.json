@@ -4,7 +4,7 @@
     {
       "name": "essenplaner-backend",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd backend && PORT=18090 go run ./cmd/server"],
+      "runtimeArgs": ["-c", "cd backend && set -a && { [ ! -f .env.local ] || . ./.env.local; } && set +a && PORT=18090 go run ./cmd/server"],
       "port": 18090,
       "autoPort": false
     },

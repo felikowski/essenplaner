@@ -15,7 +15,8 @@ Ablauf bei jedem Push auf `main` ([`.github/workflows/deploy.yml`](../.github/wo
 
 Pull Requests und andere Branches werden nur getestet.
 
-Bis `add-auth0-login` fertig ist, schützt Traefik alle Pfade außer `/healthz` mit HTTP Basic Auth.
+Die Anmeldung übernimmt die App selbst über Auth0 ([auth0-setup.md](auth0-setup.md)). Traefik leitet nur
+weiter und terminiert TLS; `/healthz` ist ohne Anmeldung erreichbar.
 
 ## Was wo liegt
 
@@ -31,19 +32,10 @@ Bis `add-auth0-login` fertig ist, schützt Traefik alle Pfade außer `/healthz` 
 Reihenfolge: **erst einrichten, dann nach `main` mergen.** Fehlt etwas, bricht der Deploy-Job mit
 einer Meldung ab. Ein fehlgeschlagener Lauf lässt sich danach mit „Re-run jobs“ wiederholen.
 
-### 1. Zugang für die Familie (temporär, HTTP Basic Auth)
+### 1. Auth0
 
-Ein langes Zufallspasswort erzeugen und den bcrypt-Hash für Traefik bilden:
-
-```bash
-openssl rand -base64 24
-```
-
-```bash
-docker run --rm httpd:2.4-alpine htpasswd -nbB familie '<passwort>'
-```
-
-Das Passwort im Passwortmanager ablegen, die Ausgabe (`familie:$2y$05$…`) kommt in Schritt 2.
+Application und Connection nach [auth0-setup.md](auth0-setup.md) einrichten und die Familienkonten
+anlegen. Daraus kommen die Werte für Schritt 2.
 
 ### 2. Auf dem VPS
 
@@ -55,16 +47,13 @@ ssh root@srv1115517.hstgr.cloud
 mkdir -p /docker/essenplaner && install -d -m 700 /etc/essenplaner
 ```
 
-Die Env-Datei anlegen. Der Wert **muss in einfachen Anführungszeichen** stehen, sonst ersetzt Compose
-die `$` im Hash:
-
 ```bash
 install -m 600 /dev/null /etc/essenplaner/production.env
 ```
 
-```bash
-echo "ESSENPLANER_BASIC_AUTH_USERS='familie:\$2y\$05\$…'" > /etc/essenplaner/production.env
-```
+Darin stehen die Auth0-Werte (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`,
+`ALLOWED_SUBJECTS`). `ALLOWED_SUBJECTS` enthält ein `|` und steht deshalb in einfachen
+Anführungszeichen, etwa `ALLOWED_SUBJECTS='auth0|6ad5…,auth0|6ad6…'`.
 
 Den Public Key des CI-Schlüssels (siehe Schritt 3) in `/root/.ssh/authorized_keys` eintragen.
 
@@ -129,6 +118,13 @@ Im Notfall direkt auf dem VPS: `ESSENPLANER_TAG` in `.env` auf `sha-<commit>` ä
 ```bash
 docker compose --env-file /etc/essenplaner/production.env --env-file .env up -d --wait
 ```
+
+**Nicht vor die Anmeldung zurück.** Stände vor `add-auth0-login` (vor Commit `8345d9d`) haben keine
+Anmeldung, und die Compose-Datei enthält keinen Proxy-Schutz mehr. Der Workflow lehnt solche Rollbacks
+deshalb ab. Wer es trotzdem braucht, aktiviert vorher wieder HTTP Basic Auth: in `deploy/docker-compose.yml`
+eine `basicauth`-Middleware am Router `essenplaner` (bcrypt-Hash per
+`docker run --rm httpd:2.4-alpine htpasswd -nbB familie '<passwort>'`) und einen Router nur für `/healthz`
+ohne Middleware, wie im Stand `affab3c`. Das gilt auch für den Notfallweg direkt auf dem VPS.
 
 Migrationen fügen bisher nur Tabellen und Spalten hinzu, ältere Versionen laufen deshalb mit einer neueren
 Datenbank. Vor einem Deployment mit Migrationen, die Daten ändern, ein Backup ziehen.

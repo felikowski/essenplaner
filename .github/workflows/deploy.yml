@@ -93,6 +93,17 @@ jobs:
           fi
           echo "TAG=sha-$DEPLOY_SHA" >> "$GITHUB_ENV"
 
+      - name: Rollback nur auf Stände mit Anmeldung
+        if: ${{ inputs.sha != '' }}
+        run: |
+          # Die Compose-Datei kommt immer vom aktuellen Stand und hat keinen Proxy-Schutz mehr. Ein Image ohne
+          # Anmeldung wäre damit frei zugänglich, also nur Commits zulassen, die backend/internal/auth enthalten.
+          git fetch --quiet origin "$DEPLOY_SHA"
+          if ! git cat-file -e "$DEPLOY_SHA:backend/internal/auth/auth.go" 2>/dev/null; then
+            echo "::error::$DEPLOY_SHA enthält noch keine Anmeldung (add-auth0-login). Vorher HTTP Basic Auth wieder aktivieren, siehe docs/deployment.md."
+            exit 1
+          fi
+
       - name: Rollback-Image in GHCR prüfen
         if: ${{ inputs.sha != '' }}
         run: |
