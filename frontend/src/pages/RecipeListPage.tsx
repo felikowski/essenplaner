@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
+import { PlanRecipeDialog, PlannedNotice } from '../components/PlanRecipeDialog'
 import { ImportRecipeDialog } from '../components/ImportRecipeDialog'
 import { SearchField } from '../components/SearchField'
 import { LoadError, Loading } from '../components/Status'
@@ -9,7 +10,7 @@ import { RecipeFilters } from '../components/RecipeFilters'
 import { activeFilterCount, queryRecipes, recipeQueryFromParams, recipeQueryToParams, type RecipeQueryState } from '../lib/recipeQuery'
 import { sourceLabel } from '../lib/recipes'
 import { useAsyncData } from '../lib/useAsyncData'
-import type { Recipe } from '../types'
+import type { IsoDate, Meal, Recipe } from '../types'
 
 export function RecipeListPage() {
   const api = usePlannerApi()
@@ -19,6 +20,8 @@ export function RecipeListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const queryState = recipeQueryFromParams(searchParams)
   const [importing, setImporting] = useState(false)
+  const [planning, setPlanning] = useState<Recipe | null>(null)
+  const [planned, setPlanned] = useState<{ date: IsoDate; meal: Meal } | null>(null)
   const navigate = useNavigate()
 
   function setQueryState(value: RecipeQueryState) {
@@ -48,6 +51,17 @@ export function RecipeListPage() {
           onClose={() => setImporting(false)}
         />
       )}
+      {planning && (
+        <PlanRecipeDialog
+          recipe={planning}
+          onPlanned={(date, meal) => {
+            setPlanning(null)
+            setPlanned({ date, meal })
+          }}
+          onClose={() => setPlanning(null)}
+        />
+      )}
+      {planned && <PlannedNotice date={planned.date} meal={planned.meal} />}
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <LoadError message="Die Rezepte konnten nicht geladen werden." onRetry={retry} />}
       {state.status === 'ready' &&
@@ -64,6 +78,10 @@ export function RecipeListPage() {
               recipes={queryRecipes(state.data, queryState)}
               filtered={activeFilterCount(queryState.filters) > 0}
               onReset={() => setQueryState({ ...queryState, filters: { tags: [], toTry: false } })}
+              onPlan={(recipe) => {
+                setPlanned(null)
+                setPlanning(recipe)
+              }}
             />
           </>
         ))}
@@ -71,7 +89,14 @@ export function RecipeListPage() {
   )
 }
 
-function RecipeList({ recipes, filtered, onReset }: { recipes: Recipe[]; filtered: boolean; onReset: () => void }) {
+interface RecipeListProps {
+  recipes: Recipe[]
+  filtered: boolean
+  onReset: () => void
+  onPlan: (recipe: Recipe) => void
+}
+
+function RecipeList({ recipes, filtered, onReset, onPlan }: RecipeListProps) {
   if (recipes.length === 0) return filtered ? (
     <div className="status"><p>Keine Rezepte passen zu den Filtern</p><button type="button" className="button button--secondary" onClick={onReset}>Filter zurücksetzen</button></div>
   ) : <p className="status">Keine Rezepte gefunden</p>
@@ -79,7 +104,7 @@ function RecipeList({ recipes, filtered, onReset }: { recipes: Recipe[]; filtere
   return (
     <ul className="recipe-list">
       {recipes.map((recipe) => (
-        <li key={recipe.id}>
+        <li key={recipe.id} className="recipe-list__item">
           <Link to={`/rezepte/${recipe.id}`} className="recipe-card">
             <RecipeImage
               className="recipe-card__image"
@@ -98,6 +123,9 @@ function RecipeList({ recipes, filtered, onReset }: { recipes: Recipe[]; filtere
               {recipe.tags && <span className="recipe-card__tags">{recipe.tags.slice(0, 3).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</span>}
             </span>
           </Link>
+          <button type="button" className="icon-button recipe-card__plan" aria-label={`${recipe.title} einplanen`} onClick={() => onPlan(recipe)}>
+            <CalendarIcon />
+          </button>
         </li>
       ))}
     </ul>
@@ -106,4 +134,13 @@ function RecipeList({ recipes, filtered, onReset }: { recipes: Recipe[]; filtere
 
 function allTags(recipes: Recipe[]) {
   return [...new Set(recipes.flatMap((recipe) => recipe.tags ?? []))].sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }))
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5" />
+    </svg>
+  )
 }

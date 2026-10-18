@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { usePlannerApi } from '../api/context'
+import { PlanRecipeDialog, PlannedNotice } from '../components/PlanRecipeDialog'
 import { RecipeHistory } from '../components/RecipeHistory'
 import { RecipeImage } from '../components/RecipeImage'
 import { ServingsPicker } from '../components/ServingsPicker'
@@ -12,7 +13,7 @@ import { scaleIngredient } from '../lib/scale'
 import { resolveStepAmounts } from '../lib/stepAmounts'
 import { useAsyncData } from '../lib/useAsyncData'
 import { useServingsParam } from '../lib/useServingsParam'
-import type { Recipe, RecipeOrganizationPatch } from '../types'
+import type { IsoDate, Meal, Recipe, RecipeOrganizationPatch } from '../types'
 
 export function RecipeDetailPage() {
   const { id = '' } = useParams()
@@ -49,6 +50,9 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
   const [organizationError, setOrganizationError] = useState<string | null>(null)
   const [actionNotice, setActionNotice] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [planning, setPlanning] = useState(false)
+  const [planned, setPlanned] = useState<{ date: IsoDate; meal: Meal } | null>(null)
+  const [plannedCount, setPlannedCount] = useState(0)
   const { source } = recipe
   const unavailable = recipe.available === false
   const hasIngredients = (recipe.ingredients?.length ?? 0) > 0
@@ -125,12 +129,18 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
           <StarRating value={recipe.rating} onRate={(rating) => void updateOrganization({ rating, toTry: false })} label="Nach dem Kochen bewerten" />
         </section>
       )}
-      <RecipeHistory recipeId={recipe.id} />
+      {/* Nach dem Einplanen neu laden, damit der Verlauf den neuen Eintrag zeigt. */}
+      <RecipeHistory key={plannedCount} recipeId={recipe.id} />
       <div className="recipe-detail__actions no-print">
         {(hasIngredients || hasInstructions) && (
           <Link className="button" to={`/rezepte/${recipe.id}/kochen${location.search}`}>
             Kochen
           </Link>
+        )}
+        {!unavailable && (
+          <button type="button" className="button button--secondary" onClick={() => setPlanning(true)}>
+            Einplanen
+          </button>
         )}
         <button type="button" className="button button--secondary" onClick={() => void shareRecipe()}>
           Teilen
@@ -154,6 +164,7 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
           </Link>
         )}
       </div>
+      {planned && <PlannedNotice date={planned.date} meal={planned.meal} />}
       {actionNotice && <p className="notice no-print" role="status">{actionNotice}</p>}
       {actionError && <p className="form__error no-print" role="alert">{actionError}</p>}
       {hasIngredients ? (
@@ -192,6 +203,18 @@ function RecipeDetail({ recipe: initialRecipe }: { recipe: Recipe }) {
         </section>
       )}
       {recipe.removable && <RemoveRecipe recipe={recipe} />}
+      {planning && (
+        <PlanRecipeDialog
+          recipe={recipe}
+          initialServings={servings}
+          onPlanned={(date, meal) => {
+            setPlanning(false)
+            setPlanned({ date, meal })
+            setPlannedCount((count) => count + 1)
+          }}
+          onClose={() => setPlanning(false)}
+        />
+      )}
     </article>
   )
 }

@@ -475,6 +475,23 @@ img {
   text-decoration: none;
 }
 
+.recipe-list__item {
+  position: relative;
+}
+
+.recipe-list__item .recipe-card {
+  padding-right: calc(2.75rem + var(--space-3));
+}
+
+.recipe-card__plan {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+}
+
 .recipe-card__image {
   flex-shrink: 0;
   width: 4.5rem;
@@ -749,6 +766,22 @@ img {
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
   color: var(--color-text-muted);
+}
+
+.planned-notice a {
+  white-space: nowrap;
+}
+
+.plan-week {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.plan-week__label {
+  font-weight: 600;
 }
 
 .recipe-detail__actions {

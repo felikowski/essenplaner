@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MockPlannerApi } from '../api/MockPlannerApi'
 import { loadMockFiles } from '../test/mockData'
-import { renderApp } from '../test/renderApp'
+import { currentUrl, renderApp } from '../test/renderApp'
 
 function recipeTitles() {
   return within(screen.getByRole('list'))
@@ -130,5 +130,26 @@ describe('Rezeptliste', () => {
       await user.selectOptions(screen.getByLabelText('Sortierung'), 'rating')
       expect(screen.getByRole('button', { name: 'Filter Ausprobieren entfernen' })).toBeInTheDocument()
     })
+  })
+
+  it('plant ein Rezept über das Kalender-Symbol ein, ohne Suche und Filter zu verlieren', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 21, 12, 0))
+    try {
+      const api = new MockPlannerApi(loadMockFiles)
+      const { user } = renderApp('/rezepte?q=Curry', api)
+
+      await user.click(await screen.findByRole('button', { name: 'Hähnchen-Curry einplanen' }))
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Einplanen' }))
+
+      const notice = await screen.findByText(/Für Mi 21\.10\. · Abendessen eingeplant/)
+      expect(within(notice).getByRole('link', { name: 'Zur Woche' })).toHaveAttribute('href', '/woche/2026-W43')
+      expect(currentUrl()).toBe('/rezepte?q=Curry')
+      expect(screen.getByRole('searchbox')).toHaveValue('Curry')
+      const week = await api.getWeek('2026-W43')
+      expect(week.days['2026-10-21'].at(-1)).toMatchObject({ kind: 'recipe', recipeId: 'haehnchen-curry', servings: 4 })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -188,4 +188,36 @@ describe('Rezeptdetail', () => {
       expect(milk).toHaveAttribute('title', 'umgerechnet aus 200 ml für 2 Portionen')
     })
   })
+
+  describe('Einplanen', () => {
+    it('plant mit den gewählten Portionen ein und verlinkt die Woche', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2026, 9, 21, 12, 0))
+      const api = new MockPlannerApi(loadMockFiles)
+      const { user } = renderApp('/rezepte/linsensuppe?portionen=8', api)
+
+      await user.click(await screen.findByRole('button', { name: 'Einplanen' }))
+      const dialog = screen.getByRole('dialog', { name: 'Einplanen: Linsensuppe' })
+      expect(within(dialog).getByRole('group', { name: 'Portionen' })).toHaveTextContent('8')
+      await user.click(within(dialog).getByRole('button', { name: 'Do 22.10.' }))
+      await user.click(within(dialog).getByRole('button', { name: 'Einplanen' }))
+
+      const notice = await screen.findByText(/Für Do 22\.10\. · Abendessen eingeplant/)
+      expect(within(notice).getByRole('link', { name: 'Zur Woche' })).toHaveAttribute('href', '/woche/2026-W43')
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(currentUrl()).toBe('/rezepte/linsensuppe?portionen=8')
+      const week = await api.getWeek('2026-W43')
+      expect(week.days['2026-10-22'].at(-1)).toMatchObject({ kind: 'recipe', recipeId: 'linsensuppe', meal: 'dinner', servings: 8 })
+    })
+
+    it('bietet Einplanen bei entfernten Rezepten nicht an', async () => {
+      const api = new MockPlannerApi(loadMockFiles)
+      const own = await api.createRecipe({ title: 'Omas Gulasch', servings: 4, ingredients: [], instructions: [] })
+      await api.removeRecipe(own.id)
+      renderApp(`/rezepte/${own.id}`, api)
+
+      expect(await screen.findByText(/Nicht mehr verfügbar/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Einplanen' })).not.toBeInTheDocument()
+    })
+  })
 })
