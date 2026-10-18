@@ -27,9 +27,9 @@
 - [x] 5.1 Login-Seite mit „Anmelden“ und Fehlermeldungen („Dieses Konto hat keinen Zugriff“, „Anmeldung abgebrochen“); Test
 - [x] 5.2 401-Behandlung in `HttpPlannerApi` → Weiterleitung zum Login mit `returnTo`; Test
 - [x] 5.3 Kopfzeile mit Profil und „Abmelden“; Test
-- [ ] 5.4 Feature-Branch manuell über `deploy.yml` auf den VPS ausliefern, während HTTP Basic Auth noch aktiv ist; unter `https://essenplaner.srv1115517.hstgr.cloud` mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit einem nicht freigegebenen Konto abgewiesen werden, Deep-Link nach Login erreichen und sichere Cookies prüfen
+- [x] 5.4 Feature-Branch manuell über `deploy.yml` auf den VPS ausliefern, während HTTP Basic Auth noch aktiv ist; unter `https://essenplaner.srv1115517.hstgr.cloud` mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit einem nicht freigegebenen Konto abgewiesen werden, Deep-Link nach Login erreichen und sichere Cookies prüfen
 
 ## 6. Abschluss
 
-- [ ] 6.1 Nach erfolgreicher Live-Prüfung die Basic-Auth-Middleware aus `deploy/docker-compose.yml` und `ESSENPLANER_BASIC_AUTH_USERS` aus der Serverkonfiguration entfernen; erneut ausliefern und prüfen, dass ein nicht angemeldeter Aufruf die Login-Seite statt einer HTTP-Basic-Auth-Abfrage zeigt
-- [ ] 6.2 README, `.env.example`, `docs/deployment.md` und Rollback-Anleitung aktualisieren; vor einem Rollback auf einen Stand ohne Auth0 muss HTTP Basic Auth wieder aktiviert werden
+- [x] 6.1 Nach erfolgreicher Live-Prüfung die Basic-Auth-Middleware aus `deploy/docker-compose.yml` und `ESSENPLANER_BASIC_AUTH_USERS` aus der Serverkonfiguration entfernen; erneut ausliefern und prüfen, dass ein nicht angemeldeter Aufruf die Login-Seite statt einer HTTP-Basic-Auth-Abfrage zeigt
+- [x] 6.2 README, `.env.example`, `docs/deployment.md` und Rollback-Anleitung aktualisieren; vor einem Rollback auf einen Stand ohne Auth0 muss HTTP Basic Auth wieder aktiviert werden
