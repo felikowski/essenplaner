@@ -24,5 +24,5 @@
 ## 5. Erster Livegang
 
 - [x] 5.1 Nach deiner Einrichtung (Env-Datei mit Basic-Auth-Hash, Public Key) den Pull Request mergen und den ersten Lauf von `deploy.yml` verfolgen; GHCR-Paket auf öffentlich stellen, falls nötig, und den Lauf wiederholen
-- [ ] 5.2 Live prüfen: `https://essenplaner.srv1115517.hstgr.cloud` verlangt ohne Zugangsdaten HTTP Basic Auth und lädt mit ihnen ohne Zertifikatswarnung, HTTP leitet auf HTTPS um, `/healthz` ist ohne Zugangsdaten erreichbar und meldet den Commit, eine Zuordnung übersteht ein weiteres Deployment
-- [ ] 5.3 Rollback einmal ausprobieren: `deploy.yml` mit dem vorherigen Commit-Hash starten, `/healthz` meldet ihn, die Daten sind unverändert; danach wieder auf den aktuellen Stand deployen
+- [x] 5.2 Live prüfen: `https://essenplaner.srv1115517.hstgr.cloud` verlangt ohne Zugangsdaten HTTP Basic Auth und lädt mit ihnen ohne Zertifikatswarnung, HTTP leitet auf HTTPS um, `/healthz` ist ohne Zugangsdaten erreichbar und meldet den Commit, eine Zuordnung übersteht ein weiteres Deployment
+- [x] 5.3 Rollback einmal ausprobieren: `deploy.yml` mit dem vorherigen Commit-Hash starten, `/healthz` meldet ihn, die Daten sind unverändert; danach wieder auf den aktuellen Stand deployen
