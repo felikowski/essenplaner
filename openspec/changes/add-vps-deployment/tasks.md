@@ -18,7 +18,7 @@
 ## 4. Anleitung und einmalige Einrichtung
 
 - [x] 4.1 `docs/deployment.md`: temporären HTTP-Basic-Auth-Zugang mit langem Zufallspasswort erzeugen, Einrichtung auf dem VPS (`/docker/essenplaner/`, `/etc/essenplaner/production.env` mit `0600`, Public Key), GitHub-Environment und Secrets inklusive `known_hosts`, Sichtbarkeit des GHCR-Pakets, Reihenfolge „erst einrichten, dann mergen“, Rollback, Logs ansehen, manuelles Backup mit `sqlite3 .backup`; README verweist darauf und ersetzt den Warnhinweis
-- [ ] 4.2 CI-Schlüsselpaar erzeugen, Private Key und `known_hosts` als Secrets im Environment `production` hinterlegen und dir den Public Key zum Eintragen geben (nicht selbst auf dem VPS eintragen)
+- [x] 4.2 CI-Schlüsselpaar erzeugen, Private Key und `known_hosts` als Secrets im Environment `production` hinterlegen und dir den Public Key zum Eintragen geben (nicht selbst auf dem VPS eintragen)
 - [x] 4.3 Mit dir gemeinsam (nur lesend, nach deiner Freigabe) auf dem VPS nachsehen: Architektur (`uname -m`), Name des HTTP-Entrypoints und ob Traefik bereits global auf HTTPS umleitet; `deploy/docker-compose.yml` und design.md bei Bedarf anpassen
 
 ## 5. Erster Livegang
