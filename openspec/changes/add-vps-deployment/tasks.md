@@ -11,7 +11,7 @@
 
 ## 3. Workflows
 
-- [ ] 3.1 `.github/workflows/ci.yml`: bei `pull_request` und bei Pushes außer auf `main`, zusätzlich als `workflow_call`; Go (`vet`, `test`), Frontend (`npm ci`, `test`, `lint`, `build`) und `docker compose config` für `deploy/docker-compose.yml`; ein Pull Request mit diesem Workflow läuft grün
+- [x] 3.1 `.github/workflows/ci.yml`: bei `pull_request` und bei Pushes außer auf `main`, zusätzlich als `workflow_call`; Go (`vet`, `test`), Frontend (`npm ci`, `test`, `lint`, `build`) und `docker compose config` für `deploy/docker-compose.yml`; ein Pull Request mit diesem Workflow läuft grün
 - [x] 3.2 `.github/workflows/deploy.yml`: Jobs `test` (ruft `ci.yml` auf) → `image` (Buildx, `linux/amd64`, GHA-Cache, Tags `sha-<sha>` und `main`, `VERSION=<sha>`) → `deploy` (Environment `production`, `concurrency: deploy-production`, festgelegte `known_hosts`, `scp` der Compose-Datei, `.env` mit dem Tag, `pull` und `up -d --wait`, danach bis zu 2 Minuten Abfrage der öffentlichen `/healthz`, bis die Version übereinstimmt); leere Secrets brechen mit klarer Meldung ab
 - [x] 3.3 Rollback-Pfad in `deploy.yml`: `workflow_dispatch` mit optionaler Eingabe `sha`. Ist sie gesetzt, werden `test` und `image` übersprungen, `docker manifest inspect` prüft `sha-<sha>`, und dieses Image wird deployt; mit `actionlint` prüfen, dass beide Pfade (Push und manueller Start mit und ohne `sha`) gültig sind
 
