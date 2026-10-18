@@ -48,9 +48,10 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: VERSION=${{ github.sha }}
+          # :main nur für Builds von main; ein manueller Testdeploy eines Branches bekommt nur sha-<commit>.
           tags: |
             ${{ env.IMAGE }}:sha-${{ github.sha }}
-            ${{ env.IMAGE }}:main
+            ${{ github.ref == 'refs/heads/main' && format('{0}:main', env.IMAGE) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

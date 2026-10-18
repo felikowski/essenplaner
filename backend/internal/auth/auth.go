@@ -112,10 +112,14 @@ func (s *Service) providerFor(ctx context.Context) (*oidc.Provider, error) {
 }
 
 func (s *Service) oauthConfig(provider *oidc.Provider) *oauth2.Config {
+	endpoint := provider.Endpoint()
+	// Die Application ist in Auth0 auf "Client Secret (Post)" eingestellt; ohne diese Angabe probiert
+	// oauth2 zuerst Basic Auth und braucht einen zweiten Anlauf.
+	endpoint.AuthStyle = oauth2.AuthStyleInParams
 	return &oauth2.Config{
 		ClientID:     s.cfg.ClientID,
 		ClientSecret: s.cfg.ClientSecret,
-		Endpoint:     provider.Endpoint(),
+		Endpoint:     endpoint,
 		RedirectURL:  s.cfg.PublicURL + "/api/auth/callback",
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 	}

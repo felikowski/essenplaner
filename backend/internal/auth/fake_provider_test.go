@@ -74,6 +74,10 @@ func (p *fakeProvider) handleToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad form", http.StatusBadRequest)
 		return
 	}
+	if r.PostForm.Get("client_id") != p.clientID || r.PostForm.Get("client_secret") != "secret" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid_client"})
+		return
+	}
 	sum := sha256.Sum256([]byte(r.Form.Get("code_verifier")))
 	if base64.RawURLEncoding.EncodeToString(sum[:]) != p.challenge {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_grant"})
