@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/felikowski/essenplaner/backend/internal/auth"
 	"github.com/felikowski/essenplaner/backend/internal/config"
 	"github.com/felikowski/essenplaner/backend/internal/healthcheck"
 	"github.com/felikowski/essenplaner/backend/internal/httpapi"
@@ -38,9 +40,9 @@ func main() {
 
 // runHealthcheck prüft den laufenden Server im selben Container (Exit-Code 0 oder 1).
 func runHealthcheck() int {
-	cfg, err := config.FromEnv(os.Getenv)
+	port, err := config.PortFromEnv(os.Getenv)
 	if err == nil {
-		err = healthcheck.Check(context.Background(), healthcheck.URL(cfg.Port))
+		err = healthcheck.Check(context.Background(), healthcheck.URL(port))
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "healthcheck:", err)
@@ -73,7 +75,11 @@ func run(logger *slog.Logger) error {
 	}
 
 	importer := webimport.Importer{Client: safefetch.New(safefetch.Options{UserAgent: "Essenplaner/1.0"})}
-	api := httpapi.NewServer(httpapi.StoresFrom(db), logger).WithImporter(importer).WithVersion(version)
+	authService := auth.New(cfg.Auth, db, logger, auth.Options{})
+	api := httpapi.NewServer(httpapi.StoresFrom(db), logger).
+		WithImporter(importer).
+		WithVersion(version).
+		WithAuth(authService, strings.HasPrefix(cfg.Auth.PublicURL, "https://"))
 	server := &http.Server{
 		Addr:              cfg.Addr(),
 		Handler:           api.Handler(web.Handler(web.Dist())),
@@ -85,7 +91,7 @@ func run(logger *slog.Logger) error {
 
 	errc := make(chan error, 1)
 	go func() {
-		logger.Info("essenplaner lauscht", "version", version, "port", cfg.Port, "database", cfg.DatabasePath)
+		logger.Info("essenplaner lauscht", "version", version, "port", cfg.Port, "public_url", cfg.Auth.PublicURL, "allowed_subjects", len(cfg.Auth.AllowedSubjects), "database", cfg.DatabasePath)
 		errc <- server.ListenAndServe()
 	}()
 

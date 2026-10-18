@@ -10,7 +10,7 @@ import (
 	"github.com/felikowski/essenplaner/backend/internal/store"
 )
 
-func (s *Server) routeMenus(mux *http.ServeMux) {
+func (s *Server) routeMenus(mux *routes) {
 	mux.HandleFunc("GET /api/menus", s.handleListMenus)
 	mux.HandleFunc("POST /api/menus", s.handleCreateMenu)
 	mux.HandleFunc("GET /api/menus/{id}", s.handleGetMenu)

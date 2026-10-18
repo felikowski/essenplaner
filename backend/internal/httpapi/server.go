@@ -25,7 +25,19 @@ type Server struct {
 	health   HealthChecker
 	importer RecipeImporter
 	version  string
+	auth     Authenticator
+	hsts     bool
 	logger   *slog.Logger
+}
+
+// Authenticator schützt die API (umgesetzt von auth.Service). Ohne ihn ist die API offen, das gibt es nur in Tests.
+type Authenticator interface {
+	// Register fügt Anmelde-Routen hinzu, etwa /api/auth/login und /api/me.
+	Register(mux interface {
+		HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
+	})
+	// Protect weist Anfragen an /api/ ohne gültige Sitzung und ändernde Anfragen fremder Origins ab.
+	Protect(next http.Handler) http.Handler
 }
 
 // Stores bündelt die Datenzugriffe der API. In der Anwendung ist alles dieselbe Datenbank.
@@ -40,6 +52,13 @@ type Stores struct {
 
 func NewServer(stores Stores, logger *slog.Logger) *Server {
 	return &Server{recipes: stores.Recipes, plans: stores.Plans, settings: stores.Settings, shopping: stores.Shopping, menus: stores.Menus, health: stores.Health, version: "dev", logger: logger}
+}
+
+// WithAuth schützt die API mit einer Anmeldung. hsts schaltet Strict-Transport-Security ein (App läuft über https).
+func (s *Server) WithAuth(a Authenticator, hsts bool) *Server {
+	s.auth = a
+	s.hsts = hsts
+	return s
 }
 
 // WithVersion legt fest, welche Version /healthz meldet (beim Build eingebetteter Commit).
@@ -65,8 +84,40 @@ func StoresFrom(db interface {
 
 // Handler liefert den vollständigen Router. static beantwortet alle Pfade außerhalb
 // von /api/ und /healthz (das eingebettete Frontend); nil bedeutet nur API.
+// Die API-Routen kommen aus routes, damit APIRoutes genau dieselbe Liste liefert.
 func (s *Server) Handler(static http.Handler) http.Handler {
-	mux := http.NewServeMux()
+	mux := s.routes()
+	if s.auth != nil {
+		s.auth.Register(mux)
+	}
+	if static != nil {
+		mux.Handle("/", static)
+	}
+	var h http.Handler = mux
+	if s.auth != nil {
+		h = s.auth.Protect(h)
+	}
+	return SecurityHeaders(s.hsts, Logging(s.logger, Recover(s.logger, h)))
+}
+
+// APIRoutes listet die Muster aller Routen der API (ohne Anmeldung und Frontend), etwa "GET /api/recipes".
+func (s *Server) APIRoutes() []string {
+	return s.routes().patterns
+}
+
+// routes zeichnet beim Registrieren die Muster auf, damit Tests alle Routen durchgehen können.
+type routes struct {
+	*http.ServeMux
+	patterns []string
+}
+
+func (r *routes) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	r.patterns = append(r.patterns, pattern)
+	r.ServeMux.HandleFunc(pattern, handler)
+}
+
+func (s *Server) routes() *routes {
+	mux := &routes{ServeMux: http.NewServeMux()}
 	mux.HandleFunc("GET /api/recipes", s.handleListRecipes)
 	mux.HandleFunc("POST /api/recipes", s.handleCreateRecipe)
 	mux.HandleFunc("GET /api/recipes/{id}", s.handleGetRecipe)
@@ -91,10 +142,7 @@ func (s *Server) Handler(static http.Handler) http.Handler {
 		writeError(w, http.StatusNotFound, "not found")
 	})
 	mux.HandleFunc("GET /healthz", s.handleHealth)
-	if static != nil {
-		mux.Handle("/", static)
-	}
-	return Logging(s.logger, Recover(s.logger, mux))
+	return mux
 }
 
 // internalError protokolliert den Fehler und antwortet ohne technische Details.

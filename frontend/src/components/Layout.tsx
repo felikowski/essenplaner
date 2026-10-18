@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { SettingsProvider } from '../lib/settings'
 import { TimerProvider } from '../lib/timers'
 import { TimerBar } from './TimerBar'
+import { UserMenu } from './UserMenu'
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -27,6 +28,7 @@ export function Layout() {
             <NavLink to="/einstellungen" className="app-nav__link app-nav__link--icon" aria-label="Einstellungen">
               ⚙
             </NavLink>
+            <UserMenu />
           </nav>
         </div>
       </header>

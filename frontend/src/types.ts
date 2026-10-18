@@ -175,6 +175,13 @@ export interface ApplyMenuResult {
   skipped: string[]
 }
 
+/** Angemeldeter Nutzer (GET /api/me); Auth0 liefert nicht jedes Feld für jedes Konto. */
+export interface CurrentUser {
+  name?: string
+  email?: string
+  picture?: string
+}
+
 export interface HouseholdSettings {
   visibleMeals: Meal[]
 }

@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import { CurrentWeekRedirect } from './pages/CurrentWeekRedirect'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { LoginPage } from './pages/LoginPage'
 import { RecipeDetailPage } from './pages/RecipeDetailPage'
 import { RecipeEditPage } from './pages/RecipeEditPage'
 import { RecipeListPage } from './pages/RecipeListPage'
@@ -17,6 +18,7 @@ import { CookingPage } from './pages/CookingPage'
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="login" element={<LoginPage />} />
       <Route element={<Layout />}>
         <Route index element={<CurrentWeekRedirect />} />
         <Route path="woche" element={<CurrentWeekRedirect />} />

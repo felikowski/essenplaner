@@ -1,5 +1,6 @@
 import type {
   CopyMode,
+  CurrentUser,
   EntryPatch,
   HouseholdSettings,
   ApplyMenuResult,
@@ -28,6 +29,8 @@ import type {
  * die Implementierung (heute Dummy-Daten, später das Backend) kommt über den Context.
  */
 export interface PlannerApi {
+  /** Angemeldeter Nutzer für die Kopfzeile. */
+  getMe(): Promise<CurrentUser>
   listRecipes(): Promise<Recipe[]>
   /** null, wenn es kein Rezept mit dieser ID gibt. */
   getRecipe(id: string): Promise<Recipe | null>

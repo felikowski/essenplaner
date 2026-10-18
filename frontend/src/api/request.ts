@@ -14,12 +14,33 @@ export class RequestError extends Error {
   }
 }
 
-/** Fetch-Wrapper mit relativer Basis-URL: Pfade werden gegen den eigenen Host aufgelöst. */
+/** Pfad der Login-Seite mit der aktuellen Seite als Rücksprungziel. */
+export function loginPath(current: string): string {
+  return current === '/' || current.startsWith('/login') ? '/login' : `/login?returnTo=${encodeURIComponent(current)}`
+}
+
+let onUnauthorized = () => {
+  const { pathname, search } = window.location
+  if (!pathname.startsWith('/login')) window.location.assign(loginPath(pathname + search))
+}
+
+/** Ersetzt die Reaktion auf 401 (Tests). Liefert eine Funktion, die den vorigen Zustand wiederherstellt. */
+export function setUnauthorizedHandler(handler: () => void): () => void {
+  const previous = onUnauthorized
+  onUnauthorized = handler
+  return () => {
+    onUnauthorized = previous
+  }
+}
+
+/** Fetch-Wrapper mit relativer Basis-URL: Pfade werden gegen den eigenen Host aufgelöst.
+ * Bei 401 (keine oder abgelaufene Sitzung) geht es zur Login-Seite. */
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   })
+  if (res.status === 401) onUnauthorized()
   if (!res.ok) {
     const { message, field } = await readErrorBody(res)
     throw new RequestError(`${init?.method ?? 'GET'} ${path} fehlgeschlagen: ${res.status}`, res.status, message, field)

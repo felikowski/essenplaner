@@ -1,6 +1,7 @@
 import { parseIngredients } from '../lib/ingredient'
 import { daysOfWeek, parseIsoDate, toIsoDate, weekOf } from '../lib/isoWeek'
 import {
+  type CurrentUser,
   type ApplyMenuResult,
   MEALS,
   type CopyMode,
@@ -424,6 +425,10 @@ export class MockPlannerApi implements PlannerApi {
       .map((entry) => entry.date)
       .sort()
       .reverse()
+  }
+
+  async getMe(): Promise<CurrentUser> {
+    return { name: 'Familie' }
   }
 
   async getSettings(): Promise<HouseholdSettings> {

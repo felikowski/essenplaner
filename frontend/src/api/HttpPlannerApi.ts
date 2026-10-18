@@ -1,5 +1,6 @@
 import type {
   CopyMode,
+  CurrentUser,
   EntryPatch,
   HouseholdSettings,
   ApplyMenuResult,
@@ -27,6 +28,10 @@ import { RequestError, request } from './request'
 
 /** Spricht mit der Go-API unter /api (im Dev-Modus per Vite-Proxy). */
 export class HttpPlannerApi implements PlannerApi {
+  getMe(): Promise<CurrentUser> {
+    return request('/api/me')
+  }
+
   listRecipes(): Promise<Recipe[]> {
     return request('/api/recipes')
   }
