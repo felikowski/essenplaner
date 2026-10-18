@@ -20,15 +20,15 @@ Das System SHALL die Anmeldung ausschließlich über Auth0 anbieten. Welche Anme
 - **THEN** zeigt das System die Login-Seite mit einer verständlichen Meldung und legt keine Sitzung an
 
 ### Requirement: Freigabeliste
-Das System SHALL nur Konten zulassen, deren E-Mail-Adresse in der konfigurierten Freigabeliste steht und von Auth0 als verifiziert gemeldet wird (`email_verified`). Der Vergleich MUST ohne Beachtung von Groß- und Kleinschreibung erfolgen. Die Prüfung MUST in der Anwendung stattfinden, unabhängig von Einstellungen in Auth0. Abgewiesene Nutzer MUST eine verständliche Meldung erhalten, und es MUST keine Sitzung entstehen.
+Das System SHALL nur Konten zulassen, deren Auth0-Nutzer-ID (`sub`) in der konfigurierten Freigabeliste steht. Der Vergleich MUST exakt erfolgen. Eine von Auth0 bestätigte E-Mail-Adresse MUST NOT vorausgesetzt werden, weil die Konten vom Administrator angelegt werden. Die Prüfung MUST in der Anwendung stattfinden, unabhängig von Einstellungen in Auth0. Abgewiesene Nutzer MUST eine verständliche Meldung erhalten, und es MUST keine Sitzung entstehen.
 
 #### Scenario: Nicht freigegeben
-- **WHEN** sich jemand mit einer Adresse anmeldet, die nicht auf der Freigabeliste steht
+- **WHEN** sich jemand mit einem Konto anmeldet, dessen Nutzer-ID nicht auf der Freigabeliste steht, etwa mit einem Konto einer anderen App im selben Tenant
 - **THEN** zeigt das System „Dieses Konto hat keinen Zugriff“ und legt keine Sitzung an
 
-#### Scenario: Unverifizierte Adresse
-- **WHEN** Auth0 die E-Mail-Adresse als nicht verifiziert meldet
-- **THEN** weist das System die Anmeldung mit einem Hinweis ab, die Adresse erst zu bestätigen
+#### Scenario: Konto ohne bestätigte E-Mail
+- **WHEN** sich ein freigegebenes Konto anmeldet, für das Auth0 keine bestätigte E-Mail-Adresse meldet
+- **THEN** ist der Nutzer angemeldet
 
 ### Requirement: Sitzungen
 Das System SHALL angemeldete Nutzer über ein Sitzungs-Cookie wiedererkennen. Das Cookie MUST `HttpOnly`, `Secure` (außer bei lokaler Entwicklung über http://localhost) und `SameSite=Lax` sein. Eine Sitzung MUST nach 30 Tagen Inaktivität ablaufen. Wird ein Konto von der Freigabeliste entfernt, MUST seine bestehende Sitzung bei der nächsten Anfrage abgewiesen werden.
@@ -38,7 +38,7 @@ Das System SHALL angemeldete Nutzer über ein Sitzungs-Cookie wiedererkennen. Da
 - **THEN** ist er ohne erneute Anmeldung angemeldet
 
 #### Scenario: Konto entfernt
-- **WHEN** eine Adresse aus der Freigabeliste entfernt und der Dienst neu gestartet wird
+- **WHEN** eine Nutzer-ID aus der Freigabeliste entfernt und der Dienst neu gestartet wird
 - **THEN** erhält dieser Nutzer bei der nächsten API-Anfrage 401
 
 ### Requirement: Abmelden
@@ -64,7 +64,7 @@ Das System SHALL alle Endpunkte unter `/api/` außer den Anmelde-Endpunkten nur 
 - **THEN** leitet es zur Login-Seite weiter und merkt sich die aktuelle Seite als Rücksprungziel
 
 ### Requirement: Angemeldeten Nutzer anzeigen
-Das System SHALL unter `GET /api/me` Name, E-Mail und Profilbild des angemeldeten Nutzers liefern, soweit Auth0 sie übermittelt. Das Frontend MUST den Namen oder das Profilbild sowie die Möglichkeit zum Abmelden anzeigen.
+Das System SHALL unter `GET /api/me` Name, E-Mail und Profilbild des angemeldeten Nutzers liefern, soweit Auth0 sie übermittelt. Fehlt der Name, MUST der Benutzername oder Spitzname aus Auth0 angezeigt werden. Das Frontend MUST den Namen oder das Profilbild sowie die Möglichkeit zum Abmelden anzeigen.
 
 #### Scenario: Profil
 - **WHEN** ein angemeldeter Nutzer die App öffnet

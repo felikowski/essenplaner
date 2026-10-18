@@ -1,7 +1,8 @@
 ## 1. Vorbereitung
 
-- [ ] 1.1 Anleitung in `docs/auth0-setup.md`: Tenant, Regular Web Application, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Anmeldemethoden, Selbstregistrierung abschalten, optionale Post-Login-Action; anhand der Anleitung die Anwendung anlegen und die Produktionswerte vor dem ersten manuellen Deploy in `/etc/essenplaner/production.env` hinterlegen
-- [ ] 1.2 Neue Konfiguration (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`, `ALLOWED_EMAILS`) mit Prüfung beim Start; Test: fehlender Wert → Start bricht mit Nennung der Variable ab
+- [ ] 1.1 Anleitung in `docs/auth0-setup.md`: vorhandener Tenant, Regular Web Application, eigene Datenbank-Connection `essenplaner-users` nur für diese Application mit „Disable Sign Ups“, Callback-/Logout-/Web-Origin-URLs für lokal und Produktion, Konten anlegen, Nutzer-IDs ablesen; danach im Chrome des Nutzers (jeweils nach Zustimmung) Application und Connection einrichten und klären, ob die Anmeldung mit Benutzername geht und ob Auth0 trotzdem eine E-Mail verlangt
+- [ ] 1.2 Der Nutzer legt die Familienkonten in `essenplaner-users` an; Claude liest Nutzer-IDs und Client-Secret ab und hinterlegt die Produktionswerte vor dem ersten manuellen Deploy per SSH in `/etc/essenplaner/production.env` (nicht im Chat nennen)
+- [ ] 1.3 Neue Konfiguration (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `PUBLIC_URL`, `ALLOWED_SUBJECTS`) mit Prüfung beim Start; Test: fehlender Wert → Start bricht mit Nennung der Variable ab
 
 ## 2. Sitzungen
 
@@ -11,7 +12,7 @@
 ## 3. Login-Flow
 
 - [ ] 3.1 OIDC-Provider per Discovery von `AUTH0_DOMAIN`; `GET /api/auth/login` mit state/nonce/PKCE und validiertem `returnTo`; Tests für relative Pfade, `//evil` und absolute URLs
-- [ ] 3.2 `GET /api/auth/callback` mit Token-Prüfung, `email_verified` und Freigabeliste; Tests gegen einen Fake-OIDC-Provider: Erfolg, falscher state, falscher nonce, Auth0-Fehler am Callback, nicht freigegeben, E-Mail unverifiziert
+- [ ] 3.2 `GET /api/auth/callback` mit Token-Prüfung und Freigabeliste der Nutzer-IDs; Tests gegen einen Fake-OIDC-Provider: Erfolg, falscher state, falscher nonce, Auth0-Fehler am Callback, nicht freigegebene ID, freigegebenes Konto mit `email_verified: false` bzw. ohne E-Mail wird zugelassen
 - [ ] 3.3 `POST /api/auth/logout` mit Weiterleitung zu `/oidc/logout` sowie `GET /api/me`; Tests prüfen gelöschte Sitzung und die Logout-URL
 
 ## 4. Schutz
@@ -23,10 +24,10 @@
 
 ## 5. Frontend
 
-- [ ] 5.1 Login-Seite mit „Anmelden“ und Fehlermeldungen („Dieses Konto hat keinen Zugriff“, „Bitte E-Mail-Adresse bestätigen“, „Anmeldung abgebrochen“); Test
+- [ ] 5.1 Login-Seite mit „Anmelden“ und Fehlermeldungen („Dieses Konto hat keinen Zugriff“, „Anmeldung abgebrochen“); Test
 - [ ] 5.2 401-Behandlung in `HttpPlannerApi` → Weiterleitung zum Login mit `returnTo`; Test
 - [ ] 5.3 Kopfzeile mit Profil und „Abmelden“; Test
-- [ ] 5.4 Feature-Branch manuell über `deploy.yml` auf den VPS ausliefern, während HTTP Basic Auth noch aktiv ist; unter `https://essenplaner.srv1115517.hstgr.cloud` mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit fremdem Konto abgewiesen werden, Deep-Link nach Login erreichen und sichere Cookies prüfen
+- [ ] 5.4 Feature-Branch manuell über `deploy.yml` auf den VPS ausliefern, während HTTP Basic Auth noch aktiv ist; unter `https://essenplaner.srv1115517.hstgr.cloud` mit freigegebenem Konto an- und abmelden (danach fragt Auth0 erneut), mit einem nicht freigegebenen Konto abgewiesen werden, Deep-Link nach Login erreichen und sichere Cookies prüfen
 
 ## 6. Abschluss
 
