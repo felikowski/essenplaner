@@ -122,6 +122,10 @@ jobs:
           # Festgelegter Host-Schlüssel statt ssh-keyscan: ein untergeschobener Server fällt auf.
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+          # Nur IPv4: Der VPS hat auch einen AAAA-Eintrag, GitHub-Runner haben aber nicht immer eine IPv6-Route
+          # ("Network is unreachable"). Gilt für ssh und scp.
+          printf 'Host *\n  AddressFamily inet\n' > ~/.ssh/config
+          chmod 600 ~/.ssh/config
 
       - name: Compose-Datei kopieren
         run: |
