@@ -70,12 +70,14 @@ func Recover(logger *slog.Logger, next http.Handler) http.Handler {
 
 // SecurityHeaders setzt Schutz-Header für alle Antworten. Bilder importierter Rezepte liegen auf fremden
 // https-Servern, deshalb erlaubt img-src https:. Weiterleitungen zu Auth0 sind Navigationen und fallen nicht unter die CSP.
+// X-Robots-Tag hält die private App samt Anmeldeseite aus Suchmaschinen heraus.
 func SecurityHeaders(hsts bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("X-Robots-Tag", "noindex, nofollow")
 		if hsts {
 			h.Set("Strict-Transport-Security", "max-age=31536000")
 		}
