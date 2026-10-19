@@ -34,3 +34,4 @@
 - [x] 6.2 Im Browser-Pane bei 375×812 mit Mock-Daten beide Ansichten durchklicken (Umschalter passt in die Zeile, Namen umbrechen nicht unschön) und einen Screenshot ablegen.
   - Umsetzung: statt Mock-Daten gegen das echte Backend (Migration 009 auf frischer Datenbank, Platzhalter-Auth0-Konfiguration, zwei von Hand angelegte Sitzungen „felix“ und „linh“) mit Daten über die API: Plan-Übernahme, Eingabefeld, Batch, Vorrat. Geprüft: Namen am Artikel, Herkunftsansicht mit geteilten Karotten (2 + 2), gemeinsames Abhaken, gemerkte Ansicht nach dem Neuladen, Herkunftsdialog „… · Felix“, keine Auth0-Kennung in der Antwort. Screenshot unter `docs/add-shopping-item-attribution-mobile.jpg`. Die Druckvorschau ist nicht im Browser geprüft, nur per Seitentest.
 - [x] 6.3 README-Abschnitt zur Einkaufsliste um Namen und Herkunftsansicht ergänzen.
+- [x] 6.4 Live auf dem VPS nach dem Deploy (main 43e680a) vom Nutzer geprüft, ohne Befund (2026-10-19).
