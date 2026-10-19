@@ -180,6 +180,13 @@ werden aus Detailansicht und Wochenplan übernommen. Zeitangaben wie „10 Minut
 direkt einen benannten Timer. Gängige Zutaten zeigen auf Wunsch Ersatzmöglichkeiten. In der Detailansicht
 lassen sich Rezepte außerdem teilen oder drucken.
 
+Ein Tippen auf einen Schritt (oder auf „Zutaten“ darunter) hebt die Zutaten hervor, die er erwähnt, und
+zeigt sie mit umgerechneter Menge direkt unter dem Schritt; dort lassen sie sich auch abhaken. Im
+Schritt-Modus stehen die Zutaten des aktuellen Schritts immer unter der Karte. Erkannt werden Zutaten über
+ihre Namen, auch im Plural und in zusammengesetzten Wörtern („Knoblauch“ findet „Knoblauchzehen“,
+„Reis“ findet „Basmatireis“). Sammelbegriffe wie „das Gemüse“ oder „alles“ werden bewusst nicht aufgelöst;
+dann fehlt die Zutat unter dem Schritt oder es erscheint „Keine Zutaten erkannt“.
+
 Mehrere freie oder aus Schritten gestartete Timer laufen parallel und erscheinen auf jeder Seite. Sie
 werden auf diesem Gerät gespeichert und stimmen nach einem Neuladen weiter. Solange die App geöffnet ist,
 meldet ein abgelaufener Timer sich mit Dialog, Ton und – wenn unterstützt – Vibration beziehungsweise

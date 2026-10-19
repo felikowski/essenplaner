@@ -1830,9 +1830,103 @@ img {
   cursor: pointer;
 }
 
-.cooking-steps p {
+.cooking-step {
   flex: 1;
+  min-width: 0;
+}
+
+.cooking-steps p {
   padding-top: var(--space-2);
+  cursor: pointer;
+}
+
+.cooking-steps .is-selected p {
+  font-weight: 600;
+}
+
+.cooking-step__toggle {
+  min-height: 2.75rem;
+  margin-top: var(--space-1);
+  padding: var(--space-1) 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.cooking-step__toggle[aria-expanded='true'] {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cooking-ingredients li > button[role='checkbox'] {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.cooking-ingredients .is-highlighted > button[role='checkbox'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: inset 4px 0 0 var(--color-accent);
+}
+
+.step-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-ingredients button {
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-accent);
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.step-ingredients .is-checked button {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.step-ingredients__empty {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.step-mode .step-ingredients,
+.step-mode .step-ingredients__empty {
+  margin-top: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cooking-ingredients li > button[role='checkbox'] {
+    transition: none;
+  }
+}
+
+@media print {
+  .cooking-ingredients .is-highlighted > button[role='checkbox'] {
+    border-color: var(--color-border);
+    background: none;
+    box-shadow: none;
+  }
+
+  .cooking-steps .is-selected p {
+    font-weight: inherit;
+  }
 }
 
 .step-time {
