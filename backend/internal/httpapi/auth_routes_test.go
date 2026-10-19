@@ -74,6 +74,7 @@ func TestSecurityHeaders(t *testing.T) {
 			"Content-Security-Policy":   "default-src 'self'; img-src 'self' https: data:",
 			"X-Content-Type-Options":    "nosniff",
 			"Referrer-Policy":           "strict-origin-when-cross-origin",
+			"X-Robots-Tag":              "noindex, nofollow",
 			"Strict-Transport-Security": "max-age=31536000",
 		}
 		for name, value := range want {
