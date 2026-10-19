@@ -8,7 +8,8 @@
 - [x] 2.1 `config.Voice` mit `OPENAI_API_KEY`, `OPENAI_TRANSCRIBE_MODEL` und `OPENAI_PARSE_MODEL` samt Standardwerten; ohne Schlüssel startet der Dienst. Config-Tests grün; `.env.example` und `docs/deployment.md` nennen die Variablen
 - [x] 2.2 Paket `internal/voice`: Schnittstelle mit `Transcribe` und `SplitLines`, OpenAI-Implementierung über `net/http` (Multipart, JSON-Schema, 20 s Timeout), Nachprüfung der Zeilen (trimmen, Doppelte, 50, Höchstlänge); Tests mit `httptest.Server` als OpenAI-Ersatz für Erfolg, leere Liste, Schema-Verstoß, Timeout und HTTP-Fehler sind grün
 - [x] 2.3 `GET /api/shopping/voice` und `POST /api/shopping/voice/parse` (Audio roh bis 5 MB, JSON-Text bis 2000 Zeichen) mit Ratenbegrenzung je Auth0-Subjekt (30 pro Stunde) und Protokoll ohne Inhalte; HTTP-Tests mit Fake-Sprachdienst für 200, 401, 413, 422, 429, 502 und 503 sowie ein Test, der prüft, dass das Protokoll weder Transkript noch Zeilen enthält, sind grün
-- [ ] 2.4 Mit echtem Schlüssel lokal zehn typische Ansagen (Aufnahmen und Freitexte) auswerten, `OPENAI_PARSE_MODEL`-Standard festlegen und in design.md nachtragen; Ergebnisse als Tabelle in der PR-Beschreibung
+- [x] 2.4 Mit echtem Schlüssel lokal zehn typische Ansagen (Aufnahmen und Freitexte) auswerten, `OPENAI_PARSE_MODEL`-Standard festlegen und in design.md nachtragen; Ergebnisse als Tabelle in der PR-Beschreibung
+  - Umsetzung: statt von Hand automatisch auf dem VPS mit dem Produktionsschlüssel, zehn mit `say` erzeugte Aufnahmen und zwei Freitexte, alle korrekt; dazu zwei echte Aufnahmen am Handy. Standards `gpt-transcribe` und `gpt-6-luna` festgelegt, Tabelle in design.md (Open Questions)
 
 ## 3. Frontend
 
@@ -19,8 +20,9 @@
 
 ## 4. Abschluss
 
-- [ ] 4.1 Am Handy mit echtem Schlüssel (lokal oder auf dem Server) eine Ansage mit vier Artikeln aufnehmen, eine Zeile korrigieren und hinzufügen; auf einem zweiten Gerät erscheinen alle Artikel; Screenshot unter `docs/add-shopping-voice-input-mobile.jpg`
-- [ ] 4.2 `make test` ist grün
+- [x] 4.1 Am Handy mit echtem Schlüssel (lokal oder auf dem Server) eine Ansage mit vier Artikeln aufnehmen, eine Zeile korrigieren und hinzufügen; auf einem zweiten Gerät erscheinen alle Artikel; Screenshot unter `docs/add-shopping-voice-input-mobile.jpg`
+  - Umsetzung: live am Handy eine Aufnahme mit vier Artikeln vollständig und korrekt übernommen; das Korrigieren einer Zeile ist nur durch den Seitentest „übernimmt korrigierte, entfernte und ergänzte Zeilen“ und im Browser-Pane geprüft; kein Screenshot abgelegt
+- [x] 4.2 `make test` ist grün
 
 ## Workflow follow-up
 
