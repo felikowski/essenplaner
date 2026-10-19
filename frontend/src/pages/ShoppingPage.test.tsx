@@ -1,6 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockPlannerApi } from '../api/MockPlannerApi'
+import { RequestError } from '../api/request'
 import { loadMockFiles } from '../test/mockData'
 import { currentUrl, renderApp } from '../test/renderApp'
 import { STORE_FILTER_KEY } from './ShoppingPage'
@@ -224,5 +225,203 @@ describe('Vorrat', () => {
     const { user } = renderApp('/einkauf/vorrat', api)
     await user.click(await screen.findByRole('button', { name: 'Kaffee aus dem Vorrat entfernen' }))
     expect(await screen.findByText(/Noch nichts im Vorrat/)).toBeInTheDocument()
+  })
+})
+
+/** Ersatz für MediaRecorder: Beim Stoppen liefert er ein kleines Stück „Audio“. */
+class FakeRecorder {
+  static instances: FakeRecorder[] = []
+  static isTypeSupported = (type: string) => type === 'audio/mp4'
+  state: 'inactive' | 'recording' = 'inactive'
+  mimeType: string
+  ondataavailable: ((event: { data: Blob }) => void) | null = null
+  onstop: (() => void) | null = null
+
+  constructor(_stream: unknown, options?: { mimeType?: string }) {
+    this.mimeType = options?.mimeType ?? ''
+    FakeRecorder.instances.push(this)
+  }
+
+  start() {
+    this.state = 'recording'
+  }
+
+  stop() {
+    this.state = 'inactive'
+    this.ondataavailable?.({ data: new Blob(['audio'], { type: this.mimeType }) })
+    this.onstop?.()
+  }
+}
+
+function stubMicrophone() {
+  const track = { stop: vi.fn() }
+  FakeRecorder.instances = []
+  vi.stubGlobal('MediaRecorder', FakeRecorder)
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track] }) },
+  })
+  return track
+}
+
+function lineInputs(): HTMLInputElement[] {
+  return screen.queryAllByRole('textbox', { name: /^Zeile \d+$/ }) as HTMLInputElement[]
+}
+
+async function openVoiceDialog(user: ReturnType<typeof renderApp>['user']) {
+  await user.click(await screen.findByRole('button', { name: 'Einkauf ansagen' }))
+  return screen.getByRole('dialog', { name: 'Einkauf ansagen' })
+}
+
+async function evaluateText(user: ReturnType<typeof renderApp>['user'], text: string) {
+  const dialog = await openVoiceDialog(user)
+  await user.type(within(dialog).getByRole('textbox', { name: /Text|Einkaufsliste/ }), text)
+  await user.click(within(dialog).getByRole('button', { name: 'Auswerten' }))
+  return dialog
+}
+
+describe('Einkauf ansagen', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    Reflect.deleteProperty(navigator, 'mediaDevices')
+  })
+
+  it('fehlt, wenn der Sprachdienst nicht konfiguriert ist', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    vi.spyOn(api, 'getVoiceAvailability').mockResolvedValue(false)
+    const { user } = renderApp('/einkauf', api)
+
+    await user.type(await screen.findByRole('textbox', { name: 'Artikel hinzufügen' }), 'Kaffee{Enter}')
+    expect(await screen.findByRole('checkbox', { name: 'Kaffee' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Einkauf ansagen' })).not.toBeInTheDocument()
+  })
+
+  it('beendet die Aufnahme nach 60 Sekunden und wertet sie aus', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const track = stubMicrophone()
+    const api = new MockPlannerApi(loadMockFiles)
+    const parse = vi.spyOn(api, 'parseShoppingVoice')
+    const { user } = renderApp('/einkauf', api)
+
+    const dialog = await openVoiceDialog(user)
+    await user.click(within(dialog).getByRole('button', { name: 'Aufnahme starten' }))
+    expect(await within(dialog).findByRole('button', { name: 'Fertig' })).toBeInTheDocument()
+    expect(FakeRecorder.instances[0]).toMatchObject({ state: 'recording', mimeType: 'audio/mp4' })
+
+    await act(() => vi.advanceTimersByTimeAsync(60_000))
+
+    await vi.waitFor(() => expect(lineInputs().map((input) => input.value)).toEqual(['2 Gurken', 'Feta', 'Bier', 'Spülmittel']))
+    expect(FakeRecorder.instances[0].state).toBe('inactive')
+    expect(track.stop).toHaveBeenCalled()
+    const audio = parse.mock.calls[0][0] as Blob
+    expect(audio).toBeInstanceOf(Blob)
+    expect(audio.type).toBe('audio/mp4')
+  })
+
+  it('wertet einen Freitext aus, wenn der Browser nicht aufnehmen kann', async () => {
+    const { user } = renderApp('/einkauf')
+    const dialog = await openVoiceDialog(user)
+    expect(within(dialog).getByText(/Aufnehmen geht in diesem Browser nicht/)).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Aufnahme starten' })).not.toBeInTheDocument()
+
+    await user.type(within(dialog).getByRole('textbox', { name: 'Einkaufsliste' }), '500g Hack{Enter}Tomaten (Dose){Enter}Parmesan')
+    await user.click(within(dialog).getByRole('button', { name: 'Auswerten' }))
+
+    await vi.waitFor(() => expect(lineInputs().map((input) => input.value)).toEqual(['500 g Hack', 'Tomaten (Dose)', 'Parmesan']))
+    expect(within(dialog).getByRole('button', { name: '3 Artikel hinzufügen' })).toBeInTheDocument()
+  })
+
+  it('meldet, wenn nichts zum Einkaufen erkannt wurde, und bietet eine neue Aufnahme an', async () => {
+    stubMicrophone()
+    const { user } = renderApp('/einkauf')
+    const dialog = await evaluateText(user, ', ,')
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Ich habe nichts zum Einkaufen herausgehört.')
+    expect(within(dialog).getByRole('button', { name: 'Neu aufnehmen' })).toBeInTheDocument()
+  })
+
+  it('zeigt in der Vorschau Kategorie und Zusammenfassen', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    let list = await api.createShoppingCategory('Käsetheke')
+    list = await api.addShoppingItem('Feta')
+    const feta = list.items.find((item) => item.name === 'Feta')!
+    await api.updateShoppingItem(feta.id, { categoryId: list.categories.find((c) => c.name === 'Käsetheke')!.id })
+    await api.deleteShoppingItem(feta.id)
+    await api.addShoppingItem('Bier')
+    const { user } = renderApp('/einkauf', api)
+
+    const dialog = await evaluateText(user, 'Feta, Bier')
+
+    await vi.waitFor(() => expect(lineInputs()).toHaveLength(2))
+    const [fetaLine, beerLine] = within(dialog).getAllByRole('listitem')
+    expect(fetaLine).toHaveTextContent('Käsetheke')
+    expect(fetaLine).not.toHaveTextContent('kommt zu')
+    expect(beerLine).toHaveTextContent('kommt zu Bier dazu')
+  })
+
+  it('lässt die Liste beim Abbrechen unverändert', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const add = vi.spyOn(api, 'addShoppingItems')
+    const { user } = renderApp('/einkauf', api)
+    const version = (await api.getShoppingList())!.version
+
+    const dialog = await evaluateText(user, 'Feta, Bier')
+    await vi.waitFor(() => expect(lineInputs()).toHaveLength(2))
+    await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(add).not.toHaveBeenCalled()
+    expect((await api.getShoppingList())!.version).toBe(version)
+    expect(screen.getByText('Die Einkaufsliste ist leer.')).toBeInTheDocument()
+  })
+
+  it('übernimmt korrigierte, entfernte und ergänzte Zeilen', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const preview = vi.spyOn(api, 'previewShoppingLines')
+    const { user } = renderApp('/einkauf', api)
+
+    const dialog = await evaluateText(user, 'Raum, Limetten, Eis')
+    await vi.waitFor(() => expect(lineInputs()).toHaveLength(3))
+    await user.clear(lineInputs()[0])
+    await user.type(lineInputs()[0], 'Rum')
+    await vi.waitFor(() => expect(preview).toHaveBeenLastCalledWith(['Rum', 'Limetten', 'Eis']))
+    await user.click(within(dialog).getByRole('button', { name: 'Zeile 3 entfernen' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Zeile hinzufügen' }))
+    await user.type(lineInputs()[2], 'Minze')
+    await user.click(within(dialog).getByRole('button', { name: '3 Artikel hinzufügen' }))
+
+    expect(await screen.findByText('Die angesagten Artikel sind auf der Liste.')).toBeInTheDocument()
+    for (const name of ['Rum', 'Limetten', 'Minze']) expect(screen.getByRole('checkbox', { name })).toBeInTheDocument()
+    for (const name of ['Raum', 'Eis']) expect(screen.queryByRole('checkbox', { name })).not.toBeInTheDocument()
+  })
+
+  it('fügt alle Zeilen in einem Schritt hinzu', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const add = vi.spyOn(api, 'addShoppingItems')
+    const { user } = renderApp('/einkauf', api)
+
+    const dialog = await evaluateText(user, 'zwei Gurken, Feta, noch Bier und Spülmittel')
+    await user.click(await within(dialog).findByRole('button', { name: '4 Artikel hinzufügen' }))
+
+    expect(await screen.findByRole('checkbox', { name: /Gurken/ })).toBeInTheDocument()
+    expect(add).toHaveBeenCalledTimes(1)
+    expect(add).toHaveBeenCalledWith(['2 Gurken', 'Feta', 'Bier', 'Spülmittel'])
+    for (const name of ['Feta', 'Bier', 'Spülmittel']) expect(screen.getByRole('checkbox', { name })).toBeInTheDocument()
+  })
+
+  it('meldet einen gestörten Sprachdienst, und das Eingabefeld funktioniert weiter', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    vi.spyOn(api, 'parseShoppingVoice').mockRejectedValue(
+      new RequestError('fehlgeschlagen: 502', 502, 'Die Spracherkennung ist gerade nicht erreichbar.'),
+    )
+    const { user } = renderApp('/einkauf', api)
+
+    const dialog = await evaluateText(user, 'Feta')
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Die Spracherkennung ist gerade nicht erreichbar.')
+    await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }))
+
+    await user.type(screen.getByRole('textbox', { name: 'Artikel hinzufügen' }), 'Feta{Enter}')
+    expect(await screen.findByRole('checkbox', { name: 'Feta' })).toBeInTheDocument()
   })
 })

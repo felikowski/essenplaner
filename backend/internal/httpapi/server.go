@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/felikowski/essenplaner/backend/internal/store"
+	"github.com/felikowski/essenplaner/backend/internal/voice"
 )
 
 const maxBodyBytes = 1 << 20
@@ -28,6 +29,9 @@ type Server struct {
 	auth     Authenticator
 	hsts     bool
 	logger   *slog.Logger
+
+	voice        voice.Service
+	voiceLimiter *rateLimiter
 }
 
 // Authenticator schützt die API (umgesetzt von auth.Service). Ohne ihn ist die API offen, das gibt es nur in Tests.
@@ -138,6 +142,7 @@ func (s *Server) routes() *routes {
 	mux.HandleFunc("DELETE /api/tags/{key}", s.handleDeleteTag)
 	s.routeMenus(mux)
 	s.routeShopping(mux)
+	s.routeVoice(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")
 	})

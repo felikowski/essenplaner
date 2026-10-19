@@ -7,6 +7,7 @@ import type {
   ShoppingImportResult,
   ShoppingItem,
   ShoppingItemPatch,
+  ShoppingLinePreview,
   ShoppingList,
   ShoppingSource,
   Staple,
@@ -125,6 +126,49 @@ function checkName(text: string, max: number, what: string): string {
   return trimmed
 }
 
+const MAX_LINES = 50
+
+function checkLines(texts: string[]): string[] {
+  if (texts.length === 0 || texts.length > MAX_LINES) throw invalid(`Es lassen sich 1 bis ${MAX_LINES} Artikel auf einmal hinzufügen.`)
+  return texts.map((text, index) => {
+    try {
+      return checkName(text, 200, 'Der Artikel')
+    } catch (error) {
+      throw invalid(`Zeile ${index + 1}: ${(error as RequestError).serverMessage}`)
+    }
+  })
+}
+
+const NUMBER_WORDS: Record<string, string> = {
+  ein: '1', eine: '1', einen: '1', zwei: '2', drei: '3', vier: '4', fünf: '5', sechs: '6', sieben: '7', acht: '8',
+  neun: '9', zehn: '10', zwölf: '12',
+}
+const FILLER = /^(?:noch|bitte|wir brauchen|brauchen|außerdem|dann|auch)\s+/i
+
+/**
+ * Zerlegt eine Ansage ohne Sprachmodell, damit Tests und der Mock-Modus ohne Netz laufen:
+ * an Zeilenumbrüchen, Kommas und „und“, mit Zahlwörtern als Ziffern und ohne einfache Füllwörter.
+ */
+export function splitShoppingText(text: string): string[] {
+  const seen = new Set<string>()
+  const lines: string[] = []
+  for (const raw of text.split(/\n|,|;|\s+und\s+/)) {
+    let line = raw.trim().split(/\s+/).join(' ')
+    while (FILLER.test(line)) line = line.replace(FILLER, '')
+    line = line
+      .replace(/^(\p{L}+)\s/u, (match, word: string) => (NUMBER_WORDS[word.toLowerCase()] ? `${NUMBER_WORDS[word.toLowerCase()]} ` : match))
+      .replace(/^(\d+(?:[.,]\d+)?)([a-zA-Z]+)\b/, '$1 $2')
+      .replace(/[.!?]+$/, '')
+    if (!line) continue
+    const key = shoppingKey(parseIngredient(line).name || line)
+    if (seen.has(key)) continue
+    seen.add(key)
+    lines.push(line.slice(0, 200))
+    if (lines.length === MAX_LINES) break
+  }
+  return lines
+}
+
 export class MockShopping {
   private version = 1
   private categories: { id: string; slug?: string; name: string; position: number }[] = BUILTIN.map(
@@ -152,6 +196,39 @@ export class MockShopping {
     const line = checkName(text, 200, 'Der Artikel')
     const parsed = parseIngredient(line)
     this.addPart(parsed.name, { quantity: parsed.quantity, unit: parsed.unit, source: { kind: 'manual', text: line } })
+    return this.changed()
+  }
+
+  /** Wie internal/store PreviewShoppingLines: prüft alle Zeilen und zeigt, wohin sie kämen. */
+  previewLines(texts: string[]): ShoppingLinePreview[] {
+    const earlier = new Map<string, ShoppingLinePreview>()
+    return checkLines(texts).map((text) => {
+      const name = parseIngredient(text).name.trim().split(/\s+/).join(' ')
+      const preview: ShoppingLinePreview = { text, name, categoryId: '', category: '', mergesInto: null }
+      if (!name) return preview
+      const place = this.place(name)
+      preview.name = place.name
+      const first = earlier.get(place.key)
+      if (place.item) {
+        preview.categoryId = place.item.categoryId
+        preview.mergesInto = place.item.name
+      } else if (first) {
+        preview.categoryId = first.categoryId
+        preview.mergesInto = first.name
+      } else {
+        preview.categoryId = place.categoryId
+        earlier.set(place.key, preview)
+      }
+      preview.category = this.categories.find((c) => c.id === preview.categoryId)?.name ?? ''
+      return preview
+    })
+  }
+
+  addItems(texts: string[]): ShoppingList {
+    for (const line of checkLines(texts)) {
+      const parsed = parseIngredient(line)
+      this.addPart(parsed.name, { quantity: parsed.quantity, unit: parsed.unit, source: { kind: 'manual', text: line } })
+    }
     return this.changed()
   }
 
@@ -356,23 +433,29 @@ export class MockShopping {
     return this.changed()
   }
 
-  private addPart(rawName: string, part: Part) {
+  /** Folgt Zusammenführungen und sucht den offenen Artikel oder die Kategorie für einen neuen. */
+  private place(rawName: string) {
     let name = rawName.trim().split(/\s+/).join(' ')
-    if (!name) return
     let key = shoppingKey(name)
     const alias = this.aliases.get(key)
     if (alias) {
       key = alias.toKey
       name = alias.toName
     }
-    let item = this.items.find((candidate) => candidate.key === key && !candidate.checked)
+    const item = this.items.find((candidate) => candidate.key === key && !candidate.checked)
+    const pref = this.prefs.get(key)
+    const suggested = `cat-${SUGGESTIONS[key] ?? 'sonstiges'}`
+    const categoryId = pref?.categoryId ?? (this.categories.some((c) => c.id === suggested) ? suggested : 'cat-sonstiges')
+    return { key, name, item, categoryId, storeId: pref?.storeId }
+  }
+
+  private addPart(rawName: string, part: Part) {
+    if (!rawName.trim()) return
+    const place = this.place(rawName)
+    let item = place.item
     if (!item) {
-      const pref = this.prefs.get(key)
-      const suggested = `cat-${SUGGESTIONS[key] ?? 'sonstiges'}`
-      const categoryId =
-        pref?.categoryId ?? (this.categories.some((c) => c.id === suggested) ? suggested : 'cat-sonstiges')
-      item = { id: `s-${this.nextId++}`, key, name, categoryId, checked: false, parts: [] }
-      if (pref?.storeId) item.storeId = pref.storeId
+      item = { id: `s-${this.nextId++}`, key: place.key, name: place.name, categoryId: place.categoryId, checked: false, parts: [] }
+      if (place.storeId) item.storeId = place.storeId
       this.items.push(item)
     }
     item.parts.push(part)

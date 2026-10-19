@@ -13,6 +13,7 @@ import (
 func (s *Server) routeShopping(mux *routes) {
 	mux.HandleFunc("GET /api/shopping/list", s.handleShoppingList)
 	mux.HandleFunc("POST /api/shopping/items", s.handleAddShoppingItem)
+	mux.HandleFunc("POST /api/shopping/items/batch", s.handleAddShoppingItems)
 	mux.HandleFunc("PATCH /api/shopping/items/{id}", s.handleUpdateShoppingItem)
 	mux.HandleFunc("PUT /api/shopping/items/{id}/checked", s.handleCheckShoppingItem)
 	mux.HandleFunc("DELETE /api/shopping/items/{id}", s.handleDeleteShoppingItem)
@@ -111,6 +112,33 @@ func (s *Server) handleAddShoppingItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.listAfter(w, r, s.shopping.AddShoppingItem(r.Context(), *body.Text))
+}
+
+// handleAddShoppingItems fügt mehrere Zeilen hinzu; mit ?dryRun=1 zeigt es nur, wo sie landen würden.
+func (s *Server) handleAddShoppingItems(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Texts []string `json:"texts"`
+	}
+	if !decodeBody(w, r, &body) {
+		return
+	}
+	if body.Texts == nil {
+		writeError(w, http.StatusBadRequest, `"texts" is required`)
+		return
+	}
+	if r.URL.Query().Get("dryRun") == "1" {
+		lines, err := s.shopping.PreviewShoppingLines(r.Context(), body.Texts)
+		if s.writeShoppingError(w, r, err) {
+			return
+		}
+		writeJSON(w, http.StatusOK, linesBody{Lines: lines})
+		return
+	}
+	s.listAfter(w, r, s.shopping.AddShoppingItems(r.Context(), body.Texts))
+}
+
+type linesBody struct {
+	Lines []store.ShoppingLinePreview `json:"lines"`
 }
 
 func (s *Server) handleUpdateShoppingItem(w http.ResponseWriter, r *http.Request) {

@@ -97,3 +97,25 @@ func TestFromEnvInvalidPublicURL(t *testing.T) {
 		t.Errorf("http://localhost muss erlaubt sein: %v", err)
 	}
 }
+
+func TestFromEnvVoice(t *testing.T) {
+	cfg, err := FromEnv(env(withAuth(nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Voice.Enabled() || cfg.Voice.TranscribeModel != DefaultTranscribeModel || cfg.Voice.ParseModel != DefaultParseModel {
+		t.Errorf("ohne Schlüssel: %+v", cfg.Voice)
+	}
+
+	cfg, err = FromEnv(env(withAuth(map[string]string{
+		"OPENAI_API_KEY":          " sk-test ",
+		"OPENAI_TRANSCRIBE_MODEL": "whisper-1",
+		"OPENAI_PARSE_MODEL":      "gpt-x",
+	})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Voice.Enabled() || cfg.Voice.APIKey != "sk-test" || cfg.Voice.TranscribeModel != "whisper-1" || cfg.Voice.ParseModel != "gpt-x" {
+		t.Errorf("mit Schlüssel: %+v", cfg.Voice)
+	}
+}

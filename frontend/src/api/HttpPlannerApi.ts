@@ -18,7 +18,9 @@ import type {
   ShoppingAlias,
   ShoppingImportResult,
   ShoppingItemPatch,
+  ShoppingLinePreview,
   ShoppingList,
+  ShoppingVoiceResult,
   Staple,
   TagSummary,
   WeekPlan,
@@ -263,6 +265,29 @@ export class HttpPlannerApi implements PlannerApi {
 
   addStaplesToList(ids: string[]): Promise<ShoppingList> {
     return send('POST', '/api/shopping/staples/add', { ids })
+  }
+
+  async getVoiceAvailability(): Promise<boolean> {
+    const { available } = await request<{ available: boolean }>('/api/shopping/voice')
+    return available
+  }
+
+  parseShoppingVoice(input: Blob | string): Promise<ShoppingVoiceResult> {
+    if (typeof input === 'string') return send('POST', '/api/shopping/voice/parse', { text: input })
+    return request('/api/shopping/voice/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': input.type || 'audio/webm' },
+      body: input,
+    })
+  }
+
+  async previewShoppingLines(texts: string[]): Promise<ShoppingLinePreview[]> {
+    const { lines } = await send<{ lines: ShoppingLinePreview[] }>('POST', '/api/shopping/items/batch?dryRun=1', { texts })
+    return lines
+  }
+
+  addShoppingItems(texts: string[]): Promise<ShoppingList> {
+    return send('POST', '/api/shopping/items/batch', { texts })
   }
 }
 

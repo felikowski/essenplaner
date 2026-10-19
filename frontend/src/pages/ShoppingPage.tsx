@@ -1,9 +1,10 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { usePlannerApi } from '../api/context'
 import { RequestError } from '../api/request'
 import { ImportFromPlanDialog } from '../components/ImportFromPlanDialog'
 import { ShoppingItemDialog } from '../components/ShoppingItemDialog'
+import { ShoppingVoiceDialog } from '../components/ShoppingVoiceDialog'
 import { LoadError, Loading } from '../components/Status'
 import { toIsoDate } from '../lib/isoWeek'
 import { groupByCategory, shareText, visibleUnder } from '../lib/shopping'
@@ -30,7 +31,7 @@ function writeStoreFilter(storeId: string | null) {
   }
 }
 
-type Dialog = { kind: 'item'; id: string } | { kind: 'import' }
+type Dialog = { kind: 'item'; id: string } | { kind: 'import' } | { kind: 'voice' }
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof RequestError && error.status === 422 && error.serverMessage ? error.serverMessage : fallback
@@ -48,7 +49,20 @@ export function ShoppingPage() {
   const [busy, setBusy] = useState(false)
   const [storeFilter, setStoreFilter] = useState<string | null>(readStoreFilter)
   const [today] = useState(() => toIsoDate(new Date()))
+  const [voiceAvailable, setVoiceAvailable] = useState(false)
   useWakeLock()
+
+  useEffect(() => {
+    let active = true
+    // Ohne Sprachdienst (oder wenn die Abfrage scheitert) fehlt nur der Knopf.
+    api.getVoiceAvailability().then(
+      (available) => active && setVoiceAvailable(available),
+      () => undefined,
+    )
+    return () => {
+      active = false
+    }
+  }, [api])
 
   if (error) return <LoadError message="Die Einkaufsliste konnte nicht geladen werden." onRetry={retry} />
   if (!list) return <Loading />
@@ -176,6 +190,22 @@ export function ShoppingPage() {
           placeholder="Artikel hinzufügen, z. B. 2 Packungen Kaffee"
           onChange={(event) => setText(event.target.value)}
         />
+        {voiceAvailable && (
+          <button
+            type="button"
+            className="button button--secondary shopping-add__voice"
+            aria-label="Einkauf ansagen"
+            title="Einkauf ansagen"
+            onClick={() => setDialog({ kind: 'voice' })}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"
+              />
+            </svg>
+          </button>
+        )}
         <button type="submit" className="button" disabled={!text.trim()}>
           Hinzufügen
         </button>
@@ -290,6 +320,17 @@ export function ShoppingPage() {
             setDialog(null)
             setImportError(null)
           }}
+        />
+      )}
+      {dialog?.kind === 'voice' && (
+        <ShoppingVoiceDialog
+          onAdded={(next) => {
+            apply(next)
+            setDialog(null)
+            setSaveError(null)
+            setNotice('Die angesagten Artikel sind auf der Liste.')
+          }}
+          onClose={() => setDialog(null)}
         />
       )}
       {openItem && (

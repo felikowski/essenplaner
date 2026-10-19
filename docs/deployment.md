@@ -55,6 +55,12 @@ Darin stehen die Auth0-Werte (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_S
 `ALLOWED_SUBJECTS`). `ALLOWED_SUBJECTS` enthält ein `|` und steht deshalb in einfachen
 Anführungszeichen, etwa `ALLOWED_SUBJECTS='auth0|6ad5…,auth0|6ad6…'`.
 
+Optional schaltet `OPENAI_API_KEY` die Spracheingabe der Einkaufsliste ein („Einkauf ansagen“).
+Fehlt der Schlüssel, startet die App normal, nur ohne diesen Knopf. Die Modelle lassen sich mit
+`OPENAI_TRANSCRIBE_MODEL` (Standard `gpt-transcribe`) und `OPENAI_PARSE_MODEL` (Standard `gpt-6-luna`)
+ändern, ohne ein neues Image zu bauen. Im OpenAI-Konto ein monatliches Budget-Limit setzen. Nach einer
+Änderung an `production.env` den Container neu starten.
+
 Den Public Key des CI-Schlüssels (siehe Schritt 3) in `/root/.ssh/authorized_keys` eintragen.
 
 ### 3. GitHub

@@ -253,3 +253,19 @@ export interface Staple {
   id: string
   text: string
 }
+
+/** Wohin eine Artikelzeile käme (Vorschau vor dem Hinzufügen). */
+export interface ShoppingLinePreview {
+  text: string
+  name: string
+  categoryId: string
+  category: string
+  /** Name des offenen Artikels, zu dem die Zeile käme; sonst null. */
+  mergesInto: string | null
+}
+
+/** Ergebnis einer ausgewerteten Ansage. */
+export interface ShoppingVoiceResult {
+  transcript: string
+  lines: ShoppingLinePreview[]
+}

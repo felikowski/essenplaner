@@ -83,6 +83,9 @@ docker run --rm -p 8080:8080 -v essenplaner-data:/data essenplaner
 | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` | – (Pflicht) | Application in Auth0 |
 | `PUBLIC_URL`    | – (Pflicht)             | Adresse der App, etwa `http://localhost:5173` |
 | `ALLOWED_SUBJECTS` | – (Pflicht)          | Auth0-Nutzer-IDs mit Zugriff, kommagetrennt  |
+| `OPENAI_API_KEY` | – (optional)           | Schaltet „Einkauf ansagen“ ein; ohne Schlüssel ist die Spracheingabe aus |
+| `OPENAI_TRANSCRIBE_MODEL` | `gpt-transcribe` | Modell für die Transkription               |
+| `OPENAI_PARSE_MODEL` | `gpt-6-luna`        | Modell für die Zerlegung in Artikelzeilen   |
 
 Im Container ist `DATABASE_PATH=/data/essenplaner.db` gesetzt. Ein Backup ist eine Kopie dieser
 Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 … ".backup …"`).
@@ -110,6 +113,9 @@ Datei (bei laufendem Server zusammen mit `-wal` und `-shm`, oder per `sqlite3 �
 | DELETE  | `/api/recipes/{id}`   | importiertes oder eigenes Rezept entfernen (bleibt in Plänen)   |
 | GET     | `/api/shopping/list`  | Einkaufsliste mit `ETag`, unverändert 304                        |
 | POST    | `/api/shopping/import` | Body `{"from": "2026-10-15", "to": "2026-10-21"}`: Zutaten aus dem Plan |
+| POST    | `/api/shopping/items/batch` | Body `{"texts": ["2 Gurken", …]}` (1 bis 50): alle oder keine; mit `?dryRun=1` nur die Vorschau `{"lines": […]}` |
+| GET     | `/api/shopping/voice` | `{"available": true}`, wenn die Spracheingabe konfiguriert ist |
+| POST    | `/api/shopping/voice/parse` | Aufnahme (`audio/webm`, `audio/mp4`, `audio/ogg`, bis 5 MB) oder `{"text": "…"}` → `{"transcript": "…", "lines": […]}`, schreibt nichts |
 | …       | `/api/shopping/…`     | Artikel, Kategorien, Geschäfte, Zusammenführungen, Vorrat (siehe `internal/httpapi/shopping.go`) |
 | GET/POST | `/api/menus`         | Menüs auflisten oder leer beziehungsweise aus einem Zeitraum anlegen |
 | GET/PATCH/DELETE | `/api/menus/{id}` | Menü lesen, Name und Beschreibung ändern oder löschen          |
@@ -216,6 +222,21 @@ Geschäfte und gemerkte Zusammenführungen verwaltet man in den Einstellungen.
 Die Seite fragt alle 10 Sekunden nach Änderungen, solange sie sichtbar ist, und hält den Bildschirm an.
 „Vorrat prüfen“ (`/einkauf/vorrat`) bringt angekreuzte Dinge, die immer im Haus sein sollen, auf die Liste.
 „Teilen“ nutzt das Teilen-Menü des Handys oder kopiert die Liste, „Drucken“ hat eine eigene Druckansicht.
+
+### Einkauf ansagen
+
+Mit dem Mikrofon-Knopf neben dem Eingabefeld („Einkauf ansagen“) sagt man mehrere Artikel auf einmal an,
+etwa „zwei Gurken, Feta, noch Bier und Spülmittel“ (höchstens eine Minute), oder fügt eine Liste als Text ein.
+Eine Vorschau zeigt die erkannten Zeilen („2 Gurken“, „Feta“ …) mit ihrer Kategorie und dem Hinweis, wenn ein
+Artikel zu einem vorhandenen dazukommt. Zeilen lassen sich dort korrigieren, entfernen und ergänzen; erst
+„4 Artikel hinzufügen“ schreibt sie auf die Liste, nach denselben Regeln wie das Eingabefeld.
+
+Voraussetzung ist `OPENAI_API_KEY` auf dem Server (siehe Konfiguration); ohne Schlüssel fehlt der Knopf.
+Die App schickt an OpenAI nur die Aufnahme bzw. den Text und als Schreibhilfe die Namen der Artikel auf der
+Liste und im Vorrat, nie Rezepte, Plan oder Nutzerdaten. Das Sprachmodell zerlegt nur in Zeilen; Kategorien
+und Zusammenfassen bleiben bei der App. Aufnahmen und Transkripte werden weder gespeichert noch protokolliert.
+Pro Person sind 30 Ansagen in der Stunde möglich. Aufnehmen braucht `MediaRecorder` und die Freigabe des
+Mikrofons; ohne beides bleibt das Textfeld.
 
 ## Rezepte per Link importieren
 

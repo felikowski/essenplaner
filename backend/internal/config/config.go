@@ -11,12 +11,43 @@ import (
 const (
 	DefaultPort         = 8080
 	DefaultDatabasePath = "./data/essenplaner.db"
+
+	DefaultTranscribeModel = "gpt-transcribe"
+	DefaultParseModel      = "gpt-6-luna"
 )
 
 type Config struct {
 	Port         int
 	DatabasePath string
 	Auth         Auth
+	Voice        Voice
+}
+
+// Voice ist der optionale Sprachdienst (OpenAI) für die Einkaufsliste. Ohne APIKey ist er aus.
+type Voice struct {
+	APIKey          string
+	TranscribeModel string
+	ParseModel      string
+}
+
+// Enabled meldet, ob ein Schlüssel hinterlegt ist.
+func (v Voice) Enabled() bool {
+	return v.APIKey != ""
+}
+
+func voiceFromEnv(getenv func(string) string) Voice {
+	v := Voice{
+		APIKey:          strings.TrimSpace(getenv("OPENAI_API_KEY")),
+		TranscribeModel: strings.TrimSpace(getenv("OPENAI_TRANSCRIBE_MODEL")),
+		ParseModel:      strings.TrimSpace(getenv("OPENAI_PARSE_MODEL")),
+	}
+	if v.TranscribeModel == "" {
+		v.TranscribeModel = DefaultTranscribeModel
+	}
+	if v.ParseModel == "" {
+		v.ParseModel = DefaultParseModel
+	}
+	return v
 }
 
 // Auth ist die Anmeldung über Auth0. Alle Werte sind Pflicht.
@@ -55,6 +86,7 @@ func FromEnv(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 	cfg.Auth = auth
+	cfg.Voice = voiceFromEnv(getenv)
 	return cfg, nil
 }
 
