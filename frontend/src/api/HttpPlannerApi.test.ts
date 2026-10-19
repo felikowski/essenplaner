@@ -226,4 +226,36 @@ describe('HttpPlannerApi', () => {
     await api.addStaplesToList(['st-1'])
     expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/staples/add', expect.objectContaining({ body: '{"ids":["st-1"]}' }))
   })
+
+  it('nutzt die Endpunkte der Spracheingabe', async () => {
+    const api = new HttpPlannerApi()
+    const line = { text: '2 Gurken', name: 'Gurken', categoryId: 'cat-obst-gemuese', category: 'Obst & Gemüse', mergesInto: null }
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ available: true }))
+    expect(await api.getVoiceAvailability()).toBe(true)
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/voice', expect.anything())
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ transcript: 'zwei Gurken', lines: [line] }))
+    const audio = new Blob(['x'], { type: 'audio/mp4' })
+    expect((await api.parseShoppingVoice(audio)).lines).toEqual([line])
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/shopping/voice/parse',
+      expect.objectContaining({ method: 'POST', body: audio, headers: { 'Content-Type': 'audio/mp4' } }),
+    )
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ transcript: 'Feta', lines: [line] }))
+    await api.parseShoppingVoice('Feta')
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/voice/parse', expect.objectContaining({ body: '{"text":"Feta"}' }))
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ lines: [line] }))
+    expect(await api.previewShoppingLines(['2 Gurken'])).toEqual([line])
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items/batch?dryRun=1', expect.objectContaining({ body: '{"texts":["2 Gurken"]}' }))
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ version: 2, categories: [], stores: [], items: [] }))
+    await api.addShoppingItems(['2 Gurken'])
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/shopping/items/batch', expect.objectContaining({ method: 'POST', body: '{"texts":["2 Gurken"]}' }))
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Die Spracherkennung ist gerade nicht erreichbar.' }, 502))
+    await expect(api.parseShoppingVoice('Feta')).rejects.toMatchObject({ status: 502, serverMessage: 'Die Spracherkennung ist gerade nicht erreichbar.' })
+  })
 })

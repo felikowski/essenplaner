@@ -30,7 +30,12 @@ const (
 const (
 	maxShoppingText = 200
 	maxShoppingName = 60
+	// MaxShoppingLines begrenzt, wie viele Zeilen auf einmal hinzukommen.
+	MaxShoppingLines = 50
 )
+
+// MaxShoppingText ist die Höchstlänge einer Artikelzeile.
+const MaxShoppingText = maxShoppingText
 
 // ShoppingCategory ist ein Gang im Laden.
 type ShoppingCategory struct {
@@ -112,6 +117,10 @@ type ShoppingStore interface {
 	ShoppingList(ctx context.Context) (ShoppingList, error)
 	ShoppingVersion(ctx context.Context) (int, error)
 	AddShoppingItem(ctx context.Context, text string) error
+	// PreviewShoppingLines zeigt, wie Zeilen einsortiert würden, ohne zu schreiben.
+	PreviewShoppingLines(ctx context.Context, texts []string) ([]ShoppingLinePreview, error)
+	// AddShoppingItems fügt alle Zeilen in einem Schritt hinzu oder keine.
+	AddShoppingItems(ctx context.Context, texts []string) error
 	UpdateShoppingItem(ctx context.Context, id string, patch ShoppingItemPatch) error
 	SetShoppingItemChecked(ctx context.Context, id string, checked bool) error
 	DeleteShoppingItem(ctx context.Context, id string) error
@@ -326,12 +335,8 @@ func addPart(ctx context.Context, tx *sql.Tx, name string, p part) error {
 	if name == "" {
 		return nil
 	}
-	key := shopping.Key(name)
-	var toKey, toName string
-	err := tx.QueryRowContext(ctx, "SELECT to_key, to_name FROM shopping_aliases WHERE from_key = ?", key).Scan(&toKey, &toName)
-	if err == nil {
-		key, name = toKey, toName
-	} else if !errors.Is(err, sql.ErrNoRows) {
+	key, name, err := resolveAlias(ctx, tx, name)
+	if err != nil {
 		return err
 	}
 
@@ -352,6 +357,20 @@ func addPart(ctx context.Context, tx *sql.Tx, name string, p part) error {
 		}
 	}
 	return insertPart(ctx, tx, itemID, p)
+}
+
+// resolveAlias folgt einer gemerkten Zusammenführung und liefert Schlüssel und Namen, unter denen der Artikel landet.
+func resolveAlias(ctx context.Context, tx *sql.Tx, name string) (key, resolved string, err error) {
+	key = shopping.Key(name)
+	var toKey, toName string
+	err = tx.QueryRowContext(ctx, "SELECT to_key, to_name FROM shopping_aliases WHERE from_key = ?", key).Scan(&toKey, &toName)
+	if err == nil {
+		return toKey, toName, nil
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return key, name, nil
+	}
+	return "", "", err
 }
 
 func insertPart(ctx context.Context, tx *sql.Tx, itemID string, p part) error {
@@ -418,6 +437,108 @@ func (db *DB) AddShoppingItem(ctx context.Context, text string) error {
 	parsed := ingredient.Parse(text)
 	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
 		return addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: text})
+	})
+}
+
+// ShoppingLinePreview beschreibt, wo eine Zeile landen würde.
+type ShoppingLinePreview struct {
+	Text       string `json:"text"`
+	Name       string `json:"name"`
+	CategoryID string `json:"categoryId"`
+	Category   string `json:"category"`
+	// MergesInto ist der Name des offenen Artikels, zu dem die Zeile käme, sonst nil.
+	MergesInto *string `json:"mergesInto"`
+}
+
+// shoppingLines prüft alle Zeilen, bevor eine davon verarbeitet wird.
+func shoppingLines(texts []string) ([]string, error) {
+	if len(texts) == 0 || len(texts) > MaxShoppingLines {
+		return nil, ErrInvalidShopping{fmt.Sprintf("Es lassen sich 1 bis %d Artikel auf einmal hinzufügen.", MaxShoppingLines)}
+	}
+	lines := make([]string, len(texts))
+	for i, text := range texts {
+		line, err := shoppingText(text, maxShoppingText, "Der Artikel")
+		if err != nil {
+			return nil, ErrInvalidShopping{fmt.Sprintf("Zeile %d: %s", i+1, err.Error())}
+		}
+		lines[i] = line
+	}
+	return lines, nil
+}
+
+func (db *DB) PreviewShoppingLines(ctx context.Context, texts []string) ([]ShoppingLinePreview, error) {
+	lines, err := shoppingLines(texts)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := db.sql.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	categories, err := shoppingCategories(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	categoryNames := map[string]string{}
+	for _, c := range categories {
+		categoryNames[c.ID] = c.Name
+	}
+	// Gleiche Artikel innerhalb der Zeilen werden beim Speichern ebenfalls zusammengefasst.
+	earlier := map[string]ShoppingLinePreview{}
+	previews := make([]ShoppingLinePreview, 0, len(lines))
+	for _, line := range lines {
+		name := strings.Join(strings.Fields(ingredient.Parse(line).Name), " ")
+		preview := ShoppingLinePreview{Text: line, Name: name}
+		if name == "" {
+			previews = append(previews, preview)
+			continue
+		}
+		key, resolved, err := resolveAlias(ctx, tx, name)
+		if err != nil {
+			return nil, err
+		}
+		preview.Name = resolved
+		itemID, err := openItem(ctx, tx, key, "")
+		if err != nil {
+			return nil, err
+		}
+		switch first, seen := earlier[key]; {
+		case itemID != "":
+			var itemName string
+			if err := tx.QueryRowContext(ctx, "SELECT name, category_id FROM shopping_items WHERE id = ?", itemID).
+				Scan(&itemName, &preview.CategoryID); err != nil {
+				return nil, err
+			}
+			preview.MergesInto = &itemName
+		case seen:
+			preview.CategoryID, preview.MergesInto = first.CategoryID, &first.Name
+		default:
+			if preview.CategoryID, _, err = preferredPlace(ctx, tx, key); err != nil {
+				return nil, err
+			}
+			earlier[key] = preview
+		}
+		preview.Category = categoryNames[preview.CategoryID]
+		previews = append(previews, preview)
+	}
+	return previews, nil
+}
+
+func (db *DB) AddShoppingItems(ctx context.Context, texts []string) error {
+	lines, err := shoppingLines(texts)
+	if err != nil {
+		return err
+	}
+	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
+		for _, line := range lines {
+			parsed := ingredient.Parse(line)
+			if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: line}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

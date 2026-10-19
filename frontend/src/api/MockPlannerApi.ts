@@ -23,14 +23,19 @@ import {
   type ShoppingAlias,
   type ShoppingImportResult,
   type ShoppingItemPatch,
+  type ShoppingLinePreview,
   type ShoppingList,
+  type ShoppingVoiceResult,
   type Staple,
   type TagSummary,
   type WeekPlan,
 } from '../types'
-import { MockShopping } from './mockShopping'
+import { MockShopping, splitShoppingText } from './mockShopping'
 import type { PlannerApi } from './PlannerApi'
 import { RequestError, request } from './request'
+
+/** Steht im Mock für das Transkript jeder Aufnahme. */
+export const MOCK_TRANSCRIPT = 'zwei Gurken, Feta, noch Bier und Spülmittel'
 
 export type JsonLoader = (file: string) => Promise<unknown>
 
@@ -656,6 +661,31 @@ export class MockPlannerApi implements PlannerApi {
 
   async addStaplesToList(ids: string[]): Promise<ShoppingList> {
     return this.shopping.addStaples(ids)
+  }
+
+  async getVoiceAvailability(): Promise<boolean> {
+    return true
+  }
+
+  /** Zerlegt deterministisch ohne Netz; eine Aufnahme steht für eine feste Beispielansage. */
+  async parseShoppingVoice(input: Blob | string): Promise<ShoppingVoiceResult> {
+    const transcript = typeof input === 'string' ? input.trim() : MOCK_TRANSCRIPT
+    if (!transcript || transcript.length > 2000) {
+      throw new RequestError('fehlgeschlagen: 422', 422, 'Der Text muss 1 bis 2000 Zeichen lang sein.')
+    }
+    const lines = splitShoppingText(transcript)
+    if (lines.length === 0) {
+      throw new RequestError('fehlgeschlagen: 422', 422, 'Ich habe nichts zum Einkaufen herausgehört.')
+    }
+    return { transcript, lines: this.shopping.previewLines(lines) }
+  }
+
+  async previewShoppingLines(texts: string[]): Promise<ShoppingLinePreview[]> {
+    return this.shopping.previewLines(texts)
+  }
+
+  async addShoppingItems(texts: string[]): Promise<ShoppingList> {
+    return this.shopping.addItems(texts)
   }
 
   private getData(): Promise<MockData> {

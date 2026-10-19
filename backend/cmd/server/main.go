@@ -20,6 +20,7 @@ import (
 	"github.com/felikowski/essenplaner/backend/internal/safefetch"
 	"github.com/felikowski/essenplaner/backend/internal/seed"
 	"github.com/felikowski/essenplaner/backend/internal/store"
+	"github.com/felikowski/essenplaner/backend/internal/voice"
 	"github.com/felikowski/essenplaner/backend/internal/web"
 	"github.com/felikowski/essenplaner/backend/internal/webimport"
 )
@@ -80,6 +81,9 @@ func run(logger *slog.Logger) error {
 		WithImporter(importer).
 		WithVersion(version).
 		WithAuth(authService, strings.HasPrefix(cfg.Auth.PublicURL, "https://"))
+	if cfg.Voice.Enabled() {
+		api.WithVoice(voice.NewOpenAI(cfg.Voice.APIKey, cfg.Voice.TranscribeModel, cfg.Voice.ParseModel))
+	}
 	server := &http.Server{
 		Addr:              cfg.Addr(),
 		Handler:           api.Handler(web.Handler(web.Dist())),
@@ -91,7 +95,7 @@ func run(logger *slog.Logger) error {
 
 	errc := make(chan error, 1)
 	go func() {
-		logger.Info("essenplaner lauscht", "version", version, "port", cfg.Port, "public_url", cfg.Auth.PublicURL, "allowed_subjects", len(cfg.Auth.AllowedSubjects), "database", cfg.DatabasePath)
+		logger.Info("essenplaner lauscht", "version", version, "port", cfg.Port, "public_url", cfg.Auth.PublicURL, "allowed_subjects", len(cfg.Auth.AllowedSubjects), "database", cfg.DatabasePath, "voice", cfg.Voice.Enabled())
 		errc <- server.ListenAndServe()
 	}()
 

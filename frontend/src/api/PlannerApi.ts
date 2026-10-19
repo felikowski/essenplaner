@@ -18,7 +18,9 @@ import type {
   ShoppingAlias,
   ShoppingImportResult,
   ShoppingItemPatch,
+  ShoppingLinePreview,
   ShoppingList,
+  ShoppingVoiceResult,
   Staple,
   TagSummary,
   WeekPlan,
@@ -104,4 +106,13 @@ export interface PlannerApi {
   createStaple(text: string): Promise<Staple[]>
   deleteStaple(id: string): Promise<Staple[]>
   addStaplesToList(ids: string[]): Promise<ShoppingList>
+
+  /** Meldet, ob der Server einen Sprachdienst hat („Einkauf ansagen“). */
+  getVoiceAvailability(): Promise<boolean>
+  /** Wertet eine Aufnahme oder einen Freitext aus; schreibt nichts. */
+  parseShoppingVoice(input: Blob | string): Promise<ShoppingVoiceResult>
+  /** Zeigt, wohin Zeilen kämen, ohne sie hinzuzufügen. */
+  previewShoppingLines(texts: string[]): Promise<ShoppingLinePreview[]>
+  /** Fügt alle Zeilen in einem Schritt hinzu oder keine. */
+  addShoppingItems(texts: string[]): Promise<ShoppingList>
 }

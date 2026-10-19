@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { loadMockFiles } from '../test/mockData'
-import { MockPlannerApi } from './MockPlannerApi'
+import { MOCK_TRANSCRIPT, MockPlannerApi } from './MockPlannerApi'
 
 describe('MockPlannerApi', () => {
   it('lädt Rezepte und Wochenpläne aus den Dummy-Daten', async () => {
@@ -133,5 +133,30 @@ describe('MockPlannerApi', () => {
     expect(result.weeks.map((plan) => plan.week)).toContain('2026-W42')
     await api.deleteMenu(menu.id)
     expect(await api.getMenu(menu.id)).toBeNull()
+  })
+
+  it('zerlegt Ansagen deterministisch und fügt Zeilen gesammelt hinzu', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    await api.addShoppingItem('Bier')
+
+    const spoken = await api.parseShoppingVoice('zwei Gurken, Feta, noch Bier und Spülmittel')
+    expect(spoken.lines.map((line) => line.text)).toEqual(['2 Gurken', 'Feta', 'Bier', 'Spülmittel'])
+    expect(spoken.lines[1]).toMatchObject({ category: 'Käse', mergesInto: null })
+    expect(spoken.lines[2]).toMatchObject({ mergesInto: 'Bier' })
+    expect((await api.parseShoppingVoice(new Blob(['x']))).transcript).toBe(MOCK_TRANSCRIPT)
+
+    const pasted = await api.parseShoppingVoice('500g Hack\nTomaten (Dose)\nParmesan')
+    expect(pasted.lines.map((line) => line.text)).toEqual(['500 g Hack', 'Tomaten (Dose)', 'Parmesan'])
+    await expect(api.parseShoppingVoice('äh. ')).resolves.toBeDefined()
+    await expect(api.parseShoppingVoice('   ')).rejects.toMatchObject({ status: 422 })
+    await expect(api.parseShoppingVoice(',,')).rejects.toMatchObject({ serverMessage: 'Ich habe nichts zum Einkaufen herausgehört.' })
+
+    const version = (await api.getShoppingList())!.version
+    expect(await api.previewShoppingLines(['Rum'])).toMatchObject([{ text: 'Rum', mergesInto: null }])
+    expect((await api.getShoppingList())!.version).toBe(version)
+    await expect(api.addShoppingItems(['Rum', ''])).rejects.toMatchObject({ status: 422 })
+    const list = await api.addShoppingItems(['Rum', '2 Bier'])
+    expect(list.version).toBe(version + 1)
+    expect(list.items.map((item) => [item.name, item.display])).toEqual(expect.arrayContaining([['Rum', undefined], ['Bier', '2']]))
   })
 })
