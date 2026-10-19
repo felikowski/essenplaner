@@ -44,6 +44,28 @@ describe('Einstellungen', () => {
     expect(dinner).toBeChecked()
     expect(update).not.toHaveBeenCalled()
   })
+
+  it('stellt das Farbschema nur für dieses Gerät um', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    const update = vi.spyOn(api, 'updateSettings')
+    const { user } = renderApp('/einstellungen', api)
+
+    expect(await screen.findByRole('radio', { name: 'Wie das Gerät' })).toBeChecked()
+    await user.click(screen.getByRole('radio', { name: 'Dunkel' }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('essenplaner.theme')).toBe('dark')
+
+    await user.click(screen.getByRole('radio', { name: 'Wie das Gerät' }))
+    expect(document.documentElement.dataset.theme).toBeUndefined()
+    expect(localStorage.getItem('essenplaner.theme')).toBeNull()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('zeigt das gemerkte Farbschema an', async () => {
+    localStorage.setItem('essenplaner.theme', 'light')
+    renderApp('/einstellungen', new MockPlannerApi(loadMockFiles))
+    expect(await screen.findByRole('radio', { name: 'Hell' })).toBeChecked()
+  })
 })
 
 describe('Planungsverlauf im Rezept', () => {

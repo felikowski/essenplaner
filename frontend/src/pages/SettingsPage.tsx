@@ -3,13 +3,26 @@ import { ShoppingSettings } from '../components/ShoppingSettings'
 import { TagSettings } from '../components/TagSettings'
 import { MEAL_LABELS } from '../lib/meals'
 import { useSettings } from '../lib/settingsContext'
+import { readTheme, saveTheme, type ThemePreference } from '../lib/theme'
 import { MEALS, type Meal } from '../types'
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Wie das Gerät' },
+  { value: 'light', label: 'Hell' },
+  { value: 'dark', label: 'Dunkel' },
+]
 
 export function SettingsPage() {
   const { settings, update } = useSettings()
   const [hint, setHint] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [theme, setTheme] = useState(readTheme)
+
+  function chooseTheme(next: ThemePreference) {
+    saveTheme(next)
+    setTheme(next)
+  }
 
   async function toggle(meal: Meal, checked: boolean) {
     setHint(null)
@@ -64,6 +77,23 @@ export function SettingsPage() {
       <TagSettings />
       <h2 className="settings-heading">Einkauf</h2>
       <ShoppingSettings />
+      <h2 className="settings-heading">Darstellung</h2>
+      <fieldset className="settings-group">
+        <legend className="form__label">Farbschema</legend>
+        <p className="form__hint">Gilt nur auf diesem Gerät.</p>
+        {THEME_OPTIONS.map((option) => (
+          <label key={option.value} className="checkbox">
+            <input
+              type="radio"
+              name="theme"
+              value={option.value}
+              checked={theme === option.value}
+              onChange={() => chooseTheme(option.value)}
+            />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
     </div>
   )
 }
