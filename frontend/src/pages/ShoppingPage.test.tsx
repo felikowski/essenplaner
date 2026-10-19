@@ -1,10 +1,12 @@
-import { act, screen, within } from '@testing-library/react'
+import { act, cleanup, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockPlannerApi } from '../api/MockPlannerApi'
 import { RequestError } from '../api/request'
+import { shareText } from '../lib/shopping'
 import { loadMockFiles } from '../test/mockData'
 import { currentUrl, renderApp } from '../test/renderApp'
-import { STORE_FILTER_KEY } from './ShoppingPage'
+import type { ShoppingList } from '../types'
+import { STORE_FILTER_KEY, VIEW_KEY } from './ShoppingPage'
 
 function section(name: string): HTMLElement {
   return screen.getByRole('region', { name })
@@ -46,7 +48,7 @@ describe('Einkaufsliste', () => {
     await user.type(input, '2 Packungen Kaffee{Enter}')
     await user.type(input, 'Zucchini{Enter}')
 
-    expect(await screen.findByRole('checkbox', { name: /Kaffee/ })).toHaveTextContent('Kaffee2 Pck.')
+    expect(await screen.findByRole('checkbox', { name: /Kaffee/ })).toHaveTextContent('KaffeeFamilie2 Pck.')
     expect(itemNames(section('Getränke'))).toEqual(['Kaffee'])
     expect(itemNames(section('Obst & Gemüse'))).toEqual(['Zucchini'])
     expect(input).toHaveValue('')
@@ -110,7 +112,7 @@ describe('Einkaufsliste', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Details zu Karotten' }))
     const dialog = screen.getByRole('dialog', { name: 'Karotten' })
-    expect(within(dialog).getByText('Linsensuppe (Fr 02.10.): 2 Karotten')).toBeInTheDocument()
+    expect(within(dialog).getByText('Linsensuppe (Fr 02.10.): 2 Karotten · Familie')).toBeInTheDocument()
 
     await user.selectOptions(within(dialog).getByLabelText('Kategorie'), 'Sonstiges')
     await user.click(within(dialog).getByRole('button', { name: 'Speichern' }))
@@ -137,7 +139,7 @@ describe('Einkaufsliste', () => {
     await user.selectOptions(within(dialog).getByLabelText('Zusammenführen mit'), 'Zwiebeln')
     await user.click(within(dialog).getByRole('button', { name: 'Zusammenführen' }))
     await vi.waitFor(() => expect(screen.queryByRole('checkbox', { name: 'Zwiebel' })).not.toBeInTheDocument())
-    expect(screen.getByRole('checkbox', { name: /Zwiebeln/ })).toHaveTextContent('Zwiebeln4')
+    expect(screen.getByRole('checkbox', { name: /Zwiebeln/ })).toHaveTextContent('ZwiebelnFamilie4')
     expect(await api.listShoppingAliases()).toEqual([{ fromKey: 'zwiebel', fromName: 'Zwiebel', toName: 'Zwiebeln' }])
 
     await user.click(screen.getByRole('button', { name: 'Details zu Spülmittel' }))
@@ -423,5 +425,110 @@ describe('Einkauf ansagen', () => {
 
     await user.type(screen.getByRole('textbox', { name: 'Artikel hinzufügen' }), 'Feta{Enter}')
     expect(await screen.findByRole('checkbox', { name: 'Feta' })).toBeInTheDocument()
+  })
+})
+
+describe('Einkaufsliste nach Herkunft', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 1, 12, 0))
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** Butter aus einem Rezept (250 g, Felix) und von Hand (2 EL, Linh); Kaffee ohne Person. */
+  function apiWithMixedButter() {
+    const api = new MockPlannerApi(loadMockFiles)
+    const list: ShoppingList = {
+      version: 7,
+      categories: [
+        { id: 'milch', name: 'Milchprodukte & Eier', removable: true },
+        { id: 'getraenke', name: 'Getränke', removable: true },
+      ],
+      stores: [],
+      items: [
+        {
+          id: 'b',
+          name: 'Butter',
+          categoryId: 'milch',
+          checked: false,
+          display: '250 g + 2 EL',
+          amounts: [],
+          sources: [
+            { kind: 'plan', recipeTitle: 'Kuchen', date: '2026-10-02', amount: '250 g', addedBy: 'felix' },
+            { kind: 'manual', text: '2 EL Butter', amount: '2 EL', addedBy: 'linh' },
+          ],
+          sourceDisplay: { plan: '250 g', manual: '2 EL' },
+        },
+        {
+          id: 'k',
+          name: 'Kaffee',
+          categoryId: 'getraenke',
+          checked: false,
+          amounts: [],
+          sources: [{ kind: 'manual', text: 'Kaffee' }],
+          sourceDisplay: { manual: '' },
+        },
+      ],
+    }
+    let checked = false
+    const current = () => ({ ...list, items: list.items.map((item) => (item.id === 'b' ? { ...item, checked } : item)) })
+    vi.spyOn(api, 'getShoppingList').mockImplementation(async () => current())
+    const check = vi.spyOn(api, 'setShoppingItemChecked').mockImplementation(async (_id, value) => {
+      checked = value
+      return current()
+    })
+    return { api, check }
+  }
+
+  it('zeigt am Artikel, wer ihn eingetragen hat', async () => {
+    const { api } = apiWithMixedButter()
+    renderApp('/einkauf', api)
+
+    const butter = await screen.findByRole('checkbox', { name: /Butter/ })
+    expect(butter).toHaveAccessibleDescription('Felix, Linh')
+    expect(butter).toHaveTextContent('ButterFelix, Linh250 g + 2 EL')
+    expect(screen.getByRole('checkbox', { name: /Kaffee/ })).not.toHaveAccessibleDescription()
+  })
+
+  it('teilt gemischte Artikel nach Herkunft auf, hakt sie gemeinsam ab und merkt sich die Ansicht', async () => {
+    const { api, check } = apiWithMixedButter()
+    const { user } = renderApp('/einkauf', api)
+
+    await user.click(await screen.findByRole('button', { name: 'Nach Herkunft' }))
+    expect(screen.getByRole('button', { name: 'Nach Herkunft' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('region', { name: 'Vorrat' })).not.toBeInTheDocument()
+
+    const fromRecipes = within(section('Aus Rezepten')).getByRole('checkbox', { name: /Butter/ })
+    const manual = within(section('Selbst eingetragen')).getByRole('checkbox', { name: /Butter/ })
+    expect(fromRecipes).toHaveTextContent('ButterFelix250 g')
+    expect(manual).toHaveTextContent('ButterLinh2 EL')
+    expect(itemNames(section('Selbst eingetragen'))).toEqual(['Butter', 'Kaffee'])
+
+    await user.click(manual)
+    expect(check).toHaveBeenCalledWith('b', true)
+    await vi.waitFor(() => expect(within(section('Aus Rezepten')).getByRole('checkbox', { name: /Butter/ })).toBeChecked())
+    expect(localStorage.getItem(VIEW_KEY)).toBe('source')
+
+    cleanup()
+    renderApp('/einkauf', api)
+    expect(await screen.findByRole('region', { name: 'Aus Rezepten' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Nach Gängen' }))
+    expect(itemNames(section('Milchprodukte & Eier'))).toEqual(['Butter'])
+  })
+
+  it('druckt und teilt ohne Namen', async () => {
+    const { api } = apiWithMixedButter()
+    localStorage.setItem(VIEW_KEY, 'source')
+    renderApp('/einkauf', api)
+
+    await screen.findByRole('region', { name: 'Aus Rezepten' })
+    const printed = document.querySelector('.print-only')!
+    expect(printed).toHaveTextContent('Milchprodukte & EierButter: 250 g + 2 EL')
+    expect(printed.textContent).not.toMatch(/Felix|Linh/)
+    expect(shareText((await api.getShoppingList())!)).not.toMatch(/Felix|Linh/)
   })
 })

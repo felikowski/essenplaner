@@ -223,6 +223,13 @@ Die Seite fragt alle 10 Sekunden nach Änderungen, solange sie sichtbar ist, und
 „Vorrat prüfen“ (`/einkauf/vorrat`) bringt angekreuzte Dinge, die immer im Haus sein sollen, auf die Liste.
 „Teilen“ nutzt das Teilen-Menü des Handys oder kopiert die Liste, „Drucken“ hat eine eigene Druckansicht.
 
+Unter jedem Artikel steht klein, wer ihn eingetragen hat (Anzeigename aus der Anmeldung, bei „Aus dem
+Plan“ die Person, die übernommen hat). Der Umschalter „Nach Gängen | Nach Herkunft“ gruppiert die Liste
+wahlweise nach „Aus Rezepten“, „Selbst eingetragen“ (Eingabefeld und Spracheingabe) und „Vorrat“. Ein
+Artikel aus mehreren Quellen steht dann in jeder Gruppe mit deren Menge, abgehakt wird er überall
+zugleich. Die Wahl merkt sich das Gerät. Teilen und Drucken bleiben nach Gängen und ohne Namen. Artikel aus
+der Zeit vor dieser Funktion zeigen keinen Namen.
+
 ### Einkauf ansagen
 
 Mit dem Mikrofon-Knopf neben dem Eingabefeld („Einkauf ansagen“) sagt man mehrere Artikel auf einmal an,

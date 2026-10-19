@@ -18,7 +18,7 @@ func rememberCategory(t *testing.T, db *DB, name, category string) {
 	list := shoppingList(t, db)
 	item := itemNamed(t, list, name)
 	id := categoryID(t, list, category)
-	if err := db.UpdateShoppingItem(ctx, item.ID, ShoppingItemPatch{CategoryID: &id}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, item.ID, ShoppingItemPatch{CategoryID: &id}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.DeleteShoppingItem(ctx, item.ID); err != nil {
@@ -85,7 +85,7 @@ func TestAddShoppingItems(t *testing.T) {
 	mustAdd(t, db, "1 Bier")
 	before, _ := db.ShoppingVersion(ctx)
 
-	if err := db.AddShoppingItems(ctx, []string{"2 Gurken", "Feta", "2 Bier", "Spülmittel"}); err != nil {
+	if err := db.AddShoppingItems(ctx, []string{"2 Gurken", "Feta", "2 Bier", "Spülmittel"}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	list := shoppingList(t, db)
@@ -122,14 +122,14 @@ func TestAddShoppingItemsAllOrNothing(t *testing.T) {
 		"zu viele":     tooMany,
 	} {
 		var invalid ErrInvalidShopping
-		if err := db.AddShoppingItems(ctx, texts); !errors.As(err, &invalid) {
+		if err := db.AddShoppingItems(ctx, texts, Actor{}); !errors.As(err, &invalid) {
 			t.Errorf("%s: err = %v", name, err)
 		}
 		if _, err := db.PreviewShoppingLines(ctx, texts); !errors.As(err, &invalid) {
 			t.Errorf("%s (vorschau): err = %v", name, err)
 		}
 	}
-	if err := db.AddShoppingItems(ctx, tooMany[:MaxShoppingLines]); err != nil {
+	if err := db.AddShoppingItems(ctx, tooMany[:MaxShoppingLines], Actor{}); err != nil {
 		t.Errorf("genau %d zeilen: %v", MaxShoppingLines, err)
 	}
 	list := shoppingList(t, db)
@@ -137,7 +137,7 @@ func TestAddShoppingItemsAllOrNothing(t *testing.T) {
 		t.Errorf("version %d → %d, artikel %+v", before, list.Version, list.Items)
 	}
 	var invalid ErrInvalidShopping
-	if err := db.AddShoppingItems(ctx, []string{"Gurken", ""}); !errors.As(err, &invalid) || !strings.HasPrefix(invalid.Reason, "Zeile 2:") {
+	if err := db.AddShoppingItems(ctx, []string{"Gurken", ""}, Actor{}); !errors.As(err, &invalid) || !strings.HasPrefix(invalid.Reason, "Zeile 2:") {
 		t.Errorf("meldung = %v", err)
 	}
 }

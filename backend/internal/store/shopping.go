@@ -60,6 +60,14 @@ type ShoppingSource struct {
 	// Amount ist die Menge dieses Anteils als Text, etwa „2“ oder „333 g“.
 	Amount string `json:"amount,omitempty"`
 	Text   string `json:"text,omitempty"`
+	// AddedBy ist der Anzeigename des Nutzers, der den Anteil eingetragen hat (leer bei älteren Anteilen).
+	AddedBy string `json:"addedBy,omitempty"`
+}
+
+// Actor ist der angemeldete Nutzer, der etwas auf die Liste bringt. Leer, wenn keine Anmeldung aktiv ist.
+type Actor struct {
+	Subject string
+	Name    string
 }
 
 // ShoppingItem ist ein Artikel mit den aus seinen Anteilen berechneten Mengen.
@@ -72,6 +80,8 @@ type ShoppingItem struct {
 	Display    string           `json:"display,omitempty"`
 	Amounts    []quantity.Group `json:"amounts"`
 	Sources    []ShoppingSource `json:"sources"`
+	// SourceDisplay ist die zusammengefasste Menge je Herkunft (PartPlan, PartManual, PartStaple).
+	SourceDisplay map[string]string `json:"sourceDisplay"`
 }
 
 // ShoppingList ist die ganze Liste: Kategorien und Geschäfte in ihrer Reihenfolge, Artikel nach Kategorie,
@@ -116,18 +126,19 @@ type ShoppingItemPatch struct {
 type ShoppingStore interface {
 	ShoppingList(ctx context.Context) (ShoppingList, error)
 	ShoppingVersion(ctx context.Context) (int, error)
-	AddShoppingItem(ctx context.Context, text string) error
+	AddShoppingItem(ctx context.Context, text string, by Actor) error
 	// PreviewShoppingLines zeigt, wie Zeilen einsortiert würden, ohne zu schreiben.
 	PreviewShoppingLines(ctx context.Context, texts []string) ([]ShoppingLinePreview, error)
 	// AddShoppingItems fügt alle Zeilen in einem Schritt hinzu oder keine.
-	AddShoppingItems(ctx context.Context, texts []string) error
-	UpdateShoppingItem(ctx context.Context, id string, patch ShoppingItemPatch) error
+	AddShoppingItems(ctx context.Context, texts []string, by Actor) error
+	// UpdateShoppingItem schreibt eine Menge von Hand als Anteil von by.
+	UpdateShoppingItem(ctx context.Context, id string, patch ShoppingItemPatch, by Actor) error
 	SetShoppingItemChecked(ctx context.Context, id string, checked bool) error
 	DeleteShoppingItem(ctx context.Context, id string) error
 	// MergeShoppingItem führt einen Artikel in einen anderen zusammen und merkt sich das für den Namen.
 	MergeShoppingItem(ctx context.Context, id, targetID string) error
 	// ImportFromPlan übernimmt die Zutaten der Einträge zwischen from und to und liefert die Rezepte ohne Zutaten.
-	ImportFromPlan(ctx context.Context, from, to string) ([]RecipeRef, error)
+	ImportFromPlan(ctx context.Context, from, to string, by Actor) ([]RecipeRef, error)
 	ClearCheckedShoppingItems(ctx context.Context) error
 	CreateShoppingCategory(ctx context.Context, name string) error
 	RenameShoppingCategory(ctx context.Context, id, name string) error
@@ -141,7 +152,7 @@ type ShoppingStore interface {
 	Staples(ctx context.Context) ([]Staple, error)
 	CreateStaple(ctx context.Context, text string) error
 	DeleteStaple(ctx context.Context, id string) error
-	AddStaplesToList(ctx context.Context, ids []string) error
+	AddStaplesToList(ctx context.Context, ids []string, by Actor) error
 }
 
 // seedShoppingCategories legt die eingebauten Kategorien an (Go-Schritt der Migration 5).
@@ -205,7 +216,7 @@ func (db *DB) ShoppingList(ctx context.Context) (ShoppingList, error) {
 
 	parts := map[string][]storedPart{}
 	rows, err := tx.QueryContext(ctx,
-		"SELECT item_id, quantity, unit, source_kind, entry_id, recipe_id, recipe_title, date, text FROM shopping_item_parts ORDER BY id")
+		"SELECT item_id, quantity, unit, source_kind, entry_id, recipe_id, recipe_title, date, text, added_by_name FROM shopping_item_parts ORDER BY id")
 	if err != nil {
 		return ShoppingList{}, fmt.Errorf("anteile lesen: %w", err)
 	}
@@ -214,8 +225,9 @@ func (db *DB) ShoppingList(ctx context.Context) (ShoppingList, error) {
 			p                              storedPart
 			q                              sql.NullFloat64
 			entryID, recipeID, title, date sql.NullString
+			addedBy                        sql.NullString
 		)
-		if err := rows.Scan(&p.itemID, &q, &p.unit, &p.source.Kind, &entryID, &recipeID, &title, &date, &p.source.Text); err != nil {
+		if err := rows.Scan(&p.itemID, &q, &p.unit, &p.source.Kind, &entryID, &recipeID, &title, &date, &p.source.Text, &addedBy); err != nil {
 			rows.Close()
 			return ShoppingList{}, err
 		}
@@ -223,6 +235,7 @@ func (db *DB) ShoppingList(ctx context.Context) (ShoppingList, error) {
 			p.quantity = &q.Float64
 		}
 		p.source.RecipeID, p.source.RecipeTitle, p.source.Date = recipeID.String, title.String, date.String
+		p.source.AddedBy = addedBy.String
 		p.source.Amount = quantity.Format(quantity.Sum([]quantity.Part{{Quantity: p.quantity, Unit: p.unit}}))
 		parts[p.itemID] = append(parts[p.itemID], p)
 	}
@@ -246,13 +259,20 @@ func (db *DB) ShoppingList(ctx context.Context) (ShoppingList, error) {
 		}
 		item.StoreID = storeID.String
 		var amounts []quantity.Part
+		byKind := map[string][]quantity.Part{}
 		item.Sources = []ShoppingSource{}
 		for _, p := range parts[item.ID] {
-			amounts = append(amounts, quantity.Part{Quantity: p.quantity, Unit: p.unit})
+			amount := quantity.Part{Quantity: p.quantity, Unit: p.unit}
+			amounts = append(amounts, amount)
+			byKind[p.source.Kind] = append(byKind[p.source.Kind], amount)
 			item.Sources = append(item.Sources, p.source)
 		}
 		item.Amounts = quantity.Sum(amounts)
 		item.Display = quantity.Format(item.Amounts)
+		item.SourceDisplay = make(map[string]string, len(byKind))
+		for kind, kindAmounts := range byKind {
+			item.SourceDisplay[kind] = quantity.Format(quantity.Sum(kindAmounts))
+		}
 		list.Items = append(list.Items, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -326,6 +346,7 @@ type part struct {
 	recipeTitle string
 	date        string
 	text        string
+	by          Actor
 }
 
 // addPart hängt einen Anteil an den offenen Artikel mit demselben (aufgelösten) Namen oder legt einen an.
@@ -375,10 +396,11 @@ func resolveAlias(ctx context.Context, tx *sql.Tx, name string) (key, resolved s
 
 func insertPart(ctx context.Context, tx *sql.Tx, itemID string, p part) error {
 	_, err := tx.ExecContext(ctx,
-		`INSERT INTO shopping_item_parts (item_id, quantity, unit, source_kind, entry_id, recipe_id, recipe_title, date, text)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO shopping_item_parts (item_id, quantity, unit, source_kind, entry_id, recipe_id, recipe_title, date, text,
+		     added_by_subject, added_by_name)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		itemID, p.quantity, p.unit, p.kind, nullIfEmpty(p.entryID), nullIfEmpty(p.recipeID), nullIfEmpty(p.recipeTitle),
-		nullIfEmpty(p.date), p.text)
+		nullIfEmpty(p.date), p.text, nullIfEmpty(p.by.Subject), nullIfEmpty(p.by.Name))
 	if err != nil {
 		return fmt.Errorf("anteil anlegen: %w", err)
 	}
@@ -429,14 +451,14 @@ func shoppingText(text string, max int, what string) (string, error) {
 	return text, nil
 }
 
-func (db *DB) AddShoppingItem(ctx context.Context, text string) error {
+func (db *DB) AddShoppingItem(ctx context.Context, text string, by Actor) error {
 	text, err := shoppingText(text, maxShoppingText, "Der Artikel")
 	if err != nil {
 		return err
 	}
 	parsed := ingredient.Parse(text)
 	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
-		return addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: text})
+		return addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: text, by: by})
 	})
 }
 
@@ -526,7 +548,7 @@ func (db *DB) PreviewShoppingLines(ctx context.Context, texts []string) ([]Shopp
 	return previews, nil
 }
 
-func (db *DB) AddShoppingItems(ctx context.Context, texts []string) error {
+func (db *DB) AddShoppingItems(ctx context.Context, texts []string, by Actor) error {
 	lines, err := shoppingLines(texts)
 	if err != nil {
 		return err
@@ -534,7 +556,7 @@ func (db *DB) AddShoppingItems(ctx context.Context, texts []string) error {
 	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
 		for _, line := range lines {
 			parsed := ingredient.Parse(line)
-			if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: line}); err != nil {
+			if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartManual, text: line, by: by}); err != nil {
 				return err
 			}
 		}
@@ -571,7 +593,7 @@ func ParseAmount(text string) (*float64, string, error) {
 	return parsed.Quantity, parsed.Unit, nil
 }
 
-func (db *DB) UpdateShoppingItem(ctx context.Context, id string, patch ShoppingItemPatch) error {
+func (db *DB) UpdateShoppingItem(ctx context.Context, id string, patch ShoppingItemPatch, by Actor) error {
 	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
 		item, err := getItem(ctx, tx, id)
 		if err != nil {
@@ -582,11 +604,11 @@ func (db *DB) UpdateShoppingItem(ctx context.Context, id string, patch ShoppingI
 			if err != nil {
 				return err
 			}
-			// Eine Menge von Hand ersetzt alle Anteile; die Herkunft geht dabei bewusst verloren.
+			// Eine Menge von Hand ersetzt alle Anteile; Herkunft und Personen gehen dabei bewusst verloren.
 			if _, err := tx.ExecContext(ctx, "DELETE FROM shopping_item_parts WHERE item_id = ?", id); err != nil {
 				return err
 			}
-			if err := insertPart(ctx, tx, id, part{quantity: q, unit: unit, kind: PartManual, text: strings.TrimSpace(*patch.Quantity)}); err != nil {
+			if err := insertPart(ctx, tx, id, part{quantity: q, unit: unit, kind: PartManual, text: strings.TrimSpace(*patch.Quantity), by: by}); err != nil {
 				return err
 			}
 		}
@@ -725,7 +747,7 @@ func (db *DB) MergeShoppingItem(ctx context.Context, id, targetID string) error 
 	})
 }
 
-func (db *DB) ImportFromPlan(ctx context.Context, from, to string) ([]RecipeRef, error) {
+func (db *DB) ImportFromPlan(ctx context.Context, from, to string, by Actor) ([]RecipeRef, error) {
 	without := []RecipeRef{}
 	err := db.shoppingTx(ctx, func(tx *sql.Tx) error {
 		days, err := entriesBetween(ctx, tx, from, to)
@@ -752,7 +774,7 @@ func (db *DB) ImportFromPlan(ctx context.Context, from, to string) ([]RecipeRef,
 				if e.Kind == KindItem {
 					parsed := ingredient.Parse(e.Text)
 					if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartPlan,
-						entryID: e.ID, date: date, text: e.Text}); err != nil {
+						entryID: e.ID, date: date, text: e.Text, by: by}); err != nil {
 						return err
 					}
 				} else {
@@ -773,7 +795,7 @@ func (db *DB) ImportFromPlan(ctx context.Context, from, to string) ([]RecipeRef,
 					}
 					for _, ing := range recipe.Ingredients {
 						if err := addPart(ctx, tx, ing.Name, part{quantity: quantity.Scale(ing.Quantity, factor), unit: ing.Unit,
-							kind: PartPlan, entryID: e.ID, recipeID: recipe.ID, recipeTitle: recipe.Title, date: date, text: ing.Text}); err != nil {
+							kind: PartPlan, entryID: e.ID, recipeID: recipe.ID, recipeTitle: recipe.Title, date: date, text: ing.Text, by: by}); err != nil {
 							return err
 						}
 					}
@@ -983,7 +1005,7 @@ func (db *DB) DeleteStaple(ctx context.Context, id string) error {
 	})
 }
 
-func (db *DB) AddStaplesToList(ctx context.Context, ids []string) error {
+func (db *DB) AddStaplesToList(ctx context.Context, ids []string, by Actor) error {
 	return db.shoppingTx(ctx, func(tx *sql.Tx) error {
 		for _, id := range ids {
 			var text string
@@ -995,7 +1017,7 @@ func (db *DB) AddStaplesToList(ctx context.Context, ids []string) error {
 				return err
 			}
 			parsed := ingredient.Parse(text)
-			if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartStaple, text: text}); err != nil {
+			if err := addPart(ctx, tx, parsed.Name, part{quantity: parsed.Quantity, unit: parsed.Unit, kind: PartStaple, text: text, by: by}); err != nil {
 				return err
 			}
 		}

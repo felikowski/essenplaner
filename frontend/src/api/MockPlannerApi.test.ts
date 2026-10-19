@@ -159,4 +159,15 @@ describe('MockPlannerApi', () => {
     expect(list.version).toBe(version + 1)
     expect(list.items.map((item) => [item.name, item.display])).toEqual(expect.arrayContaining([['Rum', undefined], ['Bier', '2']]))
   })
+
+  it('nennt die Person und die Menge je Herkunft', async () => {
+    const api = new MockPlannerApi(loadMockFiles)
+    await api.addShoppingItem('2 EL Butter')
+    const staples = await api.createStaple('250 g Butter')
+    const list = await api.addStaplesToList([staples[0].id])
+    const butter = list.items.find((item) => item.name === 'Butter')!
+    expect(butter.sources.map((source) => source.addedBy)).toEqual(['Familie', 'Familie'])
+    expect(butter.sourceDisplay).toEqual({ manual: '2 EL', staple: '250 g' })
+  })
 })
+

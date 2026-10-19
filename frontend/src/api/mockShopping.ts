@@ -39,6 +39,9 @@ interface StoredStaple extends Staple {
   key: string
 }
 
+/** Wer in der Mock-API etwas einträgt; derselbe Name wie bei getMe. */
+const MOCK_USER = 'Familie'
+
 export type PlanSnapshot = () => Promise<{ recipes: Recipe[]; entries: (PlanEntry & { date: IsoDate })[] }>
 
 const BUILTIN = [
@@ -244,6 +247,7 @@ export class MockShopping {
         }
         part = { quantity: parsed.quantity, unit: parsed.unit, source: { kind: 'manual', text } }
       }
+      part.source.addedBy = MOCK_USER
       item.parts = [part]
     }
     if (patch.categoryId !== undefined) {
@@ -458,7 +462,7 @@ export class MockShopping {
       if (place.storeId) item.storeId = place.storeId
       this.items.push(item)
     }
-    item.parts.push(part)
+    item.parts.push({ ...part, source: { ...part.source, addedBy: MOCK_USER } })
   }
 
   private find(id: string): StoredItem {
@@ -477,6 +481,10 @@ export class MockShopping {
     const order = (id: string) => categories.findIndex((c) => c.id === id)
     const items: ShoppingItem[] = this.items.map((item) => {
       const amounts = sumAmounts(item.parts)
+      const sourceDisplay: ShoppingItem['sourceDisplay'] = {}
+      for (const kind of new Set(item.parts.map((part) => part.source.kind))) {
+        sourceDisplay[kind] = formatAmounts(sumAmounts(item.parts.filter((part) => part.source.kind === kind)))
+      }
       const result: ShoppingItem = {
         id: item.id,
         name: item.name,
@@ -487,6 +495,7 @@ export class MockShopping {
           const amount = formatAmounts(sumAmounts([part]))
           return amount ? { ...part.source, amount } : { ...part.source }
         }),
+        sourceDisplay,
       }
       if (item.storeId) result.storeId = item.storeId
       if (amounts.length > 0) result.display = formatAmounts(amounts)

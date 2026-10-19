@@ -207,6 +207,8 @@ export interface ShoppingSource {
   /** Menge dieses Anteils, etwa „333 g“ */
   amount?: string
   text?: string
+  /** Anzeigename dessen, der den Anteil eingetragen hat; fehlt bei älteren Anteilen. */
+  addedBy?: string
 }
 
 export interface ShoppingItem {
@@ -219,6 +221,8 @@ export interface ShoppingItem {
   display?: string
   amounts: { quantity: number; unit?: string }[]
   sources: ShoppingSource[]
+  /** Zusammengefasste Menge je Herkunft, etwa { plan: '250 g', manual: '2 EL' }; leer bei Anteilen ohne Menge. */
+  sourceDisplay: Partial<Record<ShoppingSource['kind'], string>>
 }
 
 export interface ShoppingList {

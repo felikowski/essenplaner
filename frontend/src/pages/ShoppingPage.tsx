@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { usePlannerApi } from '../api/context'
 import { RequestError } from '../api/request'
@@ -7,7 +7,7 @@ import { ShoppingItemDialog } from '../components/ShoppingItemDialog'
 import { ShoppingVoiceDialog } from '../components/ShoppingVoiceDialog'
 import { LoadError, Loading } from '../components/Status'
 import { toIsoDate } from '../lib/isoWeek'
-import { groupByCategory, shareText, visibleUnder } from '../lib/shopping'
+import { addedByNames, groupByCategory, groupBySource, itemLine, shareText, visibleUnder } from '../lib/shopping'
 import { useShoppingList } from '../lib/useShoppingList'
 import { useWakeLock } from '../lib/useWakeLock'
 import type { IsoDate, ShoppingItem, ShoppingItemPatch, ShoppingList } from '../types'
@@ -31,6 +31,68 @@ function writeStoreFilter(storeId: string | null) {
   }
 }
 
+export const VIEW_KEY = 'essenplaner.shoppingView'
+
+type View = 'category' | 'source'
+
+function readView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'source' ? 'source' : 'category'
+  } catch {
+    return 'category'
+  }
+}
+
+function writeView(view: View) {
+  try {
+    localStorage.setItem(VIEW_KEY, view)
+  } catch {
+    // Ohne Speicher gilt die Ansicht nur bis zum Neuladen.
+  }
+}
+
+interface ItemRowProps {
+  item: ShoppingItem
+  /** Menge, die die Zeile zeigt; in der Herkunftsansicht nur die dieser Herkunft */
+  display?: string
+  /** Wer eingetragen hat, etwa „Felix, Linh“ */
+  names: string
+  onToggle: () => void
+  onDetails: () => void
+}
+
+function ItemRow({ item, display, names, onToggle, onDetails }: ItemRowProps) {
+  const namesId = useId()
+  return (
+    <li className={`shopping-item${item.checked ? ' shopping-item--checked' : ''}`}>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={item.checked}
+        aria-describedby={names ? namesId : undefined}
+        className="shopping-item__toggle"
+        onClick={onToggle}
+      >
+        <span className="shopping-item__box" aria-hidden="true">
+          {item.checked ? '✓' : ''}
+        </span>
+        <span className="shopping-item__label">
+          <span className="shopping-item__name">{item.name}</span>
+          {names && (
+            <span id={namesId} className="shopping-item__by" aria-hidden="true">
+              {names}
+            </span>
+          )}
+        </span>
+        {display && <span className="shopping-item__amount">{display}</span>}
+      </button>
+      <button type="button" className="icon-button icon-button--quiet" aria-label={`Details zu ${item.name}`} onClick={onDetails}>
+        ⋯
+      </button>
+    </li>
+  )
+}
+
 type Dialog = { kind: 'item'; id: string } | { kind: 'import' } | { kind: 'voice' }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -48,6 +110,7 @@ export function ShoppingPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [storeFilter, setStoreFilter] = useState<string | null>(readStoreFilter)
+  const [view, setView] = useState<View>(readView)
   const [today] = useState(() => toIsoDate(new Date()))
   const [voiceAvailable, setVoiceAvailable] = useState(false)
   useWakeLock()
@@ -156,6 +219,11 @@ export function ShoppingPage() {
     writeStoreFilter(next)
   }
 
+  function chooseView(next: View) {
+    setView(next)
+    writeView(next)
+  }
+
   async function itemAction(action: () => Promise<ShoppingList>) {
     setDialog(null)
     await change(action)
@@ -250,6 +318,17 @@ export function ShoppingPage() {
         </div>
       )}
 
+      {list.items.length > 0 && (
+        <div className="shopping-view no-print" role="group" aria-label="Ansicht">
+          <button type="button" aria-pressed={view === 'category'} onClick={() => chooseView('category')}>
+            Nach Gängen
+          </button>
+          <button type="button" aria-pressed={view === 'source'} onClick={() => chooseView('source')}>
+            Nach Herkunft
+          </button>
+        </div>
+      )}
+
       {notice && (
         <p className="notice" role="status">
           {notice}
@@ -274,40 +353,66 @@ export function ShoppingPage() {
           </div>
         </div>
       ) : (
-        groupByCategory(list, visible).map(({ category, items }) => (
-          <section key={category.id} className="shopping-category" aria-labelledby={`cat-${category.id}`}>
-            <h2 id={`cat-${category.id}`} className="shopping-category__title">
-              {category.name}
-            </h2>
-            <ul className="shopping-items">
-              {items.map((item) => (
-                <li key={item.id} className={`shopping-item${item.checked ? ' shopping-item--checked' : ''}`}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={item.checked}
-                    className="shopping-item__toggle"
-                    onClick={() => toggle(item)}
-                  >
-                    <span className="shopping-item__box" aria-hidden="true">
-                      {item.checked ? '✓' : ''}
-                    </span>
-                    <span className="shopping-item__name">{item.name}</span>
-                    {item.display && <span className="shopping-item__amount">{item.display}</span>}
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button icon-button--quiet"
-                    aria-label={`Details zu ${item.name}`}
-                    onClick={() => setDialog({ kind: 'item', id: item.id })}
-                  >
-                    ⋯
-                  </button>
-                </li>
+        <>
+          {view === 'category' &&
+            groupByCategory(list, visible).map(({ category, items }) => (
+              <section key={category.id} className="shopping-category" aria-labelledby={`cat-${category.id}`}>
+                <h2 id={`cat-${category.id}`} className="shopping-category__title">
+                  {category.name}
+                </h2>
+                <ul className="shopping-items">
+                  {items.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      display={item.display}
+                      names={addedByNames(item.sources)}
+                      onToggle={() => toggle(item)}
+                      onDetails={() => setDialog({ kind: 'item', id: item.id })}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          {view === 'source' && (
+            <>
+              {groupBySource(list, visible).map(({ kind, title, entries }) => (
+                <section key={kind} className="shopping-category no-print" aria-labelledby={`source-${kind}`}>
+                  <h2 id={`source-${kind}`} className="shopping-category__title">
+                    {title}
+                  </h2>
+                  <ul className="shopping-items">
+                    {entries.map(({ item, display, names }) => (
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        display={display}
+                        names={names}
+                        onToggle={() => toggle(item)}
+                        onDetails={() => setDialog({ kind: 'item', id: item.id })}
+                      />
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
-          </section>
-        ))
+              {/* Gedruckt wird immer nach Gängen. */}
+              <div className="print-only" aria-hidden="true">
+                {groupByCategory(list, visible).map(({ category, items }) => (
+                  <section key={category.id} className="shopping-category">
+                    <h2 className="shopping-category__title">{category.name}</h2>
+                    <ul className="shopping-print-items">
+                      {items.map((item) => (
+                        <li key={item.id} className={item.checked ? 'shopping-item--checked' : undefined}>
+                          {itemLine(item)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {dialog?.kind === 'import' && (
