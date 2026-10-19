@@ -29,8 +29,11 @@
   -webkit-text-size-adjust: 100%;
 }
 
+/* Dunkle Farben gelten bei dunklem System (außer „Hell“ ist gewählt) oder bei „Dunkel“.
+   Die Werte stehen deshalb zweimal hier: beide Blöcke gemeinsam ändern.
+   :where() hält die Spezifität bei :root, damit die Druckansicht weiter hell bleibt. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:where(:not([data-theme='light'])) {
     --color-bg: #171513;
     --color-surface: #221f1c;
     --color-surface-muted: #2c2825;
@@ -45,6 +48,27 @@
     --color-backdrop: rgb(0 0 0 / 0.6);
     --shadow: none;
   }
+}
+
+:root:where([data-theme='dark']) {
+  --color-bg: #171513;
+  --color-surface: #221f1c;
+  --color-surface-muted: #2c2825;
+  --color-text: #f1ece6;
+  --color-text-muted: #a89f95;
+  --color-border: #3a3531;
+  --color-accent: #e98a5f;
+  --color-accent-contrast: #1b1310;
+  --color-accent-soft: #3d2a20;
+  --color-danger: #ff9a9a;
+  --color-danger-soft: #3b1f20;
+  --color-backdrop: rgb(0 0 0 / 0.6);
+  --shadow: none;
+  color-scheme: dark;
+}
+
+:root:where([data-theme='light']) {
+  color-scheme: light;
 }
 
 *,

@@ -6,4 +6,6 @@ afterEach(() => {
   cleanup()
   localStorage.removeItem('essenplaner.timer.v1')
   localStorage.removeItem('essenplaner.timer-benachrichtigung-gefragt')
+  localStorage.removeItem('essenplaner.theme')
+  delete document.documentElement.dataset.theme
 })
