@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/felikowski/essenplaner/backend/internal/auth"
 	"github.com/felikowski/essenplaner/backend/internal/isoweek"
 	"github.com/felikowski/essenplaner/backend/internal/store"
 )
@@ -111,7 +112,7 @@ func (s *Server) handleAddShoppingItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, `"text" is required`)
 		return
 	}
-	s.listAfter(w, r, s.shopping.AddShoppingItem(r.Context(), *body.Text))
+	s.listAfter(w, r, s.shopping.AddShoppingItem(r.Context(), *body.Text, actor(r)))
 }
 
 // handleAddShoppingItems fügt mehrere Zeilen hinzu; mit ?dryRun=1 zeigt es nur, wo sie landen würden.
@@ -134,7 +135,7 @@ func (s *Server) handleAddShoppingItems(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusOK, linesBody{Lines: lines})
 		return
 	}
-	s.listAfter(w, r, s.shopping.AddShoppingItems(r.Context(), body.Texts))
+	s.listAfter(w, r, s.shopping.AddShoppingItems(r.Context(), body.Texts, actor(r)))
 }
 
 type linesBody struct {
@@ -168,7 +169,7 @@ func (s *Server) handleUpdateShoppingItem(w http.ResponseWriter, r *http.Request
 			return
 		}
 	}
-	s.listAfter(w, r, s.shopping.UpdateShoppingItem(r.Context(), r.PathValue("id"), patch))
+	s.listAfter(w, r, s.shopping.UpdateShoppingItem(r.Context(), r.PathValue("id"), patch, actor(r)))
 }
 
 func (s *Server) handleCheckShoppingItem(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +216,7 @@ func (s *Server) handleImportShopping(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, "Der Zeitraum darf höchstens zwei Monate umfassen.")
 		return
 	}
-	without, err := s.shopping.ImportFromPlan(r.Context(), isoweek.FormatDate(from), isoweek.FormatDate(to))
+	without, err := s.shopping.ImportFromPlan(r.Context(), isoweek.FormatDate(from), isoweek.FormatDate(to), actor(r))
 	if s.writeShoppingError(w, r, err) {
 		return
 	}
@@ -356,5 +357,14 @@ func (s *Server) handleAddStaples(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	s.listAfter(w, r, s.shopping.AddStaplesToList(r.Context(), body.IDs))
+	s.listAfter(w, r, s.shopping.AddStaplesToList(r.Context(), body.IDs, actor(r)))
+}
+
+// actor ist der angemeldete Nutzer der Anfrage; ohne Anmeldung (lokale Entwicklung) bleibt er leer.
+func actor(r *http.Request) store.Actor {
+	session, ok := auth.SessionFrom(r.Context())
+	if !ok {
+		return store.Actor{}
+	}
+	return store.Actor{Subject: session.Subject, Name: session.Name}
 }

@@ -39,7 +39,7 @@ Die Namensliste am Artikel berechnet das Frontend aus `sources`. Das `ETag` der 
 - *Alternative:* gemischte Artikel nur einmal zeigen, unter einer Gruppe „Gemischt“ oder unter der Quelle des ersten Anteils. Verworfen: Dann sucht man „Butter“ unter „Selbst eingetragen“ vergeblich, und die Menge stimmt nicht mit der Quelle überein.
 
 ### Umschalter
-Ein Segment-Umschalter „Nach Gängen | Nach Herkunft“ neben dem Geschäftsfilter. Die Wahl liegt in `localStorage` (Schlüssel `shopping.view`), genauso wie der Geschäftsfilter. Bei ungültigem Wert gilt „Nach Gängen“.
+Ein Segment-Umschalter „Nach Gängen | Nach Herkunft“ über der Liste, unter dem Geschäftsfilter. Die Wahl liegt in `localStorage` (Schlüssel `essenplaner.shoppingView`), genauso wie der Geschäftsfilter. Bei ungültigem Wert gilt „Nach Gängen“.
 
 ### Namen klein und ruhig
 Die Namen stehen als gedämpfte Zeile unter dem Artikelnamen (z. B. „Felix, Linh“), mit großem Anfangsbuchstaben, nicht als farbige Chips. So bleibt die Kopfzeile bei 375 px unverändert, und die Liste wird nur wenig höher. Der Name wird mit dem ersten Buchstaben groß angezeigt, gespeichert bleibt er wie in der Sitzung.
@@ -48,7 +48,7 @@ Die Namen stehen als gedämpfte Zeile unter dem Artikelnamen (z. B. „Felix, Li
 
 - [Gemischte Artikel stehen doppelt, und man könnte meinen, man müsse zweimal kaufen.] → Jede Zeile zeigt nur die Teilmenge ihrer Gruppe, und beide Zeilen haken sich gemeinsam ab. Ein kleiner Hinweis „auch unter …“ ist bei Bedarf leicht nachrüstbar.
 - [Bei einer Menge von Hand gehen Herkunft und Person der alten Anteile verloren (wie bisher).] → Gewollt und in der Spec festgehalten. Der Artikel wandert dann nach „Selbst eingetragen“.
-- [Rollback auf eine Version ohne Migration 009.] → Die alte Version liest nur benannte Spalten und ignoriert die neuen. Bei der Umsetzung prüfen, dass der Migrationslauf einen unbekannten Eintrag `009` in `schema_migrations` toleriert.
+- [Rollback auf eine Version ohne Migration 009.] → Die alte Version liest nur benannte Spalten und ignoriert die neuen. Geprüft: Der Migrationslauf geht nur die eigenen Dateien durch und ignoriert einen unbekannten Eintrag `009` in `schema_migrations`. Alle Zugriffe auf `shopping_item_parts` nennen ihre Spalten ausdrücklich. Der Test `TestShoppingAttributionMigration` schreibt einen Anteil im alten Format.
 - [Namen ändern sich in Auth0.] → Alte Anteile behalten den alten Namen. Bei zwei festen Konten ist das vernachlässigbar.
 
 ## Migration Plan

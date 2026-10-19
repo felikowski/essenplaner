@@ -50,7 +50,7 @@ func categoryID(t *testing.T, list ShoppingList, name string) string {
 func mustAdd(t *testing.T, db *DB, texts ...string) {
 	t.Helper()
 	for _, text := range texts {
-		if err := db.AddShoppingItem(context.Background(), text); err != nil {
+		if err := db.AddShoppingItem(context.Background(), text, Actor{}); err != nil {
 			t.Fatalf("%q hinzufügen: %v", text, err)
 		}
 	}
@@ -93,7 +93,7 @@ func TestAddShoppingItemsCombines(t *testing.T) {
 	if list.Items[0].Name != "Kartoffeln" || list.Items[1].Name != "Zucchini" || list.Items[2].Name != "Butter" {
 		t.Errorf("reihenfolge = %v", names(list))
 	}
-	if err := db.AddShoppingItem(context.Background(), "   "); !isInvalidShopping(err) {
+	if err := db.AddShoppingItem(context.Background(), "   ", Actor{}); !isInvalidShopping(err) {
 		t.Errorf("leerer artikel: %v", err)
 	}
 }
@@ -182,7 +182,7 @@ func TestImportFromPlan(t *testing.T) {
 	planRecipe(t, db, "2026-10-04", "aepfel")      // ohne Zutaten
 	planRecipe(t, db, "2026-10-20", "linsensuppe") // außerhalb des Zeitraums
 
-	without, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07")
+	without, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07", Actor{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestImportFromPlan(t *testing.T) {
 
 	// Zweite Übernahme: nur das neu geplante Rezept kommt hinzu.
 	planRecipe(t, db, "2026-10-05", "linsensuppe")
-	if _, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07"); err != nil {
+	if _, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07", Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	list = shoppingList(t, db)
@@ -222,7 +222,7 @@ func TestImportFromPlan(t *testing.T) {
 	if err := db.DeleteShoppingItem(ctx, itemNamed(t, list, "Baguette").ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07"); err != nil {
+	if _, err := db.ImportFromPlan(ctx, "2026-10-01", "2026-10-07", Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	for _, item := range shoppingList(t, db).Items {
@@ -241,7 +241,7 @@ func TestImportWithoutServingsUsesFactorOne(t *testing.T) {
 	if _, err := db.sql.ExecContext(ctx, "UPDATE plan_entries SET servings = NULL"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.ImportFromPlan(ctx, "2026-10-02", "2026-10-02"); err != nil {
+	if _, err := db.ImportFromPlan(ctx, "2026-10-02", "2026-10-02", Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if got := itemNamed(t, shoppingList(t, db), "Linsen").Display; got != "250 g" {
@@ -309,7 +309,7 @@ func TestUpdateShoppingItemRemembersChoices(t *testing.T) {
 	list = shoppingList(t, db)
 	counter := categoryID(t, list, "Käsetheke")
 	market := list.Stores[0].ID
-	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{CategoryID: &counter, SetStore: true, StoreID: &market}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{CategoryID: &counter, SetStore: true, StoreID: &market}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.DeleteShoppingItem(ctx, feta.ID); err != nil {
@@ -323,7 +323,7 @@ func TestUpdateShoppingItemRemembersChoices(t *testing.T) {
 
 	// Menge von Hand ersetzt die Anteile.
 	amount := "500 g"
-	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{Quantity: &amount}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{Quantity: &amount}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	feta = itemNamed(t, shoppingList(t, db), "Feta")
@@ -331,18 +331,18 @@ func TestUpdateShoppingItemRemembersChoices(t *testing.T) {
 		t.Errorf("menge = %+v", feta)
 	}
 	bad := "etwas"
-	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{Quantity: &bad}); !isInvalidShopping(err) {
+	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{Quantity: &bad}, Actor{}); !isInvalidShopping(err) {
 		t.Errorf("unlesbare menge: %v", err)
 	}
 	unknown := "cat-fehlt"
-	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{CategoryID: &unknown}); !isInvalidShopping(err) {
+	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{CategoryID: &unknown}, Actor{}); !isInvalidShopping(err) {
 		t.Errorf("unbekannte kategorie: %v", err)
 	}
 
 	// Umbenennen auf einen vorhandenen Namen fasst zusammen.
 	apples := itemNamed(t, shoppingList(t, db), "Äpfel")
 	name := "feta"
-	if err := db.UpdateShoppingItem(ctx, apples.ID, ShoppingItemPatch{Name: &name}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, apples.ID, ShoppingItemPatch{Name: &name}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if list := shoppingList(t, db); len(list.Items) != 1 {
@@ -350,7 +350,7 @@ func TestUpdateShoppingItemRemembersChoices(t *testing.T) {
 	}
 
 	// Geschäft entfernen.
-	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{SetStore: true}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, feta.ID, ShoppingItemPatch{SetStore: true}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if got := itemNamed(t, shoppingList(t, db), "Feta").StoreID; got != "" {
@@ -414,7 +414,7 @@ func TestCategoriesAndShops(t *testing.T) {
 		t.Fatal(err)
 	}
 	cola := itemNamed(t, shoppingList(t, db), "Cola")
-	if err := db.UpdateShoppingItem(ctx, cola.ID, ShoppingItemPatch{SetStore: true, StoreID: &shop.ID}); err != nil {
+	if err := db.UpdateShoppingItem(ctx, cola.ID, ShoppingItemPatch{SetStore: true, StoreID: &shop.ID}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.DeleteShop(ctx, shop.ID); err != nil {
@@ -441,14 +441,14 @@ func TestStaples(t *testing.T) {
 	if len(staples) != 3 || staples[2].Text != "1 kg Reis" {
 		t.Fatalf("vorrat = %+v", staples)
 	}
-	if err := db.AddStaplesToList(ctx, []string{staples[0].ID, staples[2].ID}); err != nil {
+	if err := db.AddStaplesToList(ctx, []string{staples[0].ID, staples[2].ID}, Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	list := shoppingList(t, db)
 	if len(list.Items) != 2 || itemNamed(t, list, "Reis").Display != "1 kg" || itemNamed(t, list, "Kaffee").Sources[0].Kind != PartStaple {
 		t.Errorf("liste = %+v", list.Items)
 	}
-	if err := db.AddStaplesToList(ctx, []string{"st-fehlt"}); !errors.Is(err, ErrNotFound) {
+	if err := db.AddStaplesToList(ctx, []string{"st-fehlt"}, Actor{}); !errors.Is(err, ErrNotFound) {
 		t.Errorf("unbekannter vorrat: %v", err)
 	}
 	if err := db.DeleteStaple(ctx, staples[1].ID); err != nil {
@@ -470,7 +470,7 @@ func TestShoppingMigrationOnExistingData(t *testing.T) {
 		t.Errorf("eintrag = %+v, %v", got, err)
 	}
 	// Gelöschte Einträge verschwinden aus den übernommenen.
-	if _, err := db.ImportFromPlan(context.Background(), "2026-10-02", "2026-10-02"); err != nil {
+	if _, err := db.ImportFromPlan(context.Background(), "2026-10-02", "2026-10-02", Actor{}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.DeleteEntry(context.Background(), entry.ID); err != nil {
