@@ -14,7 +14,7 @@
 ## 3. Abschluss
 
 - [x] 3.1 Am Handy (375 px) „Hähnchen-Curry“ aus dem Plan mit 8 Portionen öffnen, im Überblick Schritt 2 antippen, im Schritt-Modus bis Schritt 4 blättern und dort eine Zutat abhaken; Screenshots unter `docs/add-step-ingredients-mobile.jpg`. Ohne Auth0-Zugang lokal mit Playwright gegen den Vite-Dev-Server und nachgebildete API-Antworten aufgenommen, die Kochansicht direkt mit `?portionen=8` geöffnet; die Übernahme der Portionen aus dem Plan deckt der bestehende Test „übernimmt abweichende Portionen aus einem Planeintrag“ ab.
-- [ ] 3.2 `make test` ist grün. Frontend-Tests (370), Lint und Build sind grün, ebenso alle Go-Pakete außer `safefetch`: `TestFetchRejectsRedirectToInternalAddress` scheitert in der Cloud-Umgebung ohne IPv6 („address family not supported“) und ist von dieser Change unabhängig; in CI bzw. lokal erneut prüfen.
+- [x] 3.2 `make test` ist grün. Lokal waren Frontend-Tests (370), Lint, Build und alle Go-Pakete außer `safefetch` grün; `TestFetchRejectsRedirectToInternalAddress` scheiterte nur in der Cloud-Umgebung ohne IPv6. In der CI (GitHub Actions) ist der komplette Lauf grün.
 
 ## Workflow follow-up
 
