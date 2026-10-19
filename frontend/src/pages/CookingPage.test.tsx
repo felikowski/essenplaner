@@ -18,6 +18,19 @@ function apiWithButtermilk() {
   ] : loadMockFiles(file))
 }
 
+function ingredientList() {
+  return screen.getByRole('heading', { name: 'Zutaten' }).closest('section')!
+}
+
+function highlightedIngredients(container: HTMLElement) {
+  return [...container.querySelectorAll('.is-highlighted [role="checkbox"]')].map((item) => item.textContent?.replace('✓', ''))
+}
+
+function stepIngredients(stepNumber: number) {
+  return within(screen.getByRole('list', { name: `Zutaten für Schritt ${stepNumber}` }))
+    .getAllByRole('checkbox').map((item) => item.textContent)
+}
+
 describe('Kochansicht', () => {
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'wakeLock')
@@ -125,5 +138,75 @@ describe('Kochansicht', () => {
     const timers = screen.getAllByRole('listitem').filter((item) => item.closest('.timer-list'))
     expect(timers[0]).toHaveTextContent('Hähnchen-Curry · Schritt 5')
     expect(timers[1]).toHaveTextContent('Backofen')
+  })
+
+  it('hebt die Zutaten eines angetippten Schritts hervor und zeigt sie unter dem Schritt', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen')
+    await user.click(await screen.findByText('Hähnchen in Würfel schneiden, Zwiebel und Knoblauch fein hacken.'))
+    expect(highlightedIngredients(ingredientList())).toEqual(['600 g Hähnchenbrust', '1 Zwiebel', '2 Knoblauchzehen'])
+    expect(stepIngredients(2)).toEqual(['600 g Hähnchenbrust', '1 Zwiebel', '2 Knoblauchzehen'])
+    expect(screen.getByRole('button', { name: 'Zutaten für Schritt 2' })).toHaveAttribute('aria-expanded', 'true')
+
+    await user.click(screen.getByText('Currypulver kurz mitrösten, mit Kokosmilch ablöschen.'))
+    expect(highlightedIngredients(ingredientList())).toEqual(['1 EL Currypulver', '400 ml Kokosmilch'])
+    expect(screen.queryByRole('list', { name: 'Zutaten für Schritt 2' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('Currypulver kurz mitrösten, mit Kokosmilch ablöschen.'))
+    expect(highlightedIngredients(ingredientList())).toEqual([])
+    expect(screen.queryByRole('list', { name: 'Zutaten für Schritt 4' })).not.toBeInTheDocument()
+  })
+
+  it('wählt Schritte auch über den Knopf „Zutaten“ per Tastatur', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen')
+    const toggle = await screen.findByRole('button', { name: 'Zutaten für Schritt 1' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+    expect(stepIngredients(1)).toEqual(['250 g Basmatireis'])
+    await user.keyboard(' ')
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('zeigt die Zutaten unter dem Schritt mit den gewählten Portionen', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen?portionen=8')
+    await user.click(await screen.findByText('Hähnchen in Würfel schneiden, Zwiebel und Knoblauch fein hacken.'))
+    expect(stepIngredients(2)).toEqual(['1,2 kg Hähnchenbrust', '2 Zwiebel', '4 Knoblauchzehen'])
+  })
+
+  it('ändert die Auswahl nicht, wenn ein Timer im Schritt gestartet wird', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen')
+    await user.click(await screen.findByRole('button', { name: 'Timer über 10 Minuten starten' }))
+    expect(screen.getByText('Hähnchen-Curry · Schritt 5')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zutaten für Schritt 5' })).toHaveAttribute('aria-expanded', 'false')
+    expect(highlightedIngredients(ingredientList())).toEqual([])
+  })
+
+  it('hakt Zutaten unter dem Schritt gemeinsam mit der Zutatenliste ab', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen')
+    await user.click(await screen.findByText('Hähnchen in Würfel schneiden, Zwiebel und Knoblauch fein hacken.'))
+    const step = within(screen.getByRole('list', { name: 'Zutaten für Schritt 2' }))
+    await user.click(step.getByRole('checkbox', { name: '1 Zwiebel' }))
+    expect(step.getByRole('checkbox', { name: '1 Zwiebel' })).toHaveAttribute('aria-checked', 'true')
+    expect(within(ingredientList()).getByRole('checkbox', { name: /1 Zwiebel/ })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('meldet einen Schritt ohne erkannte Zutaten', async () => {
+    const { user } = renderApp('/rezepte/waffeln/kochen', apiWithButtermilk())
+    await user.click(await screen.findByText('Alles verrühren.'))
+    expect(screen.getByText('Keine Zutaten erkannt')).toBeInTheDocument()
+    expect(highlightedIngredients(ingredientList())).toEqual([])
+  })
+
+  it('zeigt im Schritt-Modus die Zutaten des aktuellen Schritts und hebt sie im Overlay hervor', async () => {
+    const { user } = renderApp('/rezepte/haehnchen-curry/kochen')
+    await user.click(await screen.findByRole('button', { name: 'Schritt für Schritt' }))
+    expect(stepIngredients(1)).toEqual(['250 g Basmatireis'])
+    await user.click(screen.getByRole('button', { name: 'Weiter' }))
+    await user.click(screen.getByRole('button', { name: 'Weiter' }))
+    await user.click(screen.getByRole('button', { name: 'Weiter' }))
+    expect(screen.getByText('Schritt 4 von 5')).toBeInTheDocument()
+    expect(stepIngredients(4)).toEqual(['1 EL Currypulver', '400 ml Kokosmilch'])
+
+    await user.click(screen.getByRole('button', { name: 'Zutaten' }))
+    expect(highlightedIngredients(screen.getByRole('dialog', { name: 'Zutaten' }))).toEqual(['1 EL Currypulver', '400 ml Kokosmilch'])
   })
 })
